@@ -39,7 +39,7 @@ jobs:
 
       # Runs a single command using the runners shell
       - name: Build with Vite
-        run: npm run build -- --base="/${{ github.event.repository.name }}"
+        run: npm run build -- --base="/${{ github.event.repository.name }}/"
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
