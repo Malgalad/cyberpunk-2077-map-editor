@@ -139,6 +139,10 @@ export class Map3D {
     this.#lookAt(center, zoom);
   }
 
+  resetCamera() {
+    this.#lookAt(this.#cameraLookAt, this.#cameraZoom);
+  }
+
   setBuildingsData(district?: District) {
     if (this.#buildings) {
       this.#scene.remove(this.#buildings);

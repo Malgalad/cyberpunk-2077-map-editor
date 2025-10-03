@@ -10,20 +10,8 @@ import type {
   TransformParsed,
 } from "./types.ts";
 
-export const deg2rad = THREE.MathUtils.degToRad;
-export const rad2deg = THREE.MathUtils.radToDeg;
-
 export const hadamardProduct = (a: number[], b: number[]) =>
   a.map((x, i) => x * b[i]);
-// export const addQuaternions = (
-//   a: THREE.QuaternionTuple,
-//   b: THREE.QuaternionTuple,
-// ) => {
-//   const ea = toEulerAngles(a) as [number, number, number];
-//   const eb = toEulerAngles(b) as [number, number, number];
-//
-//   return toQuaternion(ea.map((x, i) => x + eb[i]) as [number, number, number]);
-// };
 
 export function toNumber(value: string) {
   const number = parseFloat(value.trim());
@@ -33,37 +21,14 @@ export function toString(value: number) {
   return value.toString();
 }
 
-// export function toQuaternion([roll, pitch, yaw]: [Decimal, Decimal, Decimal]): [
-//   Decimal,
-//   Decimal,
-//   Decimal,
-//   Decimal,
-// ] {
-//   const cosRoll = roll.mul(0.5).cos();
-//   const sinRoll = roll.mul(0.5).sin();
-//   const cosPitch = pitch.mul(0.5).cos();
-//   const sinPitch = pitch.mul(0.5).sin();
-//   const cosYaw = yaw.mul(0.5).cos();
-//   const sinYaw = yaw.mul(0.5).sin();
-//
-//   return [
-//     sinRoll.mul(cosPitch).mul(cosYaw).sub(cosRoll.mul(sinPitch).mul(sinYaw)),
-//     cosRoll.mul(sinPitch).mul(cosYaw).add(sinRoll.mul(cosPitch).mul(sinYaw)),
-//     cosRoll.mul(cosPitch).mul(sinYaw).sub(sinRoll.mul(sinPitch).mul(cosYaw)),
-//     cosRoll.mul(cosPitch).mul(cosYaw).add(sinRoll.mul(sinPitch).mul(sinYaw)),
-//   ];
-// }
-
 function prepareTransform<K>(transform: Transform & K): TransformParsed & K {
   return {
     ...transform,
-    position: transform.position.map(toNumber) as [number, number, number],
-    rotation: transform.rotation.map(toNumber).map(deg2rad) as [
-      number,
-      number,
-      number,
-    ],
-    scale: transform.scale.map(toNumber) as [number, number, number],
+    position: transform.position.map(toNumber) as THREE.Vector3Tuple,
+    rotation: transform.rotation
+      .map(toNumber)
+      .map(THREE.MathUtils.degToRad) as THREE.EulerTuple,
+    scale: transform.scale.map(toNumber) as THREE.Vector3Tuple,
   };
 }
 
@@ -74,55 +39,25 @@ export function prepareNode(node: MapNode): MapNodeParsed {
   };
 }
 
-// export function toEulerAngles([x, y, z, w]: [
-//   Decimal,
-//   Decimal,
-//   Decimal,
-//   Decimal,
-// ]): [Decimal, Decimal, Decimal] {
-//   const sinr_cosp = new Decimal(2).mul(w.mul(x).add(y.mul(z)));
-//   const cosr_cosp = new Decimal(1).sub(
-//     new Decimal(2).mul(x.pow(2).add(y.pow(2))),
-//   );
-//   const roll = Decimal.atan2(sinr_cosp, cosr_cosp);
-//
-//   const sinp = Decimal.sqrt(
-//     new Decimal(1).add(new Decimal(2).mul(w.mul(y).sub(x.mul(z)))),
-//   );
-//   const cosp = Decimal.sqrt(
-//     new Decimal(1).sub(new Decimal(2).mul(w.mul(y).sub(x.mul(z)))),
-//   );
-//   const pitch = new Decimal(2)
-//     .mul(Decimal.atan2(sinp, cosp))
-//     .sub(new Decimal(Math.PI / 2));
-//
-//   const siny_cosp = new Decimal(2).mul(w.mul(z).add(x.mul(y)));
-//   const cosy_cosp = new Decimal(1).sub(
-//     new Decimal(2).mul(y.pow(2).add(z.pow(2))),
-//   );
-//   const yaw = Decimal.atan2(siny_cosp, cosy_cosp);
-//
-//   return [roll, pitch, yaw];
-// }
-
 export function applyParentTransform<Node extends TransformParsed>(
   node: Node,
   parent: TransformParsed,
 ): Node {
+  const parentPosition = new THREE.Vector3().fromArray(parent.position);
   const parentRotation = new THREE.Quaternion().setFromEuler(
     new THREE.Euler().fromArray(parent.rotation),
   );
-  const parentPosition = new THREE.Vector3().fromArray(parent.position);
+  const nodePosition = new THREE.Vector3().fromArray(node.position);
 
   const object = new THREE.Object3D();
-  object.position.fromArray(node.position);
+  object.position.copy(nodePosition);
+  object.position.add(parentPosition);
   object.rotation.fromArray(node.rotation);
   object.scale.fromArray(node.scale);
 
   object.applyQuaternion(parentRotation);
   object.position.sub(parentPosition);
   object.position.applyQuaternion(parentRotation);
-  object.position.add(parentPosition);
   object.position.add(parentPosition);
 
   const scale = hadamardProduct(node.scale, parent.scale);

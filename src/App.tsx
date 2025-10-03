@@ -1,14 +1,14 @@
+import { BoxIcon } from "lucide-react";
 import * as React from "react";
 
 import Button from "./components/Button.tsx";
-import { useAppDispatch, useAppSelector } from "./hooks.ts";
+import { useAppDispatch, useAppSelector, useSyncNodes } from "./hooks.ts";
 import type { InstanceTransforms } from "./map3d/importDDS.ts";
 import { Map3D } from "./map3d/map3d.ts";
 import mapData from "./mapData.min.json";
-import ModalContainer from "./modals/ModalContainer.tsx";
 import { Actions, Selectors } from "./store/globals.ts";
 import { ModalsActions } from "./store/modals.ts";
-import { NodesSelectors } from "./store/nodes.ts";
+import { NodesActions, NodesSelectors } from "./store/nodes.ts";
 import AddNodes from "./tabs/AddNodes.tsx";
 import RemoveNodes from "./tabs/RemoveNodes.tsx";
 import type { MapNodeParsed } from "./types.ts";
@@ -38,6 +38,7 @@ function App() {
     InstanceTransforms[]
   >([]);
   const [tab, setTab] = React.useState<Tabs>("add");
+  useSyncNodes(nodes, district);
 
   // const importData = React.useCallback(() => {
   //   const input = document.createElement("input");
@@ -87,6 +88,8 @@ function App() {
       dispatch(ModalsActions.openModal("select-district")).then((choice) => {
         dispatch(Actions.setDistrict(choice));
       });
+    } else {
+      dispatch(NodesActions.setEditing(null));
     }
   }, [district, dispatch]);
 
@@ -190,12 +193,42 @@ function App() {
   }, [editing, cache, instanceTransforms, map3D]);
 
   return (
-    <>
-      <div className="flex flex-row gap-2 w-screen h-screen bg-slate-900 text-white">
-        <div className="flex-2/3">
+    <div className="flex flex-col gap-2 w-screen h-screen bg-slate-900 text-white">
+      <div className="flex flex-row gap-2 px-2">
+        <Button
+          className="border-none"
+          onClick={() => {
+            dispatch(ModalsActions.openModal("select-district")).then(
+              (choice) => {
+                dispatch(Actions.setDistrict(choice));
+              },
+            );
+          }}
+        >
+          Select district
+        </Button>
+        <Button className="border-none" disabled>
+          Import
+        </Button>
+        <Button className="border-none" disabled>
+          Export
+        </Button>
+      </div>
+      <div className="grow flex flex-row gap-2">
+        <div className="grow relative">
           <canvas className="w-full h-full block" ref={canvasRef} />
+          <Button
+            className="absolute! left-4 top-4 tooltip"
+            onClick={() => {
+              map3D?.resetCamera();
+            }}
+            data-tooltip="Reset camera"
+            data-flow="right"
+          >
+            <BoxIcon />
+          </Button>
         </div>
-        <div className="flex-1/3 flex flex-col py-2 pr-2 overflow-y-auto">
+        <div className="w-[420px] flex flex-col py-2 pr-2 overflow-y-auto">
           <div className="flex flex-row gap-0.5 -mb-[1px]">
             {tabs.map((button) => (
               <Button
@@ -217,8 +250,7 @@ function App() {
           </div>
         </div>
       </div>
-      <ModalContainer />
-    </>
+    </div>
   );
 }
 

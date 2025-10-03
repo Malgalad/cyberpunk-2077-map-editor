@@ -25,6 +25,12 @@ const initialState = {
   editing: null,
 } satisfies NodesState as NodesState;
 
+const counter = {
+  group: 0,
+  instance: 0,
+};
+const getPointer = (type: keyof typeof counter) => ++counter[type];
+
 const nodesSlice = createSlice({
   name: "nodes",
   initialState,
@@ -35,7 +41,7 @@ const nodesSlice = createSlice({
         const scale = type === "instance" ? "100" : "1";
         const node: MapNode = {
           id,
-          label: `${type} ${id}`,
+          label: `${type === "instance" ? "Box" : "Group"} ${getPointer(type)}`,
           type,
           parent,
           position,
@@ -78,6 +84,9 @@ const nodesSlice = createSlice({
         state.editing = action.payload;
       },
     ),
+    setNodes: create.reducer((state, action: PayloadAction<MapNode[]>) => {
+      state.nodes = action.payload;
+    }),
   }),
   selectors: {
     getNodes(state): MapNode[] {
@@ -90,8 +99,8 @@ const nodesSlice = createSlice({
         const cache: Record<string, { i: any[]; g: string[] }> = {};
 
         for (const node of nodes) {
-          const parent = node.parent;
-          const group = cache[parent] ?? { i: [], g: [] };
+          const group = cache[node.parent] ?? { i: [], g: [] };
+
           if (node.type === "instance") {
             group.i.push(node.id);
           } else {
@@ -100,7 +109,8 @@ const nodesSlice = createSlice({
             group.i.push(self.i);
             cache[node.id] = self;
           }
-          cache[parent] = group;
+
+          cache[node.parent] = group;
         }
 
         return cache;

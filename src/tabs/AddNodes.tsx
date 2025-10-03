@@ -133,7 +133,7 @@ function AddNodes() {
             Select node
           </div>
         )}
-        {editing && <EditNode />}
+        {editing && <EditNode key={editing.id} />}
       </div>
     </>
   );
