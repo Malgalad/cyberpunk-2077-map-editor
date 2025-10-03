@@ -1,0 +1,225 @@
+import * as React from "react";
+
+import Button from "./components/Button.tsx";
+import { useAppDispatch, useAppSelector } from "./hooks.ts";
+import type { InstanceTransforms } from "./map3d/importDDS.ts";
+import { Map3D } from "./map3d/map3d.ts";
+import mapData from "./mapData.min.json";
+import ModalContainer from "./modals/ModalContainer.tsx";
+import { Actions, Selectors } from "./store/globals.ts";
+import { ModalsActions } from "./store/modals.ts";
+import { NodesSelectors } from "./store/nodes.ts";
+import AddNodes from "./tabs/AddNodes.tsx";
+import RemoveNodes from "./tabs/RemoveNodes.tsx";
+import type { MapNodeParsed } from "./types.ts";
+import {
+  applyParentTransform,
+  clsx,
+  nodeToTransform,
+  prepareNode,
+} from "./utilities.ts";
+
+type Tabs = "add" | "remove";
+const tabs = [
+  { key: "add", label: "Add nodes" },
+  { key: "remove", label: "Remove nodes" },
+] as { key: Tabs; label: string }[];
+
+function App() {
+  const dispatch = useAppDispatch();
+  const district = useAppSelector(Selectors.getDistrict);
+  const districtData = useAppSelector(Selectors.getDistrictData);
+  const nodes = useAppSelector(NodesSelectors.getNodes);
+  const editing = useAppSelector(NodesSelectors.getEditing);
+  const cache = useAppSelector(NodesSelectors.getChildNodesCache);
+  const canvasRef = React.useRef<HTMLCanvasElement>(null);
+  const [map3D, setMap3D] = React.useState<Map3D | null>(null);
+  const [instanceTransforms, setInstanceTransforms] = React.useState<
+    InstanceTransforms[]
+  >([]);
+  const [tab, setTab] = React.useState<Tabs>("add");
+
+  // const importData = React.useCallback(() => {
+  //   const input = document.createElement("input");
+  //   input.type = "file";
+  //   input.accept = ".json";
+  //   input.onchange = (event) => {
+  //     const file = (event.target as HTMLInputElement).files?.[0];
+  //     if (!file) return;
+  //
+  //     const reader = new FileReader();
+  //     reader.onload = (event) => {
+  //       const content = event.target?.result;
+  //       if (typeof content !== "string") return;
+  //
+  //       try {
+  //         context.setNodes(JSON.parse(content));
+  //       } catch (error) {
+  //         openModal("alert", "Failed to parse JSON file");
+  //         console.error("Failed to parse JSON file:", error);
+  //       }
+  //     };
+  //     reader.readAsText(file);
+  //   };
+  //   input.click();
+  // }, [context, openModal]);
+  // const exportData = React.useCallback(() => {
+  //   const blob = new Blob([JSON.stringify(context.nodes)], {
+  //     type: "application/json",
+  //   });
+  //   const url = URL.createObjectURL(blob);
+  //   const anchorElement = document.createElement("a");
+  //   anchorElement.href = url;
+  //   anchorElement.download = `${district}.json`;
+  //   anchorElement.click();
+  //   URL.revokeObjectURL(url);
+  // }, [context.nodes, district]);
+
+  // Init map and set Map3D state
+  React.useEffect(() => {
+    if (!canvasRef.current) return;
+    setMap3D(new Map3D(canvasRef.current));
+  }, []);
+
+  // open Select District modal on launch
+  React.useEffect(() => {
+    if (district === undefined) {
+      dispatch(ModalsActions.openModal("select-district")).then((choice) => {
+        dispatch(Actions.setDistrict(choice));
+      });
+    }
+  }, [district, dispatch]);
+
+  // Draw buildings on district change and set mesh state
+  React.useEffect(() => {
+    if (!map3D || !district) return;
+    map3D.setBuildingsData(mapData.soup[district]);
+  }, [district, map3D]);
+
+  // Reduce nodes to instanced mesh transforms and set instanceTransforms state
+  React.useEffect(() => {
+    if (!map3D || !districtData || !district) return;
+
+    const instanceTransforms: InstanceTransforms[] = [];
+    const reversedNodes: MapNodeParsed[] = nodes.toReversed().map(prepareNode);
+    const { origin, minMax, cubeSize } = districtData;
+
+    // for (const node of reversedNodes) {
+    //   if (!node.pattern || !node.pattern.enabled) continue;
+    //
+    //   for (let i = 0; i < node.pattern.count; i++) {
+    //     const virtualNodes = _cloneNode(reversedNodes, node);
+    //
+    //     const position = node.pattern.position.map(
+    //       scalePattern(i),
+    //     ) as THREE.Vector3Tuple;
+    //
+    //     const rotation = toQuaternion(
+    //       toEulerAngles(node.pattern.rotation)
+    //         .map((n) => rad2deg(n as number))
+    //         .map(scalePattern(i))
+    //         .map(deg2rad) as THREE.EulerTuple,
+    //     );
+    //
+    //     const scale = node.pattern.scale
+    //       .map((n) => n - 1)
+    //       .map(scalePattern(i))
+    //       .map((n) => n + 1) as THREE.Vector3Tuple;
+    //
+    //     virtualNodes.splice(0, 1, {
+    //       ...virtualNodes[0],
+    //       pattern: undefined,
+    //       position,
+    //       rotation,
+    //       scale,
+    //     });
+    //
+    //     reversedNodes.push(...virtualNodes);
+    //   }
+    // }
+
+    for (const node of reversedNodes) {
+      if (node.type === "instance") {
+        let current = node;
+        let parentId = current.parent;
+
+        while (parentId !== district) {
+          const parent = reversedNodes.find((parent) => parent.id === parentId);
+          if (!parent) break;
+          current = applyParentTransform(current, parent);
+          parentId = parent.parent;
+        }
+
+        current.position[2] += current.scale[2] / 2;
+
+        instanceTransforms.push(
+          nodeToTransform(current, origin, minMax, cubeSize),
+        );
+      }
+    }
+
+    setInstanceTransforms(instanceTransforms);
+  }, [nodes, district, districtData, map3D]);
+
+  // Draw nodes on instanceTransforms change
+  React.useEffect(() => {
+    if (!map3D || !district) return;
+    map3D.setEditsData(mapData.soup[district], instanceTransforms);
+  }, [district, instanceTransforms, map3D]);
+
+  // Highlight nodes on editing change
+  React.useEffect(() => {
+    if (!map3D) return;
+
+    if (!editing) {
+      map3D.selectEditsData([]);
+      return;
+    }
+
+    const selectedIds = new Set(
+      editing.type === "instance" ? [editing.id] : cache[editing.id].i.flat(99),
+    );
+    const indexes = instanceTransforms.reduce((acc, transform, index) => {
+      if (selectedIds.has(transform.id)) {
+        acc.push(index);
+      }
+      return acc;
+    }, [] as number[]);
+
+    map3D.selectEditsData(indexes);
+  }, [editing, cache, instanceTransforms, map3D]);
+
+  return (
+    <>
+      <div className="flex flex-row gap-2 w-screen h-screen bg-slate-900 text-white">
+        <div className="flex-2/3">
+          <canvas className="w-full h-full block" ref={canvasRef} />
+        </div>
+        <div className="flex-1/3 flex flex-col py-2 pr-2 overflow-y-auto">
+          <div className="flex flex-row gap-0.5 -mb-[1px]">
+            {tabs.map((button) => (
+              <Button
+                key={button.key}
+                className={clsx(
+                  "w-1/2 z-10",
+                  button.key === tab && "border-b-slate-900",
+                  button.key !== tab && "border-transparent",
+                )}
+                onClick={() => setTab(button.key)}
+              >
+                {button.label}
+              </Button>
+            ))}
+          </div>
+          <div className="flex flex-col flex-grow gap-2 p-2 border border-slate-600">
+            {tab === "add" && <AddNodes />}
+            {tab === "remove" && <RemoveNodes />}
+          </div>
+        </div>
+      </div>
+      <ModalContainer />
+    </>
+  );
+}
+
+export default App;

@@ -1,0 +1,1110 @@
+{
+  "$type": "CMesh",
+  "appearances": [
+    {
+      "HandleRefId": "0"
+    },
+    {
+      "HandleRefId": "1"
+    },
+    {
+      "HandleRefId": "2"
+    },
+    {
+      "HandleRefId": "3"
+    },
+    {
+      "HandleRefId": "4"
+    },
+    {
+      "HandleRefId": "5"
+    },
+    {
+      "HandleRefId": "6"
+    },
+    {
+      "HandleRefId": "7"
+    },
+    {
+      "HandleRefId": "8"
+    }
+  ],
+  "boneNames": [],
+  "boneRigMatrices": [],
+  "boneVertexEpsilons": [],
+  "boundingBox": {
+    "$type": "Box",
+    "Max": {
+      "$type": "Vector4",
+      "W": 1,
+      "X": 10000,
+      "Y": 10000,
+      "Z": 10000
+    },
+    "Min": {
+      "$type": "Vector4",
+      "W": 1,
+      "X": -10000,
+      "Y": -10000,
+      "Z": -10000
+    }
+  },
+  "castGlobalShadowsCachedInCook": 1,
+  "castLocalShadowsCachedInCook": 1,
+  "castsRayTracedShadowsFromOriginalGeometry": 1,
+  "consoleBias": 0,
+  "constrainAutoHideDistanceToTerrainHeightMap": 0,
+  "cookingPlatform": "PLATFORM_PC",
+  "externalMaterials": [],
+  "floatTrackNames": [],
+  "forceLoadAllAppearances": 0,
+  "geometryHash": "11158066576586982612",
+  "inplaceResources": [],
+  "isPlayerShadowMesh": 0,
+  "isShadowMesh": 0,
+  "localMaterialBuffer": {
+    "$type": "meshMeshMaterialBuffer",
+    "materials": [
+      {
+        "$type": "CMaterialInstance",
+        "audioTag": {
+          "$type": "CName",
+          "$storage": "string",
+          "$value": "None"
+        },
+        "baseMaterial": {
+          "DepotPath": {
+            "$type": "ResourcePath",
+            "$storage": "string",
+            "$value": "base\\materials\\3d_map_cubes.mt"
+          },
+          "Flags": "Default"
+        },
+        "cookingPlatform": "PLATFORM_None",
+        "enableMask": 1,
+        "metadata": null,
+        "resourceVersion": 4,
+        "values": [
+          {
+            "$type": "Float",
+            "PointCloudTextureHeight": 197
+          },
+          {
+            "$type": "rRef:ITexture",
+            "WorldPosTex": {
+              "DepotPath": {
+                "$type": "ResourcePath",
+                "$storage": "string",
+                "$value": "base\\fx\\textures\\3dmap\\static\\westbrook_data.xbm"
+              },
+              "Flags": "Default"
+            }
+          },
+          {
+            "$type": "Vector4",
+            "TransMin": {
+              "$type": "Vector4",
+              "W": 0,
+              "X": -1078.94739,
+              "Y": -1148.69434,
+              "Z": -18.4205875
+            }
+          },
+          {
+            "$type": "Vector4",
+            "TransMax": {
+              "$type": "Vector4",
+              "W": 1,
+              "X": 1155.12,
+              "Y": 1562.87903,
+              "Z": 507.894714
+            }
+          },
+          {
+            "$type": "Float",
+            "CubeSize": 197
+          },
+          {
+            "$type": "rRef:ITexture",
+            "BaseColor": {
+              "DepotPath": {
+                "$type": "ResourcePath",
+                "$storage": "string",
+                "$value": "base\\fx\\textures\\3dmap\\static\\c_westbrook_m.xbm"
+              },
+              "Flags": "Default"
+            }
+          },
+          {
+            "$type": "Float",
+            "Is3DMap": 1
+          }
+        ]
+      },
+      {
+        "$type": "CMaterialInstance",
+        "audioTag": {
+          "$type": "CName",
+          "$storage": "string",
+          "$value": "None"
+        },
+        "baseMaterial": {
+          "DepotPath": {
+            "$type": "ResourcePath",
+            "$storage": "string",
+            "$value": "base\\materials\\3d_map_cubes.mt"
+          },
+          "Flags": "Default"
+        },
+        "cookingPlatform": "PLATFORM_None",
+        "enableMask": 1,
+        "metadata": null,
+        "resourceVersion": 4,
+        "values": [
+          {
+            "$type": "Float",
+            "PointCloudTextureHeight": 204
+          },
+          {
+            "$type": "rRef:ITexture",
+            "WorldPosTex": {
+              "DepotPath": {
+                "$type": "ResourcePath",
+                "$storage": "string",
+                "$value": "base\\fx\\textures\\3dmap\\static\\city_center_data.xbm"
+              },
+              "Flags": "Default"
+            }
+          },
+          {
+            "$type": "Vector4",
+            "TransMin": {
+              "$type": "Vector4",
+              "W": 0,
+              "X": -770.609192,
+              "Y": -530.549133,
+              "Z": -40.6581497
+            }
+          },
+          {
+            "$type": "Vector4",
+            "TransMax": {
+              "$type": "Vector4",
+              "W": 1,
+              "X": 1316.82483,
+              "Y": 649.75531,
+              "Z": 642.893127
+            }
+          },
+          {
+            "$type": "Float",
+            "CubeSize": 168.289993
+          },
+          {
+            "$type": "rRef:ITexture",
+            "BaseColor": {
+              "DepotPath": {
+                "$type": "ResourcePath",
+                "$storage": "string",
+                "$value": "base\\fx\\textures\\3dmap\\static\\city_center_m.xbm"
+              },
+              "Flags": "Default"
+            }
+          },
+          {
+            "$type": "Float",
+            "DissolveDistance": 200
+          },
+          {
+            "$type": "Float",
+            "DissolveBandWidth": 120
+          },
+          {
+            "$type": "Float",
+            "Is3DMap": 1
+          }
+        ]
+      },
+      {
+        "$type": "CMaterialInstance",
+        "audioTag": {
+          "$type": "CName",
+          "$storage": "string",
+          "$value": "None"
+        },
+        "baseMaterial": {
+          "DepotPath": {
+            "$type": "ResourcePath",
+            "$storage": "string",
+            "$value": "base\\materials\\3d_map_cubes.mt"
+          },
+          "Flags": "Default"
+        },
+        "cookingPlatform": "PLATFORM_None",
+        "enableMask": 1,
+        "metadata": null,
+        "resourceVersion": 4,
+        "values": [
+          {
+            "$type": "Float",
+            "PointCloudTextureHeight": 205
+          },
+          {
+            "$type": "rRef:ITexture",
+            "WorldPosTex": {
+              "DepotPath": {
+                "$type": "ResourcePath",
+                "$storage": "string",
+                "$value": "base\\fx\\textures\\3dmap\\static\\heywood_data.xbm"
+              },
+              "Flags": "Default"
+            }
+          },
+          {
+            "$type": "Vector4",
+            "TransMin": {
+              "$type": "Vector4",
+              "W": 0,
+              "X": -1080.35107,
+              "Y": -418.153046,
+              "Z": -38.4002304
+            }
+          },
+          {
+            "$type": "Vector4",
+            "TransMax": {
+              "$type": "Vector4",
+              "W": 1,
+              "X": 1136.94556,
+              "Y": 1372.15979,
+              "Z": 374.181305
+            }
+          },
+          {
+            "$type": "Float",
+            "CubeSize": 197.236832
+          },
+          {
+            "$type": "rRef:ITexture",
+            "BaseColor": {
+              "DepotPath": {
+                "$type": "ResourcePath",
+                "$storage": "string",
+                "$value": "base\\fx\\textures\\3dmap\\static\\heywood_m.xbm"
+              },
+              "Flags": "Default"
+            }
+          },
+          {
+            "$type": "Float",
+            "EdgeThickness": 0.000500000024
+          },
+          {
+            "$type": "Float",
+            "EdgeSharpnessPower": 50
+          },
+          {
+            "$type": "Float",
+            "Is3DMap": 1
+          }
+        ]
+      },
+      {
+        "$type": "CMaterialInstance",
+        "audioTag": {
+          "$type": "CName",
+          "$storage": "string",
+          "$value": "None"
+        },
+        "baseMaterial": {
+          "DepotPath": {
+            "$type": "ResourcePath",
+            "$storage": "string",
+            "$value": "base\\materials\\3d_map_cubes.mt"
+          },
+          "Flags": "Default"
+        },
+        "cookingPlatform": "PLATFORM_None",
+        "enableMask": 1,
+        "metadata": null,
+        "resourceVersion": 4,
+        "values": [
+          {
+            "$type": "Float",
+            "PointCloudTextureHeight": 153
+          },
+          {
+            "$type": "rRef:ITexture",
+            "WorldPosTex": {
+              "DepotPath": {
+                "$type": "ResourcePath",
+                "$storage": "string",
+                "$value": "base\\fx\\textures\\3dmap\\static\\pacifica_data.xbm"
+              },
+              "Flags": "Default"
+            }
+          },
+          {
+            "$type": "Vector4",
+            "TransMin": {
+              "$type": "Vector4",
+              "W": 0,
+              "X": -4008.396,
+              "Y": -4575.14941,
+              "Z": -51.9539986
+            }
+          },
+          {
+            "$type": "Vector4",
+            "TransMax": {
+              "$type": "Vector4",
+              "W": 1,
+              "X": 8258.31641,
+              "Y": 7254.10059,
+              "Z": 264.306946
+            }
+          },
+          {
+            "$type": "Float",
+            "CubeSize": 305.600006
+          },
+          {
+            "$type": "rRef:ITexture",
+            "BaseColor": {
+              "DepotPath": {
+                "$type": "ResourcePath",
+                "$storage": "string",
+                "$value": "base\\fx\\textures\\3dmap\\static\\c_pacifica_m.xbm"
+              },
+              "Flags": "Default"
+            }
+          },
+          {
+            "$type": "Float",
+            "EdgeThickness": 0.000500000024
+          },
+          {
+            "$type": "Float",
+            "EdgeSharpnessPower": 50
+          },
+          {
+            "$type": "Float",
+            "Is3DMap": 1
+          }
+        ]
+      },
+      {
+        "$type": "CMaterialInstance",
+        "audioTag": {
+          "$type": "CName",
+          "$storage": "string",
+          "$value": "None"
+        },
+        "baseMaterial": {
+          "DepotPath": {
+            "$type": "ResourcePath",
+            "$storage": "string",
+            "$value": "base\\materials\\3d_map_cubes.mt"
+          },
+          "Flags": "Default"
+        },
+        "cookingPlatform": "PLATFORM_None",
+        "enableMask": 1,
+        "metadata": null,
+        "resourceVersion": 4,
+        "values": [
+          {
+            "$type": "Float",
+            "PointCloudTextureHeight": 195
+          },
+          {
+            "$type": "rRef:ITexture",
+            "WorldPosTex": {
+              "DepotPath": {
+                "$type": "ResourcePath",
+                "$storage": "string",
+                "$value": "base\\fx\\textures\\3dmap\\static\\santo_domingo_data.xbm"
+              },
+              "Flags": "Default"
+            }
+          },
+          {
+            "$type": "Vector4",
+            "TransMin": {
+              "$type": "Vector4",
+              "W": 0,
+              "X": -1328.95288,
+              "Y": -1880.02502,
+              "Z": -37.5960007
+            }
+          },
+          {
+            "$type": "Vector4",
+            "TransMax": {
+              "$type": "Vector4",
+              "W": 1,
+              "X": 1555.26318,
+              "Y": 1369.01294,
+              "Z": 332.348328
+            }
+          },
+          {
+            "$type": "Float",
+            "CubeSize": 139.342102
+          },
+          {
+            "$type": "rRef:ITexture",
+            "BaseColor": {
+              "DepotPath": {
+                "$type": "ResourcePath",
+                "$storage": "string",
+                "$value": "base\\fx\\textures\\3dmap\\static\\santo_domingo_m.xbm"
+              },
+              "Flags": "Default"
+            }
+          },
+          {
+            "$type": "Float",
+            "Is3DMap": 1
+          }
+        ]
+      },
+      {
+        "$type": "CMaterialInstance",
+        "audioTag": {
+          "$type": "CName",
+          "$storage": "string",
+          "$value": "None"
+        },
+        "baseMaterial": {
+          "DepotPath": {
+            "$type": "ResourcePath",
+            "$storage": "string",
+            "$value": "base\\materials\\3d_map_cubes.mt"
+          },
+          "Flags": "Default"
+        },
+        "cookingPlatform": "PLATFORM_None",
+        "enableMask": 1,
+        "metadata": null,
+        "resourceVersion": 4,
+        "values": [
+          {
+            "$type": "Float",
+            "PointCloudTextureHeight": 152
+          },
+          {
+            "$type": "rRef:ITexture",
+            "WorldPosTex": {
+              "DepotPath": {
+                "$type": "ResourcePath",
+                "$storage": "string",
+                "$value": "base\\fx\\textures\\3dmap\\static\\sw1_data.xbm"
+              },
+              "Flags": "Default"
+            }
+          },
+          {
+            "$type": "Float",
+            "CubeSize": 300.312256
+          },
+          {
+            "$type": "Float",
+            "EdgeThickness": 0.000500000024
+          },
+          {
+            "$type": "Float",
+            "EdgeSharpnessPower": 50
+          },
+          {
+            "$type": "Float",
+            "Is3DMap": 1
+          }
+        ]
+      },
+      {
+        "$type": "CMaterialInstance",
+        "audioTag": {
+          "$type": "CName",
+          "$storage": "string",
+          "$value": "None"
+        },
+        "baseMaterial": {
+          "DepotPath": {
+            "$type": "ResourcePath",
+            "$storage": "string",
+            "$value": "base\\materials\\3d_map_cubes.mt"
+          },
+          "Flags": "Default"
+        },
+        "cookingPlatform": "PLATFORM_None",
+        "enableMask": 1,
+        "metadata": null,
+        "resourceVersion": 4,
+        "values": [
+          {
+            "$type": "Float",
+            "PointCloudTextureHeight": 206
+          },
+          {
+            "$type": "rRef:ITexture",
+            "WorldPosTex": {
+              "DepotPath": {
+                "$type": "ResourcePath",
+                "$storage": "string",
+                "$value": "base\\fx\\textures\\3dmap\\static\\watson_data.xbm"
+              },
+              "Flags": "Default"
+            }
+          },
+          {
+            "$type": "Vector4",
+            "TransMin": {
+              "$type": "Vector4",
+              "W": 0,
+              "X": -1254.46997,
+              "Y": -1258.68469,
+              "Z": -24.7028503
+            }
+          },
+          {
+            "$type": "Vector4",
+            "TransMax": {
+              "$type": "Vector4",
+              "W": 1,
+              "X": 1988.5448,
+              "Y": 2032.52405,
+              "Z": 475.268005
+            }
+          },
+          {
+            "$type": "Float",
+            "CubeSize": 237.175003
+          },
+          {
+            "$type": "rRef:ITexture",
+            "BaseColor": {
+              "DepotPath": {
+                "$type": "ResourcePath",
+                "$storage": "string",
+                "$value": "base\\fx\\textures\\3dmap\\static\\c_watson_m.xbm"
+              },
+              "Flags": "Default"
+            }
+          },
+          {
+            "$type": "Float",
+            "EdgeThickness": 0.000500000024
+          },
+          {
+            "$type": "Float",
+            "EdgeSharpnessPower": 50
+          },
+          {
+            "$type": "Float",
+            "Is3DMap": 1
+          }
+        ]
+      },
+      {
+        "$type": "CMaterialInstance",
+        "audioTag": {
+          "$type": "CName",
+          "$storage": "string",
+          "$value": "None"
+        },
+        "baseMaterial": {
+          "DepotPath": {
+            "$type": "ResourcePath",
+            "$storage": "string",
+            "$value": "base\\materials\\3d_map_cubes.mt"
+          },
+          "Flags": "Default"
+        },
+        "cookingPlatform": "PLATFORM_None",
+        "enableMask": 1,
+        "metadata": null,
+        "resourceVersion": 4,
+        "values": [
+          {
+            "$type": "Float",
+            "PointCloudTextureHeight": 148
+          },
+          {
+            "$type": "rRef:ITexture",
+            "WorldPosTex": {
+              "DepotPath": {
+                "$type": "ResourcePath",
+                "$storage": "string",
+                "$value": "base\\fx\\textures\\3dmap\\static\\ep1_dogtown_data.xbm"
+              },
+              "Flags": "Default"
+            }
+          },
+          {
+            "$type": "Vector4",
+            "TransMin": {
+              "$type": "Vector4",
+              "W": 0,
+              "X": -2650,
+              "Y": -3126.6084,
+              "Z": -0.750015974
+            }
+          },
+          {
+            "$type": "Vector4",
+            "TransMax": {
+              "$type": "Vector4",
+              "W": 1,
+              "X": -1025.51855,
+              "Y": -1803.58118,
+              "Z": 493.576111
+            }
+          },
+          {
+            "$type": "Float",
+            "CubeSize": 198.020691
+          },
+          {
+            "$type": "rRef:ITexture",
+            "BaseColor": {
+              "DepotPath": {
+                "$type": "ResourcePath",
+                "$storage": "string",
+                "$value": "base\\fx\\textures\\3dmap\\static\\ep1_dogtown_m.xbm"
+              },
+              "Flags": "Default"
+            }
+          },
+          {
+            "$type": "Float",
+            "EdgeThickness": 0.000500000024
+          },
+          {
+            "$type": "Float",
+            "EdgeSharpnessPower": 50
+          },
+          {
+            "$type": "Float",
+            "Is3DMap": 1
+          }
+        ]
+      },
+      {
+        "$type": "CMaterialInstance",
+        "audioTag": {
+          "$type": "CName",
+          "$storage": "string",
+          "$value": "None"
+        },
+        "baseMaterial": {
+          "DepotPath": {
+            "$type": "ResourcePath",
+            "$storage": "string",
+            "$value": "base\\materials\\3d_map_cubes.mt"
+          },
+          "Flags": "Default"
+        },
+        "cookingPlatform": "PLATFORM_None",
+        "enableMask": 1,
+        "metadata": null,
+        "resourceVersion": 4,
+        "values": [
+          {
+            "$type": "Float",
+            "PointCloudTextureHeight": 94
+          },
+          {
+            "$type": "rRef:ITexture",
+            "WorldPosTex": {
+              "DepotPath": {
+                "$type": "ResourcePath",
+                "$storage": "string",
+                "$value": "base\\fx\\textures\\3dmap\\static\\ep1_spaceport_data.xbm"
+              },
+              "Flags": "Default"
+            }
+          },
+          {
+            "$type": "Vector4",
+            "TransMin": {
+              "$type": "Vector4",
+              "W": 0,
+              "X": -1168.5874,
+              "Y": -765.104614,
+              "Z": -41.4592323
+            }
+          },
+          {
+            "$type": "Vector4",
+            "TransMax": {
+              "$type": "Vector4",
+              "W": 1,
+              "X": 1219.45483,
+              "Y": 1018.70129,
+              "Z": 296.498138
+            }
+          },
+          {
+            "$type": "Float",
+            "CubeSize": 115.298218
+          },
+          {
+            "$type": "rRef:ITexture",
+            "BaseColor": {
+              "DepotPath": {
+                "$type": "ResourcePath",
+                "$storage": "string",
+                "$value": "base\\fx\\textures\\3dmap\\static\\ep1_spaceport_m.xbm"
+              },
+              "Flags": "Default"
+            }
+          },
+          {
+            "$type": "Float",
+            "EdgeThickness": 0.000500000024
+          },
+          {
+            "$type": "Float",
+            "EdgeSharpnessPower": 50
+          },
+          {
+            "$type": "Float",
+            "Is3DMap": 1
+          }
+        ]
+      }
+    ],
+    "rawData": {
+      "BufferRefId": "0"
+    },
+    "rawDataHeaders": [
+      {
+        "$type": "meshLocalMaterialHeader",
+        "offset": 0,
+        "size": 939
+      },
+      {
+        "$type": "meshLocalMaterialHeader",
+        "offset": 939,
+        "size": 1016
+      },
+      {
+        "$type": "meshLocalMaterialHeader",
+        "offset": 1955,
+        "size": 1006
+      },
+      {
+        "$type": "meshLocalMaterialHeader",
+        "offset": 2961,
+        "size": 1010
+      },
+      {
+        "$type": "meshLocalMaterialHeader",
+        "offset": 3971,
+        "size": 945
+      },
+      {
+        "$type": "meshLocalMaterialHeader",
+        "offset": 4916,
+        "size": 714
+      },
+      {
+        "$type": "meshLocalMaterialHeader",
+        "offset": 5630,
+        "size": 1006
+      },
+      {
+        "$type": "meshLocalMaterialHeader",
+        "offset": 6636,
+        "size": 1014
+      },
+      {
+        "$type": "meshLocalMaterialHeader",
+        "offset": 7650,
+        "size": 1018
+      }
+    ]
+  },
+  "localMaterialInstances": [],
+  "lodBoneMask": [],
+  "lodLevelInfo": [0
+  ],
+  "materialEntries": [
+    {
+      "$type": "CMeshMaterialEntry",
+      "index": 0,
+      "isLocalInstance": 1,
+      "name": {
+        "$type": "CName",
+        "$storage": "string",
+        "$value": "westbrook"
+      }
+    },
+    {
+      "$type": "CMeshMaterialEntry",
+      "index": 1,
+      "isLocalInstance": 1,
+      "name": {
+        "$type": "CName",
+        "$storage": "string",
+        "$value": "city_center"
+      }
+    },
+    {
+      "$type": "CMeshMaterialEntry",
+      "index": 2,
+      "isLocalInstance": 1,
+      "name": {
+        "$type": "CName",
+        "$storage": "string",
+        "$value": "heywood"
+      }
+    },
+    {
+      "$type": "CMeshMaterialEntry",
+      "index": 3,
+      "isLocalInstance": 1,
+      "name": {
+        "$type": "CName",
+        "$storage": "string",
+        "$value": "pacifica"
+      }
+    },
+    {
+      "$type": "CMeshMaterialEntry",
+      "index": 4,
+      "isLocalInstance": 1,
+      "name": {
+        "$type": "CName",
+        "$storage": "string",
+        "$value": "santo_domingo"
+      }
+    },
+    {
+      "$type": "CMeshMaterialEntry",
+      "index": 5,
+      "isLocalInstance": 1,
+      "name": {
+        "$type": "CName",
+        "$storage": "string",
+        "$value": "sw5"
+      }
+    },
+    {
+      "$type": "CMeshMaterialEntry",
+      "index": 6,
+      "isLocalInstance": 1,
+      "name": {
+        "$type": "CName",
+        "$storage": "string",
+        "$value": "watson"
+      }
+    },
+    {
+      "$type": "CMeshMaterialEntry",
+      "index": 7,
+      "isLocalInstance": 1,
+      "name": {
+        "$type": "CName",
+        "$storage": "string",
+        "$value": "ep1_dogtown"
+      }
+    },
+    {
+      "$type": "CMeshMaterialEntry",
+      "index": 8,
+      "isLocalInstance": 1,
+      "name": {
+        "$type": "CName",
+        "$storage": "string",
+        "$value": "ep1_spaceport"
+      }
+    }
+  ],
+  "objectType": "ROT_Static",
+  "parameters": [],
+  "preloadExternalMaterials": [],
+  "preloadLocalMaterialInstances": [],
+  "renderResourceBlob": {
+    "HandleId": "9",
+    "Data": {
+      "$type": "rendRenderMeshBlob",
+      "header": {
+        "$type": "rendRenderMeshBlobHeader",
+        "bonePositions": [],
+        "customData": [],
+        "customDataElemStride": 0,
+        "dataProcessing": 1,
+        "indexBufferOffset": 7168,
+        "indexBufferSize": 768,
+        "opacityMicromaps": [],
+        "quantizationOffset": {
+          "$type": "Vector4",
+          "W": 1,
+          "X": 0,
+          "Y": 0,
+          "Z": 0
+        },
+        "quantizationScale": {
+          "$type": "Vector4",
+          "W": 0,
+          "X": 10000,
+          "Y": 10000,
+          "Z": 10000
+        },
+        "renderChunkInfos": [
+          {
+            "$type": "rendChunk",
+            "baseRenderMask": 0,
+            "chunkIndices": {
+              "$type": "rendIndexBufferChunk",
+              "pe": "IBCT_IndexUShort",
+              "teOffset": 0
+            },
+            "chunkVertices": {
+              "$type": "rendVertexBufferChunk",
+              "byteOffsets": {
+                "Elements": [0,2048,3072,5120,0
+                ]
+              },
+              "vertexLayout": {
+                "$type": "GpuWrapApiVertexLayoutDesc",
+                "elements": {
+                  "Elements": [
+                    {
+                      "$type": "GpuWrapApiVertexPackingPackingElement",
+                      "streamIndex": 0,
+                      "streamType": "ST_PerVertex",
+                      "type": "PT_Short4N",
+                      "usage": "PS_Position",
+                      "usageIndex": 0
+                    },
+                    {
+                      "$type": "GpuWrapApiVertexPackingPackingElement",
+                      "streamIndex": 1,
+                      "streamType": "ST_PerVertex",
+                      "type": "PT_Float16_2",
+                      "usage": "PS_TexCoord",
+                      "usageIndex": 0
+                    },
+                    {
+                      "$type": "GpuWrapApiVertexPackingPackingElement",
+                      "streamIndex": 2,
+                      "streamType": "ST_PerVertex",
+                      "type": "PT_Dec4",
+                      "usage": "PS_Normal",
+                      "usageIndex": 0
+                    },
+                    {
+                      "$type": "GpuWrapApiVertexPackingPackingElement",
+                      "streamIndex": 2,
+                      "streamType": "ST_PerVertex",
+                      "type": "PT_Dec4",
+                      "usage": "PS_Tangent",
+                      "usageIndex": 0
+                    },
+                    {
+                      "$type": "GpuWrapApiVertexPackingPackingElement",
+                      "streamIndex": 3,
+                      "streamType": "ST_PerVertex",
+                      "type": "PT_Color",
+                      "usage": "PS_Color",
+                      "usageIndex": 0
+                    },
+                    {
+                      "$type": "GpuWrapApiVertexPackingPackingElement",
+                      "streamIndex": 3,
+                      "streamType": "ST_PerVertex",
+                      "type": "PT_Float16_2",
+                      "usage": "PS_TexCoord",
+                      "usageIndex": 1
+                    },
+                    {
+                      "$type": "GpuWrapApiVertexPackingPackingElement",
+                      "streamIndex": 7,
+                      "streamType": "ST_PerInstance",
+                      "type": "PT_Float4",
+                      "usage": "PS_InstanceTransform",
+                      "usageIndex": 0
+                    },
+                    {
+                      "$type": "GpuWrapApiVertexPackingPackingElement",
+                      "streamIndex": 7,
+                      "streamType": "ST_PerInstance",
+                      "type": "PT_Float4",
+                      "usage": "PS_InstanceTransform",
+                      "usageIndex": 1
+                    },
+                    {
+                      "$type": "GpuWrapApiVertexPackingPackingElement",
+                      "streamIndex": 7,
+                      "streamType": "ST_PerInstance",
+                      "type": "PT_Float4",
+                      "usage": "PS_InstanceTransform",
+                      "usageIndex": 2
+                    },
+                    {
+                      "$type": "GpuWrapApiVertexPackingPackingElement",
+                      "streamIndex": 0,
+                      "streamType": "ST_Invalid",
+                      "type": "PT_Invalid",
+                      "usage": "PS_Invalid",
+                      "usageIndex": 0
+                    }
+                  ]
+                },
+                "hash": 223007318,
+                "slotMask": 143,
+                "slotStrides": {
+                  "Elements": [8,4,8,8,0,0,0,48
+                  ]
+                }
+              }
+            },
+            "lodMask": 1,
+            "materialId": [],
+            "mergedRenderMask": 0,
+            "numIndices": 384,
+            "numVertices": 256,
+            "renderMask": "MCF_RenderInScene, MCF_RenderInShadows",
+            "vertexFactory": 24
+          }
+        ],
+        "renderChunks": [],
+        "renderLODs": [0
+        ],
+        "speedTreeWind": [],
+        "topology": [
+          {
+            "$type": "rendTopologyData",
+            "data": [],
+            "dataStride": 0,
+            "metadata": [],
+            "metadataStride": 0
+          }
+        ],
+        "topologyData": [],
+        "topologyDataStride": 0,
+        "topologyMetadata": [],
+        "topologyMetadataStride": 0,
+        "version": 20,
+        "vertexBufferSize": 7168
+      },
+      "renderBuffer": {
+        "BufferId": "1",
+        "Flags": 4063232,
+        "Bytes": "/f/9/wAA/38DAP3/AAD/fwMAAwAAAP9//f8DAAAA/3/9//3/AAD/fwMA/f8AAP9/AwADAAAA/3/9/wMAAAD/f/3//f8AAP9/AwD9/wAA/38DAAMAAAD/f/3/AwAAAP9//f/9/wAA/38DAP3/AAD/fwMAAwAAAP9//f8DAAAA/3/9//3/AAD/fwMA/f8AAP9/AwADAAAA/3/9/wMAAAD/f/3//f8AAP9/AwD9/wAA/38DAAMAAAD/f/3/AwAAAP9//f/9/wAA/38DAP3/AAD/fwMAAwAAAP9//f8DAAAA/3/9//3/AAD/fwMA/f8AAP9/AwADAAAA/3/9/wMAAAD/f/3//f8AAP9/AwD9/wAA/38DAAMAAAD/f/3/AwAAAP9//f/9/wAA/38DAP3/AAD/fwMAAwAAAP9//f8DAAAA/3/9//3/AAD/fwMA/f8AAP9/AwADAAAA/3/9/wMAAAD/f/3//f8AAP9/AwD9/wAA/38DAAMAAAD/f/3/AwAAAP9//f/9/wAA/38DAP3/AAD/fwMAAwAAAP9//f8DAAAA/3/9//3/AAD/fwMA/f8AAP9/AwADAAAA/3/9/wMAAAD/f/3//f8AAP9/AwD9/wAA/38DAAMAAAD/f/3/AwAAAP9//f/9/wAA/38DAP3/AAD/fwMAAwAAAP9//f8DAAAA/3/9//3/AAD/fwMA/f8AAP9/AwADAAAA/3/9/wMAAAD/f/3//f8AAP9/AwD9/wAA/38DAAMAAAD/f/3/AwAAAP9//f/9/wAA/38DAP3/AAD/fwMAAwAAAP9//f8DAAAA/3/9//3/AAD/fwMA/f8AAP9/AwADAAAA/3/9/wMAAAD/f/3//f8AAP9/AwD9/wAA/38DAAMAAAD/f/3/AwAAAP9//f/9/wAA/38DAP3/AAD/fwMAAwAAAP9//f8DAAAA/3/9//3/AAD/fwMA/f8AAP9/AwADAAAA/3/9/wMAAAD/f/3//f8AAP9/AwD9/wAA/38DAAMAAAD/f/3/AwAAAP9//f/9/wAA/38DAP3/AAD/fwMAAwAAAP9//f8DAAAA/3/9//3/AAD/fwMA/f8AAP9/AwADAAAA/3/9/wMAAAD/f/3//f8AAP9/AwD9/wAA/38DAAMAAAD/f/3/AwAAAP9//f/9/wAA/38DAP3/AAD/fwMAAwAAAP9//f8DAAAA/3/9//3/AAD/fwMA/f8AAP9/AwADAAAA/3/9/wMAAAD/f/3//f8AAP9/AwD9/wAA/38DAAMAAAD/f/3/AwAAAP9//f/9/wAA/38DAP3/AAD/fwMAAwAAAP9//f8DAAAA/3/9//3/AAD/fwMA/f8AAP9/AwADAAAA/3/9/wMAAAD/f/3//f8AAP9/AwD9/wAA/38DAAMAAAD/f/3/AwAAAP9//f/9/wAA/38DAP3/AAD/fwMAAwAAAP9//f8DAAAA/3/9//3/AAD/fwMA/f8AAP9/AwADAAAA/3/9/wMAAAD/f/3//f8AAP9/AwD9/wAA/38DAAMAAAD/f/3/AwAAAP9//f/9/wAA/38DAP3/AAD/fwMAAwAAAP9//f8DAAAA/3/9//3/AAD/fwMA/f8AAP9/AwADAAAA/3/9/wMAAAD/f/3//f8AAP9/AwD9/wAA/38DAAMAAAD/f/3/AwAAAP9//f/9/wAA/38DAP3/AAD/fwMAAwAAAP9//f8DAAAA/3/9//3/AAD/fwMA/f8AAP9/AwADAAAA/3/9/wMAAAD/f/3//f8AAP9/AwD9/wAA/38DAAMAAAD/f/3/AwAAAP9//f/9/wAA/38DAP3/AAD/fwMAAwAAAP9//f8DAAAA/3/9//3/AAD/fwMA/f8AAP9/AwADAAAA/3/9/wMAAAD/f/3//f8AAP9/AwD9/wAA/38DAAMAAAD/f/3/AwAAAP9//f/9/wAA/38DAP3/AAD/fwMAAwAAAP9//f8DAAAA/3/9//3/AAD/fwMA/f8AAP9/AwADAAAA/3/9/wMAAAD/f/3//f8AAP9/AwD9/wAA/38DAAMAAAD/f/3/AwAAAP9//f/9/wAA/38DAP3/AAD/fwMAAwAAAP9//f8DAAAA/3/9//3/AAD/fwMA/f8AAP9/AwADAAAA/3/9/wMAAAD/f/3//f8AAP9/AwD9/wAA/38DAAMAAAD/f/3/AwAAAP9//f/9/wAA/38DAP3/AAD/fwMAAwAAAP9//f8DAAAA/3/9//3/AAD/fwMA/f8AAP9/AwADAAAA/3/9/wMAAAD/f/3//f8AAP9/AwD9/wAA/38DAAMAAAD/f/3/AwAAAP9//f/9/wAA/38DAP3/AAD/fwMAAwAAAP9//f8DAAAA/3/9//3/AAD/fwMA/f8AAP9/AwADAAAA/3/9/wMAAAD/f/3//f8AAP9/AwD9/wAA/38DAAMAAAD/f/3/AwAAAP9//f/9/wAA/38DAP3/AAD/fwMAAwAAAP9//f8DAAAA/3/9//3/AAD/fwMA/f8AAP9/AwADAAAA/3/9/wMAAAD/f/3//f8AAP9/AwD9/wAA/38DAAMAAAD/f/3/AwAAAP9//f/9/wAA/38DAP3/AAD/fwMAAwAAAP9//f8DAAAA/3/9//3/AAD/fwMA/f8AAP9/AwADAAAA/3/9/wMAAAD/f/3//f8AAP9/AwD9/wAA/38DAAMAAAD/f/3/AwAAAP9//f/9/wAA/38DAP3/AAD/fwMAAwAAAP9//f8DAAAA/38AAAAAADwAAAA8ADwAAAA8AAAAAAA8AAAAPAA8AAAAPAAAAAAAPAAAADwAPAAAADwAAAAAADwAAAA8ADwAAAA8AAAAAAA8AAAAPAA8AAAAPAAAAAAAPAAAADwAPAAAADwAAAAAADwAAAA8ADwAAAA8AAAAAAA8AAAAPAA8AAAAPAAAAAAAPAAAADwAPAAAADwAAAAAADwAAAA8ADwAAAA8AAAAAAA8AAAAPAA8AAAAPAAAAAAAPAAAADwAPAAAADwAAAAAADwAAAA8ADwAAAA8AAAAAAA8AAAAPAA8AAAAPAAAAAAAPAAAADwAPAAAADwAAAAAADwAAAA8ADwAAAA8AAAAAAA8AAAAPAA8AAAAPAAAAAAAPAAAADwAPAAAADwAAAAAADwAAAA8ADwAAAA8AAAAAAA8AAAAPAA8AAAAPAAAAAAAPAAAADwAPAAAADwAAAAAADwAAAA8ADwAAAA8AAAAAAA8AAAAPAA8AAAAPAAAAAAAPAAAADwAPAAAADwAAAAAADwAAAA8ADwAAAA8AAAAAAA8AAAAPAA8AAAAPAAAAAAAPAAAADwAPAAAADwAAAAAADwAAAA8ADwAAAA8AAAAAAA8AAAAPAA8AAAAPAAAAAAAPAAAADwAPAAAADwAAAAAADwAAAA8ADwAAAA8AAAAAAA8AAAAPAA8AAAAPAAAAAAAPAAAADwAPAAAADwAAAAAADwAAAA8ADwAAAA8AAAAAAA8AAAAPAA8AAAAPAAAAAAAPAAAADwAPAAAADwAAAAAADwAAAA8ADwAAAA8AAAAAAA8AAAAPAA8AAAAPAAAAAAAPAAAADwAPAAAADwAAAAAADwAAAA8ADwAAAA8AAAAAAA8AAAAPAA8AAAAPAAAAAAAPAAAADwAPAAAADwAAAAAADwAAAA8ADwAAAA8AAAAAAA8AAAAPAA8AAAAPAAAAAAAPAAAADwAPAAAADwAAAAAADwAAAA8ADwAAAA8AAAAAAA8AAAAPAA8AAAAPAAAAAAAPAAAADwAPAAAADwAAAAAADwAAAA8ADwAAAA8AAAAAAA8AAAAPAA8AAAAPAAAAAAAPAAAADwAPAAAADwAAAAAADwAAAA8ADwAAAA8AAAAAAA8AAAAPAA8AAAAPAAAAAAAPAAAADwAPAAAADwAAAAAADwAAAA8ADwAAAA8AAAAAAA8AAAAPAA8AAAAPAAAAAAAPAAAADwAPAAAADwAAAAAADwAAAA8ADwAAAA8AAAAAAA8AAAAPAA8AAAAPAAAAAAAPAAAADwAPAAAADwAAAAAADwAAAA8ADwAAAA8AAAAAAA8AAAAPAA8AAAAPAAAAAAAPAAAADwAPAAAADwAAAAAADwAAAA8ADwAAAA8//3/X///9x///f9f///3H//9/1////cf//3/X///9x///f9f///3H//9/1////cf//3/X///9x///f9f///3H//9/1////cf//3/X///9x///f9f///3H//9/1////cf//3/X///9x///f9f///3H//9/1////cf//3/X///9x///f9f///3H//9/1////cf//3/X///9x///f9f///3H//9/1////cf//3/X///9x///f9f///3H//9/1////cf//3/X///9x///f9f///3H//9/1////cf//3/X///9x///f9f///3H//9/1////cf//3/X///9x///f9f///3H//9/1////cf//3/X///9x///f9f///3H//9/1////cf//3/X///9x///f9f///3H//9/1////cf//3/X///9x///f9f///3H//9/1////cf//3/X///9x///f9f///3H//9/1////cf//3/X///9x///f9f///3H//9/1////cf//3/X///9x///f9f///3H//9/1////cf//3/X///9x///f9f///3H//9/1////cf//3/X///9x///f9f///3H//9/1////cf//3/X///9x///f9f///3H//9/1////cf//3/X///9x///f9f///3H//9/1////cf//3/X///9x///f9f///3H//9/1////cf//3/X///9x///f9f///3H//9/1////cf//3/X///9x///f9f///3H//9/1////cf//3/X///9x///f9f///3H//9/1////cf//3/X///9x///f9f///3H//9/1////cf//3/X///9x///f9f///3H//9/1////cf//3/X///9x///f9f///3H//9/1////cf//3/X///9x///f9f///3H//9/1////cf//3/X///9x///f9f///3H//9/1////cf//3/X///9x///f9f///3H//9/1////cf//3/X///9x///f9f///3H//9/1////cf//3/X///9x///f9f///3H//9/1////cf//3/X///9x///f9f///3H//9/1////cf//3/X///9x///f9f///3H//9/1////cf//3/X///9x///f9f///3H//9/1////cf//3/X///9x///f9f///3H//9/1////cf//3/X///9x///f9f///3H//9/1////cf//3/X///9x///f9f///3H//9/1////cf//3/X///9x///f9f///3H//9/1////cf//3/X///9x///f9f///3H//9/1////cf//3/X///9x///f9f///3H//9/1////cf//3/X///9x///f9f///3H//9/1////cf//3/X///9x///f9f///3H//9/1////cf//3/X///9x///f9f///3H//9/1////cf//3/X///9x///f9f///3H//9/1////cf//3/X///9x///f9f///3H//9/1////cf//3/X///9x///f9f///3H//9/1////cf//3/X///9x///f9f///3H//9/1////cf//3/X///9x///f9f///3H//9/1////cf//3/X///9x///f9f///3H//9/1////cf//3/X///9x///f9f///3H//9/1////cf//3/X///9x///f9f///3H//9/1////cf//3/X///9x///f9f///3H//9/1////cf//3/X///9x///f9f///3H//9/1////cf//3/X///9x///f9f///3H//9/1////cf//3/X///9x///f9f///3H//9/1////cf//3/X///9x///f9f///3H//9/1////cf//3/X///9x///f9f///3H//9/1////cf//3/X///9x///f9f///3H//9/1////cf//3/X///9x///f9f///3H//9/1////cf//3/X///9x///f9f///3H//9/1////cf//3/X///9x///f9f///3H//9/1////cf//3/X///9x///f9f///3H//9/1////cf//3/X///9x///f9f///3H//9/1////cf//3/X///9x///f9f///3H//9/1////cf//3/X///9x///f9f///3H//9/1////cf//3/X///9x///f9f///3H//9/1////cf//3/X///9x///f9f///3H//9/1////cf//3/X///9x///f9f///3H//9/1////cf//3/X///9x///f9f///3H//9/1////cf//3/X///9x///f9f///3H//9/1////cf//3/X///9x///f9f///3H//9/1////cf//3/X///9x///f9f///3H//9/1////cf//3/X///9x///f9f///3H//9/1////cf//3/X///9x///f9f///3H//9/1////cf//3/X///9x///f9f///3H//9/1////cf//3/X///9x///f9f///3H//9/1////cf//3/X///9x///f9f///3H//9/1////cf//3/X///9x///f9f///3H//9/1////cf//3/X///9x///f9f///3H//9/1////cf//3/X///9x///f9f///3H//9/1////cf//3/X///9x///f9f///3H//9/1////cf//3/X///9x///f9f///3H//9/1////cf//3/X///9x///f9f///3H//9/1////cf//3/X///9x//////AAAAAP////8AAAAA/////wAAAAD/////AAAAAP////8AAAAA/////wAAAAD/////AAAAAP////8AAAAA/////wAAAAD/////AAAAAP////8AAAAA/////wAAAAD/////AAAAAP////8AAAAA/////wAAAAD/////AAAAAP////8AAAAA/////wAAAAD/////AAAAAP////8AAAAA/////wAAAAD/////AAAAAP////8AAAAA/////wAAAAD/////AAAAAP////8AAAAA/////wAAAAD/////AAAAAP////8AAAAA/////wAAAAD/////AAAAAP////8AAAAA/////wAAAAD/////AAAAAP////8AAAAA/////wAAAAD/////AAAAAP////8AAAAA/////wAAAAD/////AAAAAP////8AAAAA/////wAAAAD/////AAAAAP////8AAAAA/////wAAAAD/////AAAAAP////8AAAAA/////wAAAAD/////AAAAAP////8AAAAA/////wAAAAD/////AAAAAP////8AAAAA/////wAAAAD/////AAAAAP////8AAAAA/////wAAAAD/////AAAAAP////8AAAAA/////wAAAAD/////AAAAAP////8AAAAA/////wAAAAD/////AAAAAP////8AAAAA/////wAAAAD/////AAAAAP////8AAAAA/////wAAAAD/////AAAAAP////8AAAAA/////wAAAAD/////AAAAAP////8AAAAA/////wAAAAD/////AAAAAP////8AAAAA/////wAAAAD/////AAAAAP////8AAAAA/////wAAAAD/////AAAAAP////8AAAAA/////wAAAAD/////AAAAAP////8AAAAA/////wAAAAD/////AAAAAP////8AAAAA/////wAAAAD/////AAAAAP////8AAAAA/////wAAAAD/////AAAAAP////8AAAAA/////wAAAAD/////AAAAAP////8AAAAA/////wAAAAD/////AAAAAP////8AAAAA/////wAAAAD/////AAAAAP////8AAAAA/////wAAAAD/////AAAAAP////8AAAAA/////wAAAAD/////AAAAAP////8AAAAA/////wAAAAD/////AAAAAP////8AAAAA/////wAAAAD/////AAAAAP////8AAAAA/////wAAAAD/////AAAAAP////8AAAAA/////wAAAAD/////AAAAAP////8AAAAA/////wAAAAD/////AAAAAP////8AAAAA/////wAAAAD/////AAAAAP////8AAAAA/////wAAAAD/////AAAAAP////8AAAAA/////wAAAAD/////AAAAAP////8AAAAA/////wAAAAD/////AAAAAP////8AAAAA/////wAAAAD/////AAAAAP////8AAAAA/////wAAAAD/////AAAAAP////8AAAAA/////wAAAAD/////AAAAAP////8AAAAA/////wAAAAD/////AAAAAP////8AAAAA/////wAAAAD/////AAAAAP////8AAAAA/////wAAAAD/////AAAAAP////8AAAAA/////wAAAAD/////AAAAAP////8AAAAA/////wAAAAD/////AAAAAP////8AAAAA/////wAAAAD/////AAAAAP////8AAAAA/////wAAAAD/////AAAAAP////8AAAAA/////wAAAAD/////AAAAAP////8AAAAA/////wAAAAD/////AAAAAP////8AAAAA/////wAAAAD/////AAAAAP////8AAAAA/////wAAAAD/////AAAAAP////8AAAAA/////wAAAAD/////AAAAAP////8AAAAA/////wAAAAD/////AAAAAP////8AAAAA/////wAAAAD/////AAAAAP////8AAAAA/////wAAAAD/////AAAAAP////8AAAAA/////wAAAAD/////AAAAAP////8AAAAA/////wAAAAD/////AAAAAP////8AAAAA/////wAAAAD/////AAAAAP////8AAAAA/////wAAAAD/////AAAAAP////8AAAAA/////wAAAAD/////AAAAAP////8AAAAA/////wAAAAD/////AAAAAP////8AAAAA/////wAAAAD/////AAAAAP////8AAAAA/////wAAAAD/////AAAAAP////8AAAAA/////wAAAAD/////AAAAAP////8AAAAA/////wAAAAD/////AAAAAP////8AAAAA/////wAAAAD/////AAAAAP////8AAAAA/////wAAAAD/////AAAAAP////8AAAAA/////wAAAAD/////AAAAAP////8AAAAA/////wAAAAD/////AAAAAP////8AAAAA/////wAAAAD/////AAAAAP////8AAAAA/////wAAAAD/////AAAAAP////8AAAAA/////wAAAAD/////AAAAAP////8AAAAA/////wAAAAD/////AAAAAP////8AAAAA/////wAAAAD/////AAAAAP////8AAAAA/////wAAAAD/////AAAAAP////8AAAAA/////wAAAAD/////AAAAAP////8AAAAA/////wAAAAD/////AAAAAAAAAgABAAAAAwACAAQABgAFAAQABwAGAAgACgAJAAgACwAKAAwADgANAAwADwAOABAAEgARABAAEwASABQAFgAVABQAFwAWABgAGgAZABgAGwAaABwAHgAdABwAHwAeACAAIgAhACAAIwAiACQAJgAlACQAJwAmACgAKgApACgAKwAqACwALgAtACwALwAuADAAMgAxADAAMwAyADQANgA1ADQANwA2ADgAOgA5ADgAOwA6ADwAPgA9ADwAPwA+AEAAQgBBAEAAQwBCAEQARgBFAEQARwBGAEgASgBJAEgASwBKAEwATgBNAEwATwBOAFAAUgBRAFAAUwBSAFQAVgBVAFQAVwBWAFgAWgBZAFgAWwBaAFwAXgBdAFwAXwBeAGAAYgBhAGAAYwBiAGQAZgBlAGQAZwBmAGgAagBpAGgAawBqAGwAbgBtAGwAbwBuAHAAcgBxAHAAcwByAHQAdgB1AHQAdwB2AHgAegB5AHgAewB6AHwAfgB9AHwAfwB+AIAAggCBAIAAgwCCAIQAhgCFAIQAhwCGAIgAigCJAIgAiwCKAIwAjgCNAIwAjwCOAJAAkgCRAJAAkwCSAJQAlgCVAJQAlwCWAJgAmgCZAJgAmwCaAJwAngCdAJwAnwCeAKAAogChAKAAowCiAKQApgClAKQApwCmAKgAqgCpAKgAqwCqAKwArgCtAKwArwCuALAAsgCxALAAswCyALQAtgC1ALQAtwC2ALgAugC5ALgAuwC6ALwAvgC9ALwAvwC+AMAAwgDBAMAAwwDCAMQAxgDFAMQAxwDGAMgAygDJAMgAywDKAMwAzgDNAMwAzwDOANAA0gDRANAA0wDSANQA1gDVANQA1wDWANgA2gDZANgA2wDaANwA3gDdANwA3wDeAOAA4gDhAOAA4wDiAOQA5gDlAOQA5wDmAOgA6gDpAOgA6wDqAOwA7gDtAOwA7wDuAPAA8gDxAPAA8wDyAPQA9gD1APQA9wD2APgA+gD5APgA+wD6APwA/gD9APwA/wD+AA=="
+      }
+    }
+  },
+  "resourceVersion": 3,
+  "saveDateTime": "1048576",
+  "surfaceAreaPerAxis": {
+    "$type": "Vector3",
+    "X": 0,
+    "Y": 0,
+    "Z": 256
+  },
+  "useRayTracingShadowLODBias": 0
+}

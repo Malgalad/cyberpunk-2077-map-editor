@@ -1,0 +1,53 @@
+@import 'tailwindcss';
+
+.tooltip {
+    @apply relative;
+}
+
+.tooltip::before {
+    @apply absolute w-max max-w-xs content-[attr(data-tooltip)] bg-slate-700 text-white px-3 py-2 rounded-lg text-sm
+    hidden z-50;
+}
+
+.tooltip::after {
+    @apply absolute w-2 h-2 bg-slate-700 hidden rotate-45 content-[''] z-50;
+}
+
+.tooltip:hover::before,
+.tooltip:hover::after {
+    @apply block;
+}
+
+/* Flow direction modifiers */
+.tooltip[data-flow^="top"]::before {
+    @apply -translate-x-1/2 left-1/2 bottom-[calc(100%+4px)];
+}
+
+.tooltip[data-flow^="top"]::after {
+    @apply -translate-x-1/2 left-1/2 bottom-[calc(100%+1px)];
+}
+
+.tooltip[data-flow^="bottom"]::before {
+    @apply -translate-x-1/2 left-1/2 top-[calc(100%+4px)];
+}
+
+.tooltip[data-flow^="bottom"]::after {
+    @apply -translate-x-1/2 left-1/2 top-[calc(100%+1px)];
+}
+
+.tooltip[data-flow^="left"]::before {
+    @apply -translate-y-1/2 top-1/2 right-[calc(100%+4px)];
+}
+
+.tooltip[data-flow^="left"]::after {
+    @apply -translate-y-1/2 top-1/2 right-[calc(100%+1px)];
+}
+
+.tooltip[data-flow^="right"]::before {
+    @apply -translate-y-1/2 top-1/2 left-[calc(100%+4px)];
+}
+
+.tooltip[data-flow^="right"]::after {
+    @apply -translate-y-1/2 top-1/2 left-[calc(100%+1px)];
+}
+
