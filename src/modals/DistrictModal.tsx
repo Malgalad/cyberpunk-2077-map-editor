@@ -19,7 +19,7 @@ function DistrictModal() {
   const [hovering, setHovering] = React.useState<keyof Districts | undefined>(
     undefined,
   );
-  const src = `/${hovering ?? "none"}.jpg`;
+  const src = `${import.meta.env.BASE_URL}${hovering ?? "none"}.jpg`;
 
   return (
     <Modal className="w-[800px] h-[460px]" title={"Select district to edit:"}>
