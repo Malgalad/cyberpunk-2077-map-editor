@@ -18,7 +18,6 @@ import {
   applyParentTransform,
   cloneNode,
   clsx,
-  hadamardProduct,
   hadamardSum,
   nodeToTransform,
   prepareNode,
@@ -75,16 +74,21 @@ function App() {
     if (!map3D || !districtData || !district) return;
 
     const instanceTransforms: InstanceTransforms[] = [];
+    const virtualTransforms: InstanceTransforms[] = [];
     const reversedNodes: MapNodeParsed[] = nodes.toReversed().map(prepareNode);
     const { origin, minMax, cubeSize } = districtData;
 
     for (const node of reversedNodes) {
-      if (!node.pattern || !node.pattern.enabled) continue;
+      if (!node.pattern?.enabled) continue;
 
       for (let i = 0; i < node.pattern.count; i++) {
         const virtualNodes = cloneNode(reversedNodes, node, node.parent, {
           cloneLabel: false,
         });
+
+        for (const clone of virtualNodes) {
+          clone.virtual = true;
+        }
 
         const position = hadamardSum(
           virtualNodes[0].position,
@@ -96,12 +100,9 @@ function App() {
           node.pattern.rotation.map(scalePattern(i)),
         ) as THREE.Vector3Tuple;
 
-        const scale = hadamardProduct(
+        const scale = hadamardSum(
           virtualNodes[0].scale,
-          node.pattern.scale
-            .map((n) => n - 1)
-            .map(scalePattern(i))
-            .map((n) => n + 1),
+          node.pattern.scale.map(scalePattern(i)),
         ) as THREE.Vector3Tuple;
 
         virtualNodes.splice(0, 1, {
@@ -130,12 +131,22 @@ function App() {
 
         current.position[2] += current.scale[2] / 2;
 
-        instanceTransforms.push(
-          nodeToTransform(current, origin, minMax, cubeSize),
+        const transformedNode = nodeToTransform(
+          current,
+          origin,
+          minMax,
+          cubeSize,
         );
+
+        if (current.virtual) {
+          virtualTransforms.push(transformedNode);
+        } else {
+          instanceTransforms.push(transformedNode);
+        }
       }
     }
 
+    map3D.setVirtualEditsData(mapData.soup[district], virtualTransforms);
     setInstanceTransforms(instanceTransforms);
   }, [nodes, district, districtData, map3D]);
 
@@ -166,6 +177,28 @@ function App() {
 
     map3D.selectEditsData(indexes);
   }, [editing, cache, instanceTransforms, map3D]);
+
+  // Listen to map events and select nodes on click
+  React.useEffect(() => {
+    if (!map3D || !instanceTransforms.length) return;
+
+    const listener = ((event: CustomEvent<{ index: number }>) => {
+      if (event.detail) {
+        const index = event.detail.index;
+        const id = instanceTransforms[index].id;
+
+        if (id) {
+          dispatch(NodesActions.setEditing(id));
+        }
+      }
+    }) as EventListener;
+
+    window.addEventListener("select-node", listener);
+
+    return () => {
+      window.removeEventListener("select-node", listener);
+    };
+  }, [map3D, dispatch, instanceTransforms]);
 
   return (
     <div className="flex flex-row gap-2 w-screen h-screen bg-slate-900 text-white">
@@ -203,7 +236,7 @@ function App() {
         <div className="grow relative">
           <canvas className="w-full h-full block" ref={canvasRef} />
           <Button
-            className="absolute! left-4 top-4 tooltip"
+            className="absolute! bg-slate-800 left-4 top-4 tooltip"
             onClick={() => {
               map3D?.resetCamera();
             }}

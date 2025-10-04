@@ -13,7 +13,7 @@ function Button({ rounded = false, ...props }: ButtonProps) {
       {...props}
       className={clsx(
         "border border-slate-500",
-        "flex flex-row items-center justify-center",
+        "flex flex-row gap-1.5 items-center justify-center",
         "cursor-pointer p-1.5",
         "hover:not-disabled:border-slate-400 hover:not-disabled:bg-slate-600",
         "active:not-disabled:ring-2 active:not-disabled:ring-slate-500",

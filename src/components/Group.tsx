@@ -77,18 +77,27 @@ function Group({ node }: GroupProps) {
             <span className="text-gray-400">({nodeChildren.i.length})</span>
           </span>
           {node.pattern?.enabled && (
-            <div
-              className="tooltip"
+            <Button
+              className="border-none p-0! tooltip"
               data-tooltip="Has pattern"
               data-flow="left"
+              onClick={() => {
+                setTimeout(() => {
+                  window.dispatchEvent(
+                    new CustomEvent("set-editing-tab", {
+                      detail: { tab: "pattern" },
+                    }),
+                  );
+                });
+              }}
             >
               <CircleDotDashed />
-            </div>
+            </Button>
           )}
         </div>
       </div>
       {expanded && children.length > 0 && (
-        <div className="pl-7 flex flex-col gap-1.5">
+        <div className="pl-8 flex flex-col gap-1.5">
           {children.map((node) => (
             <Node key={node.id} node={node} />
           ))}

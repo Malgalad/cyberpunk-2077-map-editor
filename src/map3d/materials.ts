@@ -8,6 +8,11 @@ export const editorMaterial = new THREE.MeshLambertMaterial({
   color: 0xffffff,
 });
 
+export const virtualBlocksMaterial = new THREE.MeshBasicMaterial({
+  color: 0xffff00,
+  wireframe: true,
+});
+
 buildingsMaterial.onBeforeCompile = (shader) => {
   shader.uniforms.vColorBase = { value: new THREE.Color("#5a262e") };
   shader.uniforms.vColorUp = { value: new THREE.Color("#ff375a") };

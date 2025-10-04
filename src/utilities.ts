@@ -23,7 +23,9 @@ export function toString(value: number) {
   return value.toString();
 }
 
-function prepareTransform<K>(transform: Transform & K): TransformParsed & K {
+export function prepareTransform<K>(
+  transform: Transform & K,
+): TransformParsed & K {
   return {
     ...transform,
     position: transform.position.map(toNumber) as THREE.Vector3Tuple,

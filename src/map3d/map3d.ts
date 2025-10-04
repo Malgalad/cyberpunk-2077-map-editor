@@ -3,7 +3,11 @@ import { MapControls } from "three/addons/controls/MapControls.js";
 
 import type { District } from "../types.ts";
 import { createInstancedMesh, type InstanceTransforms } from "./importDDS.ts";
-import { buildingsMaterial, editorMaterial } from "./materials.ts";
+import {
+  buildingsMaterial,
+  editorMaterial,
+  virtualBlocksMaterial,
+} from "./materials.ts";
 import { importBuildings } from "./setupBuildings.ts";
 import { setupTerrain } from "./setupTerrain.ts";
 
@@ -14,17 +18,26 @@ export class Map3D {
   readonly #camera: THREE.OrthographicCamera;
   readonly #renderer: THREE.WebGLRenderer;
   readonly #controls: MapControls;
+  readonly #raycaster: THREE.Raycaster;
   #aspect: number = 1;
   #buildings: THREE.Mesh | null = null;
   #box: THREE.BoxHelper | null = null;
   #edits: THREE.InstancedMesh | null = null;
+  #selectedIndexes: number[] = [];
+  #virtualEdits: THREE.InstancedMesh | null = null;
   #cameraPosition: THREE.Vector3 = new THREE.Vector3(0, 3000, 0);
   #cameraLookAt: THREE.Vector3 = new THREE.Vector3(0, 0, 0);
   #cameraZoom: number = 1;
+  #canvasRect: DOMRect | null = null;
+  #pointer: THREE.Vector2 = new THREE.Vector2(1, 1);
+  #hoveringId: number | null = null;
 
   constructor(canvas: HTMLCanvasElement) {
     this.#scene = new THREE.Scene();
     this.#scene.background = new THREE.Color(0x0f172b);
+
+    this.#raycaster = new THREE.Raycaster();
+    this.#canvasRect = canvas.getBoundingClientRect();
 
     this.#renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
     this.#renderer.setPixelRatio(window.devicePixelRatio);
@@ -87,16 +100,11 @@ export class Map3D {
     //
 
     window.addEventListener("resize", this.#onWindowResize);
+    canvas.addEventListener("mousemove", this.#onMouseMove);
+    canvas.addEventListener("click", this.#onClick);
 
     this.#render();
   }
-
-  #loadResource = (promise: Promise<THREE.Mesh>) => {
-    promise.then((mesh: THREE.Mesh) => {
-      this.#scene.add(mesh);
-      requestAnimationFrame(this.#render);
-    });
-  };
 
   #onWindowResize = () => {
     const canvas = this.#renderer.domElement;
@@ -110,7 +118,66 @@ export class Map3D {
     this.#camera.updateProjectionMatrix();
 
     this.#renderer.setSize(canvas.clientWidth, canvas.clientHeight);
+    this.#canvasRect = canvas.getBoundingClientRect();
     this.#render();
+  };
+
+  #onMouseMove = (event: MouseEvent) => {
+    const { left, top, width, height } = this.#canvasRect!;
+
+    this.#pointer.x = ((event.clientX - left) / width) * 2 - 1;
+    this.#pointer.y = -((event.clientY - top) / height) * 2 + 1;
+
+    if (this.#edits) {
+      this.#raycaster.setFromCamera(this.#pointer, this.#camera);
+
+      const intersection = this.#raycaster.intersectObject(this.#edits);
+
+      if (intersection.length > 0) {
+        const instanceId = intersection[0].instanceId;
+
+        if (instanceId !== undefined) {
+          const color = new THREE.Color(0x88ff88);
+
+          this.#hoveringId = instanceId;
+          this.#edits.setColorAt(instanceId, color);
+
+          if (this.#edits.instanceColor)
+            this.#edits.instanceColor.needsUpdate = true;
+
+          requestAnimationFrame(this.#render);
+        }
+      } else if (this.#hoveringId !== null) {
+        const color = new THREE.Color(0xffff00);
+
+        if (this.#selectedIndexes.includes(this.#hoveringId)) {
+          color.setHex(0x00ff00);
+        }
+
+        this.#edits.setColorAt(this.#hoveringId, color);
+
+        if (this.#edits.instanceColor)
+          this.#edits.instanceColor.needsUpdate = true;
+
+        this.#hoveringId = null;
+        requestAnimationFrame(this.#render);
+      }
+    }
+  };
+
+  #onClick = () => {
+    if (this.#edits && this.#hoveringId != null) {
+      window.dispatchEvent(
+        new CustomEvent("select-node", { detail: { index: this.#hoveringId } }),
+      );
+    }
+  };
+
+  #loadResource = (promise: Promise<THREE.Mesh>) => {
+    promise.then((mesh: THREE.Mesh) => {
+      this.#scene.add(mesh);
+      requestAnimationFrame(this.#render);
+    });
   };
 
   #render = () => {
@@ -191,6 +258,25 @@ export class Map3D {
     requestAnimationFrame(this.#render);
   }
 
+  setVirtualEditsData(district: District, data: InstanceTransforms[]) {
+    if (this.#virtualEdits) {
+      this.#scene.remove(this.#virtualEdits);
+      this.#virtualEdits.geometry.dispose();
+      requestAnimationFrame(this.#render);
+    }
+
+    this.#virtualEdits = createInstancedMesh(
+      data,
+      virtualBlocksMaterial,
+      district.cubeSize,
+      new THREE.Vector3(...district.position),
+      new THREE.Vector4(...district.transMin),
+      new THREE.Vector4(...district.transMax),
+    );
+    this.#scene.add(this.#virtualEdits);
+    requestAnimationFrame(this.#render);
+  }
+
   selectEditsData(indexes: number[]) {
     if (!this.#edits) return;
 
@@ -205,6 +291,7 @@ export class Map3D {
       }
     }
 
+    this.#selectedIndexes = indexes;
     if (this.#edits.instanceColor) this.#edits.instanceColor.needsUpdate = true;
 
     requestAnimationFrame(this.#render);

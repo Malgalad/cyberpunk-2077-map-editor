@@ -66,3 +66,13 @@ export function useSyncNodes(nodes: MapNode[], district?: keyof Districts) {
     }, 200);
   }, [district, nodes]);
 }
+
+export function usePreviousValue<T>(value: T): T | null {
+  const ref = React.useRef<T>(null);
+
+  React.useEffect(() => {
+    ref.current = value;
+  }, [value]);
+
+  return ref.current;
+}

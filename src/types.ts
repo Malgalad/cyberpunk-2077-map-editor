@@ -30,6 +30,7 @@ export type MapNode = Transform & {
   label: string;
   type: "group" | "instance";
   parent: string;
+  virtual?: boolean;
   pattern?: Transform & {
     count: number;
     enabled: boolean;
@@ -40,6 +41,7 @@ export type MapNodeParsed = TransformParsed & {
   label: string;
   type: "group" | "instance";
   parent: string;
+  virtual?: boolean;
   pattern?: TransformParsed & {
     count: number;
     enabled: boolean;
