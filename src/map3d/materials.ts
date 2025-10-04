@@ -5,7 +5,7 @@ export const buildingsMaterial = new THREE.MeshLambertMaterial({
 });
 
 export const editorMaterial = new THREE.MeshLambertMaterial({
-  color: 0xffff00,
+  color: 0xffffff,
 });
 
 buildingsMaterial.onBeforeCompile = (shader) => {

@@ -21,7 +21,7 @@ export type Transform = {
 };
 export type TransformParsed = {
   position: THREE.Vector3Tuple;
-  rotation: THREE.EulerTuple;
+  rotation: THREE.Vector3Tuple;
   scale: THREE.Vector3Tuple;
 };
 

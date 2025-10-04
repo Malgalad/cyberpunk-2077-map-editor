@@ -82,6 +82,7 @@ function AddNodes() {
             <Node key={node.id} node={node} />
           ))}
         </div>
+
         <div className="flex flex-row gap-2 justify-end border-t border-slate-900">
           {editing && (
             <>
@@ -127,9 +128,10 @@ function AddNodes() {
           </Button>
         </div>
       </div>
-      <div className="flex flex-col flex-1/2 overflow-auto bg-slate-800">
+
+      <div className="flex flex-col flex-1/2 overflow-auto">
         {!editing && (
-          <div className="grow flex items-center justify-center italic">
+          <div className="grow flex items-center justify-center italic bg-slate-800">
             Select node
           </div>
         )}

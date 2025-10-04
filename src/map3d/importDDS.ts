@@ -84,7 +84,6 @@ export function createInstancedMesh(
   const geometry = new THREE.BoxGeometry(cubeSize, cubeSize, cubeSize);
   const mesh = new THREE.InstancedMesh(geometry, material, instances.length);
   const boundingBox = transformMax.sub(transformMin);
-  const color = new THREE.Color(0xffff00);
 
   mesh.userData.count = instances.length;
   mesh.position.set(
@@ -113,7 +112,6 @@ export function createInstancedMesh(
 
     matrix.compose(position, rotation, scale);
     mesh.setMatrixAt(index, matrix);
-    mesh.setColorAt(index, color);
   }
 
   return mesh;

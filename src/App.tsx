@@ -1,7 +1,9 @@
 import { BoxIcon } from "lucide-react";
 import * as React from "react";
+import * as THREE from "three";
 
 import Button from "./components/Button.tsx";
+import { exportData, importData } from "./helpers.ts";
 import { useAppDispatch, useAppSelector, useSyncNodes } from "./hooks.ts";
 import type { InstanceTransforms } from "./map3d/importDDS.ts";
 import { Map3D } from "./map3d/map3d.ts";
@@ -14,7 +16,10 @@ import RemoveNodes from "./tabs/RemoveNodes.tsx";
 import type { MapNodeParsed } from "./types.ts";
 import {
   applyParentTransform,
+  cloneNode,
   clsx,
+  hadamardProduct,
+  hadamardSum,
   nodeToTransform,
   prepareNode,
 } from "./utilities.ts";
@@ -24,6 +29,8 @@ const tabs = [
   { key: "add", label: "Add nodes" },
   { key: "remove", label: "Remove nodes" },
 ] as { key: Tabs; label: string }[];
+
+const scalePattern = (i: number) => (value: number) => value * (i + 1);
 
 function App() {
   const dispatch = useAppDispatch();
@@ -39,42 +46,6 @@ function App() {
   >([]);
   const [tab, setTab] = React.useState<Tabs>("add");
   useSyncNodes(nodes, district);
-
-  // const importData = React.useCallback(() => {
-  //   const input = document.createElement("input");
-  //   input.type = "file";
-  //   input.accept = ".json";
-  //   input.onchange = (event) => {
-  //     const file = (event.target as HTMLInputElement).files?.[0];
-  //     if (!file) return;
-  //
-  //     const reader = new FileReader();
-  //     reader.onload = (event) => {
-  //       const content = event.target?.result;
-  //       if (typeof content !== "string") return;
-  //
-  //       try {
-  //         context.setNodes(JSON.parse(content));
-  //       } catch (error) {
-  //         openModal("alert", "Failed to parse JSON file");
-  //         console.error("Failed to parse JSON file:", error);
-  //       }
-  //     };
-  //     reader.readAsText(file);
-  //   };
-  //   input.click();
-  // }, [context, openModal]);
-  // const exportData = React.useCallback(() => {
-  //   const blob = new Blob([JSON.stringify(context.nodes)], {
-  //     type: "application/json",
-  //   });
-  //   const url = URL.createObjectURL(blob);
-  //   const anchorElement = document.createElement("a");
-  //   anchorElement.href = url;
-  //   anchorElement.download = `${district}.json`;
-  //   anchorElement.click();
-  //   URL.revokeObjectURL(url);
-  // }, [context.nodes, district]);
 
   // Init map and set Map3D state
   React.useEffect(() => {
@@ -107,39 +78,43 @@ function App() {
     const reversedNodes: MapNodeParsed[] = nodes.toReversed().map(prepareNode);
     const { origin, minMax, cubeSize } = districtData;
 
-    // for (const node of reversedNodes) {
-    //   if (!node.pattern || !node.pattern.enabled) continue;
-    //
-    //   for (let i = 0; i < node.pattern.count; i++) {
-    //     const virtualNodes = _cloneNode(reversedNodes, node);
-    //
-    //     const position = node.pattern.position.map(
-    //       scalePattern(i),
-    //     ) as THREE.Vector3Tuple;
-    //
-    //     const rotation = toQuaternion(
-    //       toEulerAngles(node.pattern.rotation)
-    //         .map((n) => rad2deg(n as number))
-    //         .map(scalePattern(i))
-    //         .map(deg2rad) as THREE.EulerTuple,
-    //     );
-    //
-    //     const scale = node.pattern.scale
-    //       .map((n) => n - 1)
-    //       .map(scalePattern(i))
-    //       .map((n) => n + 1) as THREE.Vector3Tuple;
-    //
-    //     virtualNodes.splice(0, 1, {
-    //       ...virtualNodes[0],
-    //       pattern: undefined,
-    //       position,
-    //       rotation,
-    //       scale,
-    //     });
-    //
-    //     reversedNodes.push(...virtualNodes);
-    //   }
-    // }
+    for (const node of reversedNodes) {
+      if (!node.pattern || !node.pattern.enabled) continue;
+
+      for (let i = 0; i < node.pattern.count; i++) {
+        const virtualNodes = cloneNode(reversedNodes, node, node.parent, {
+          cloneLabel: false,
+        });
+
+        const position = hadamardSum(
+          virtualNodes[0].position,
+          node.pattern.position.map(scalePattern(i)),
+        ) as THREE.Vector3Tuple;
+
+        const rotation = hadamardSum(
+          virtualNodes[0].rotation,
+          node.pattern.rotation.map(scalePattern(i)),
+        ) as THREE.Vector3Tuple;
+
+        const scale = hadamardProduct(
+          virtualNodes[0].scale,
+          node.pattern.scale
+            .map((n) => n - 1)
+            .map(scalePattern(i))
+            .map((n) => n + 1),
+        ) as THREE.Vector3Tuple;
+
+        virtualNodes.splice(0, 1, {
+          ...virtualNodes[0],
+          pattern: undefined,
+          position,
+          rotation,
+          scale,
+        });
+
+        reversedNodes.push(...virtualNodes);
+      }
+    }
 
     for (const node of reversedNodes) {
       if (node.type === "instance") {
@@ -193,28 +168,38 @@ function App() {
   }, [editing, cache, instanceTransforms, map3D]);
 
   return (
-    <div className="flex flex-col gap-2 w-screen h-screen bg-slate-900 text-white">
-      <div className="flex flex-row gap-2 px-2">
-        <Button
-          className="border-none"
-          onClick={() => {
-            dispatch(ModalsActions.openModal("select-district")).then(
-              (choice) => {
-                dispatch(Actions.setDistrict(choice));
-              },
-            );
-          }}
-        >
-          Select district
-        </Button>
-        <Button className="border-none" disabled>
-          Import
-        </Button>
-        <Button className="border-none" disabled>
-          Export
-        </Button>
-      </div>
-      <div className="grow flex flex-row gap-2">
+    <div className="flex flex-row gap-2 w-screen h-screen bg-slate-900 text-white">
+      <div className="grow flex flex-col gap-2">
+        <div className="flex flex-row gap-2 px-2">
+          <Button
+            className="border-none"
+            onClick={() => {
+              dispatch(ModalsActions.openModal("select-district")).then(
+                (choice) => {
+                  dispatch(Actions.setDistrict(choice));
+                },
+              );
+            }}
+          >
+            Select district
+          </Button>
+          <Button
+            className="border-none tooltip"
+            onClick={() => importData(dispatch, district)}
+            data-tooltip="Import from JSON file"
+            data-flow="bottom"
+          >
+            Import
+          </Button>
+          <Button
+            className="border-none tooltip"
+            onClick={() => exportData(nodes, district)}
+            data-tooltip="Export to JSON file"
+            data-flow="bottom"
+          >
+            Export
+          </Button>
+        </div>
         <div className="grow relative">
           <canvas className="w-full h-full block" ref={canvasRef} />
           <Button
@@ -228,26 +213,26 @@ function App() {
             <BoxIcon />
           </Button>
         </div>
-        <div className="w-[420px] flex flex-col py-2 pr-2 overflow-y-auto">
-          <div className="flex flex-row gap-0.5 -mb-[1px]">
-            {tabs.map((button) => (
-              <Button
-                key={button.key}
-                className={clsx(
-                  "w-1/2 z-10",
-                  button.key === tab && "border-b-slate-900",
-                  button.key !== tab && "border-transparent",
-                )}
-                onClick={() => setTab(button.key)}
-              >
-                {button.label}
-              </Button>
-            ))}
-          </div>
-          <div className="flex flex-col flex-grow gap-2 p-2 border border-slate-600">
-            {tab === "add" && <AddNodes />}
-            {tab === "remove" && <RemoveNodes />}
-          </div>
+      </div>
+      <div className="w-[420px] flex flex-col py-2 pr-2 overflow-y-auto">
+        <div className="flex flex-row gap-0.5 -mb-[1px]">
+          {tabs.map((button) => (
+            <Button
+              key={button.key}
+              className={clsx(
+                "w-1/2 z-10",
+                button.key === tab && "border-b-slate-900",
+                button.key !== tab && "border-transparent",
+              )}
+              onClick={() => setTab(button.key)}
+            >
+              {button.label}
+            </Button>
+          ))}
+        </div>
+        <div className="flex flex-col flex-grow gap-2 p-2 border border-slate-600">
+          {tab === "add" && <AddNodes />}
+          {tab === "remove" && <RemoveNodes />}
         </div>
       </div>
     </div>

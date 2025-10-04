@@ -25,12 +25,6 @@ const initialState = {
   editing: null,
 } satisfies NodesState as NodesState;
 
-const counter = {
-  group: 0,
-  instance: 0,
-};
-const getPointer = (type: keyof typeof counter) => ++counter[type];
-
 const nodesSlice = createSlice({
   name: "nodes",
   initialState,
@@ -41,7 +35,7 @@ const nodesSlice = createSlice({
         const scale = type === "instance" ? "100" : "1";
         const node: MapNode = {
           id,
-          label: `${type === "instance" ? "Box" : "Group"} ${getPointer(type)}`,
+          label: `${type === "instance" ? "Box" : "Group"}`,
           type,
           parent,
           position,
@@ -58,7 +52,7 @@ const nodesSlice = createSlice({
     cloneNode: create.reducer((state, action: PayloadAction<MapNode["id"]>) => {
       const node = state.nodes.find((node) => node.id === action.payload);
       if (!node) return;
-      const clones = cloneNode(state.nodes, node);
+      const clones = cloneNode(state.nodes, node, node.parent);
       state.nodes.push(...clones);
       state.editing = clones[0].id;
     }),

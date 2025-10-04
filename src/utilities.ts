@@ -12,6 +12,8 @@ import type {
 
 export const hadamardProduct = (a: number[], b: number[]) =>
   a.map((x, i) => x * b[i]);
+export const hadamardSum = (a: number[], b: number[]) =>
+  a.map((x, i) => x + b[i]);
 
 export function toNumber(value: string) {
   const number = parseFloat(value.trim());
@@ -27,7 +29,7 @@ function prepareTransform<K>(transform: Transform & K): TransformParsed & K {
     position: transform.position.map(toNumber) as THREE.Vector3Tuple,
     rotation: transform.rotation
       .map(toNumber)
-      .map(THREE.MathUtils.degToRad) as THREE.EulerTuple,
+      .map(THREE.MathUtils.degToRad) as THREE.Vector3Tuple,
     scale: transform.scale.map(toNumber) as THREE.Vector3Tuple,
   };
 }
@@ -110,18 +112,19 @@ export function clsx(...args: unknown[]) {
   return args.flat().filter(Boolean).join(" ");
 }
 
-export const cloneNode = (
-  nodes: WritableDraft<MapNode>[],
-  node: WritableDraft<MapNode>,
-  parentId: string = node.parent,
-) => {
-  const clone = structuredClone(
-    isDraft(node) ? (original(node) as MapNode) : node,
-  );
-  const childClones: MapNode[] = [];
+export const cloneNode = <T extends MapNode | MapNodeParsed>(
+  nodes: WritableDraft<T>[],
+  node: WritableDraft<T>,
+  parentId: string,
+  options: { cloneLabel?: boolean } = { cloneLabel: true },
+): T[] => {
+  const clone = structuredClone(isDraft(node) ? (original(node) as T) : node);
+  const childClones: T[] = [];
 
-  clone.id = `${node.type}-${nanoid(8)}`;
-  clone.label = clone.id;
+  clone.id = nanoid(8);
+  clone.label = options.cloneLabel
+    ? `${clone.type === "instance" ? "Box" : "Group"}`
+    : "";
   clone.parent = parentId;
 
   if (clone.type === "group") {
@@ -132,7 +135,7 @@ export const cloneNode = (
     }
   }
 
-  return [clone, ...childClones];
+  return [clone as T, ...childClones];
 };
 
 export function invariant(

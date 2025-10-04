@@ -1,3 +1,5 @@
+import { CircleDotDashed } from "lucide-react";
+
 import { useAppDispatch, useAppSelector } from "../hooks.ts";
 import { NodesActions, NodesSelectors } from "../store/nodes.ts";
 import type { MapNode } from "../types.ts";
@@ -33,9 +35,17 @@ function Instance({ node }: InstanceProps) {
           }
         }}
       >
-        <div className="grow">
+        <div className="grow flex flex-row justify-between items-center">
           {node.label}
-          {node.pattern && <> {node.pattern.enabled ? "★" : "☆"}</>}
+          {node.pattern?.enabled && (
+            <div
+              className="tooltip"
+              data-tooltip="Has pattern"
+              data-flow="left"
+            >
+              <CircleDotDashed />
+            </div>
+          )}
         </div>
       </div>
     </div>

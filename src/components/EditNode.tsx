@@ -4,6 +4,7 @@ import { useAppDispatch, useAppSelector } from "../hooks.ts";
 import { Selectors } from "../store/globals.ts";
 import { NodesActions, NodesSelectors } from "../store/nodes.ts";
 import type { Districts, MapNode } from "../types.ts";
+import { clsx } from "../utilities.ts";
 import Button from "./Button.tsx";
 import DraggableInput from "./DraggableInput.tsx";
 import Input from "./Input.tsx";
@@ -11,12 +12,18 @@ import Select from "./Select.tsx";
 
 const axii = [0, 1, 2] as const;
 
+type Tabs = "properties" | "pattern";
+const tabs = [
+  { key: "properties", label: "Properties" },
+  { key: "pattern", label: "Pattern" },
+] as { key: Tabs; label: string }[];
+
 function EditNode() {
   const dispatch = useAppDispatch();
   const nodes = useAppSelector(NodesSelectors.getNodes);
   const node = useAppSelector(NodesSelectors.getEditing) as MapNode;
   const district = useAppSelector(Selectors.getDistrict) as keyof Districts;
-  const [copy] = React.useState(node);
+  const [tab, setTab] = React.useState<Tabs>("properties");
   const parents = React.useMemo(
     () => [
       { label: district, value: district },
@@ -27,279 +34,243 @@ function EditNode() {
     [district, nodes, node.id],
   );
 
-  return (
-    <div className="grid grid-cols-[100px,auto] gap-2 p-2">
-      <div>Label:</div>
-      <div>
-        <Input
-          type="text"
-          className="w-[248px]"
-          disabled={node.type === "instance"}
-          value={node.label}
-          onChange={(event) => {
-            dispatch(
-              NodesActions.patchNode((draft) => {
-                draft.label = event.target.value;
-              }),
-            );
-          }}
-        />
+  function renderProperties() {
+    return (
+      <div className="grow bg-slate-800">
+        <div className="grid grid-cols-[120px_auto] items-center gap-2 p-2 ">
+          <div>Label:</div>
+          <div>
+            <Input
+              type="text"
+              className="w-[248px]"
+              value={node.label}
+              onChange={(event) => {
+                dispatch(
+                  NodesActions.patchNode((draft) => {
+                    draft.label = event.target.value;
+                  }),
+                );
+              }}
+            />
+          </div>
+          <div>Parent:</div>
+          <div>
+            <Select
+              className="w-[248px]"
+              label={""}
+              items={parents}
+              onChange={(value) => {
+                dispatch(
+                  NodesActions.patchNode((draft) => {
+                    draft.parent = value;
+                  }),
+                );
+              }}
+              value={node.parent}
+            />
+          </div>
+          <div>Position:</div>
+          <div className="flex flex-row gap-1 items-center">
+            {axii.map((i) => (
+              <DraggableInput
+                key={i}
+                className="w-20"
+                step={0.25}
+                value={node.position[i]}
+                onChange={(value) => {
+                  dispatch(
+                    NodesActions.patchNode((draft) => {
+                      draft.position[i] = value;
+                    }),
+                  );
+                }}
+              />
+            ))}
+          </div>
+          <div>Rotation:</div>
+          <div className="flex flex-row gap-1">
+            {axii.map((i) => (
+              <DraggableInput
+                key={i}
+                className="w-20"
+                value={node.rotation[i]}
+                onChange={(value) => {
+                  dispatch(
+                    NodesActions.patchNode((draft) => {
+                      draft.rotation[i] = value;
+                    }),
+                  );
+                }}
+              />
+            ))}
+          </div>
+          <div>Scale:</div>
+          <div className="flex flex-row gap-1 items-center">
+            {axii.map((i) => (
+              <DraggableInput
+                key={i}
+                className="w-20"
+                step={node.type === "instance" ? 2 : 0.1}
+                value={node.scale[i]}
+                onChange={(value) => {
+                  dispatch(
+                    NodesActions.patchNode((draft) => {
+                      draft.scale[i] = value;
+                    }),
+                  );
+                }}
+              />
+            ))}
+          </div>
+        </div>
       </div>
-      <div>Parent:</div>
-      <div>
-        <Select
-          className="w-[248px]"
-          label={""}
-          items={parents}
-          onChange={(value) => {
-            dispatch(
-              NodesActions.patchNode((draft) => {
-                draft.parent = value;
-              }),
-            );
-          }}
-          value={node.parent}
-        />
-      </div>
-      <div>Position:</div>
-      <div className="flex flex-row gap-1 items-center">
-        {axii.map((i) => (
-          <DraggableInput
-            key={i}
-            className="w-20"
-            step={0.25}
-            value={node.position[i]}
-            onChange={(value) => {
-              dispatch(
-                NodesActions.patchNode((draft) => {
-                  draft.position[i] = value;
-                }),
-              );
-            }}
-          />
-        ))}
-      </div>
-      <div>Rotation:</div>
-      <div className="flex flex-row gap-1">
-        {axii.map((i) => (
-          <DraggableInput
-            key={i}
-            className="w-20"
-            value={node.rotation[i]}
-            onChange={(value) => {
-              dispatch(
-                NodesActions.patchNode((draft) => {
-                  draft.rotation[i] = value;
-                }),
-              );
-            }}
-          />
-        ))}
-      </div>
-      <div>Scale:</div>
-      <div className="flex flex-row gap-1 items-center">
-        {axii.map((i) => (
-          <DraggableInput
-            key={i}
-            className="w-20"
-            step={2}
-            value={node.scale[i]}
-            onChange={(value) => {
-              dispatch(
-                NodesActions.patchNode((draft) => {
-                  draft.scale[i] = value;
-                }),
-              );
-            }}
-          />
-        ))}
-      </div>
-      {/*
-      <div className="flex flex-col gap-2 p-2 border border-slate-300 rounded-md">
-        <div className="flex flex-row gap-2 items-center">
-          {node.pattern ? (
-            <>
+    );
+  }
+
+  function renderPattern() {
+    return (
+      <div className="grow bg-slate-800">
+        <div className="flex flex-col gap-2 p-2">
+          <div>
+            {node.pattern?.enabled ? (
               <Button
                 onClick={() => {
-                  context.patchNode(node.id, (draft) => {
-                    draft.pattern = undefined;
-                  });
+                  dispatch(
+                    NodesActions.patchNode((draft) => {
+                      draft.pattern!.enabled = false;
+                    }),
+                  );
                 }}
               >
-                Remove pattern
+                Disable
               </Button>
-              <label>
-                <input
-                  type="checkbox"
-                  checked={node.pattern?.enabled}
-                  onChange={() => {
-                    context.patchNode(node.id, (draft) => {
-                      draft.pattern!.enabled = !draft.pattern!.enabled;
-                    });
+            ) : (
+              <Button
+                onClick={() => {
+                  dispatch(
+                    NodesActions.patchNode((draft) => {
+                      if (!draft.pattern) {
+                        draft.pattern = {
+                          count: 1,
+                          enabled: true,
+                          position: ["0", "0", "0"],
+                          rotation: ["0", "0", "0"],
+                          scale: ["1", "1", "1"],
+                        };
+                      } else {
+                        draft.pattern.enabled = true;
+                      }
+                    }),
+                  );
+                }}
+              >
+                Enable
+              </Button>
+            )}
+          </div>
+          {node.pattern?.enabled && (
+            <div className="grow grid grid-cols-[120px_auto] items-center gap-2 p-2">
+              <div>Number of copies:</div>
+              <div>
+                <DraggableInput
+                  className="w-16"
+                  min={1}
+                  step={1}
+                  value={node.pattern.count.toString()}
+                  onChange={(value) => {
+                    dispatch(
+                      NodesActions.patchNode((draft) => {
+                        draft.pattern!.count = parseInt(value, 10);
+                      }),
+                    );
                   }}
-                />{" "}
-                Enabled
-              </label>
-            </>
-          ) : (
-            <Button
-              onClick={() => {
-                context.patchNode(node.id, (draft) => {
-                  draft.pattern = {
-                    count: 1,
-                    enabled: true,
-                    position: [0, 0, 0],
-                    rotation: [0, 0, 0, 1],
-                    scale: [1, 1, 1],
-                  };
-                });
-              }}
-            >
-              Add pattern
-            </Button>
+                />
+              </div>
+              <div>Position:</div>
+              <div>
+                <div className="flex flex-row gap-1 items-center">
+                  {axii.map((i) => (
+                    <DraggableInput
+                      key={i}
+                      className="w-20"
+                      step={0.25}
+                      value={node.pattern!.position[i]}
+                      onChange={(value) => {
+                        dispatch(
+                          NodesActions.patchNode((draft) => {
+                            draft.pattern!.position[i] = value;
+                          }),
+                        );
+                      }}
+                    />
+                  ))}
+                </div>
+              </div>
+              <div>Rotation:</div>
+              <div>
+                <div className="flex flex-row gap-1">
+                  {axii.map((i) => (
+                    <DraggableInput
+                      key={i}
+                      className="w-20"
+                      value={node.pattern!.rotation[i]}
+                      onChange={(value) => {
+                        dispatch(
+                          NodesActions.patchNode((draft) => {
+                            draft.pattern!.rotation[i] = value;
+                          }),
+                        );
+                      }}
+                    />
+                  ))}
+                </div>
+              </div>
+              <div>Scale:</div>
+              <div>
+                <div className="flex flex-row gap-1 items-center">
+                  {axii.map((i) => (
+                    <DraggableInput
+                      key={i}
+                      className="w-20"
+                      step={0.1}
+                      value={node.pattern!.scale[i]}
+                      onChange={(value) => {
+                        dispatch(
+                          NodesActions.patchNode((draft) => {
+                            draft.pattern!.scale[i] = value;
+                          }),
+                        );
+                      }}
+                    />
+                  ))}
+                </div>
+              </div>
+            </div>
           )}
         </div>
-        {node.pattern && (
-          <>
-            <div>
-              <div>Number of copies:</div>
-              <Input
-                type="number"
-                className="w-16"
-                value={node.pattern.count}
-                onChange={(event) =>
-                  context.patchNode(node.id, (draft) => {
-                    draft.pattern!.count = parseInt(event.target.value);
-                  })
-                }
-              />
-            </div>
-            <div>
-              <div>Position:</div>
-              <div className="flex flex-row gap-1 items-center">
-                {[0, 1, 2].map((i) => (
-                  <Input
-                    key={`${i}-${useAbsolutePosition ? "absolute" : "relative"}`}
-                    className="w-20"
-                    type="text"
-                    value={formatClampedValue(
-                      node.pattern!.position[i],
-                      origin[i],
-                      boundingBox[i],
-                      useAbsolutePosition,
-                    )}
-                    onChange={(event) => {
-                      context.patchNode(node.id, (draft) => {
-                        draft.pattern!.position[i] = parseClampedValue(
-                          parseFloat(event.target.value),
-                          origin[i],
-                          boundingBox[i],
-                          useAbsolutePosition,
-                        );
-                      });
-                    }}
-                  />
-                ))}
-                <label>
-                  <input
-                    type="checkbox"
-                    checked={useAbsolutePosition}
-                    onChange={() =>
-                      setUseAbsolutePosition(!useAbsolutePosition)
-                    }
-                  />{" "}
-                  Use absolute
-                </label>
-              </div>
-            </div>
-            <div>
-              <div>Rotation:</div>
-              <div className="flex flex-row gap-1">
-                {[0, 1, 2].map((i) => (
-                  <Input
-                    key={i}
-                    className="w-20"
-                    type="text"
-                    defaultValue={patternRotation[i]}
-                    onBlur={(event) => {
-                      context.patchNode(node.id, (draft) => {
-                        draft.pattern!.rotation = parseRotation(
-                          patternRotation.toSpliced(
-                            i,
-                            1,
-                            parseFloat(event.target.value),
-                          ),
-                        );
-                      });
-                    }}
-                  />
-                ))}
-              </div>
-            </div>
-            <div>
-              <div>Scale:</div>
-              <div className="flex flex-row gap-1 items-center">
-                {[0, 1, 2].map((i) => (
-                  <Input
-                    key={`${i}-${useAbsoluteScale ? "absolute" : "relative"}`}
-                    className="w-20"
-                    type="text"
-                    value={formatClampedValue(
-                      node.pattern!.scale[i],
-                      0,
-                      district.cubeSize * 2,
-                      useAbsoluteScale,
-                    )}
-                    onChange={(evt) => {
-                      context.patchNode(node.id, (draft) => {
-                        draft.pattern!.scale[i] = parseClampedValue(
-                          parseFloat(evt.target.value),
-                          0,
-                          district.cubeSize * 2,
-                          useAbsoluteScale,
-                        );
-                      });
-                    }}
-                  />
-                ))}
-                {node.type === "instance" && (
-                  <label>
-                    <input
-                      type="checkbox"
-                      checked={useAbsoluteScale}
-                      onChange={() => setUseAbsoluteScale(!useAbsoluteScale)}
-                    />{" "}
-                    Use absolute
-                  </label>
-                )}
-              </div>
-            </div>
-          </>
-        )}
       </div>
-      */}
-      <div className="col-span-2 flex flex-row gap-2 items-center">
-        <Button onClick={() => dispatch(NodesActions.setEditing(null))}>
-          Done
-        </Button>
-        <Button
-          onClick={() => {
-            dispatch(
-              NodesActions.patchNode((draft) => {
-                draft.parent = copy.parent;
-                draft.pattern = copy.pattern;
-                draft.label = copy.label;
-                draft.position = copy.position;
-                draft.rotation = copy.rotation;
-                draft.scale = copy.scale;
-              }),
-            );
-            dispatch(NodesActions.setEditing(null));
-          }}
-        >
-          Revert changes
-        </Button>
+    );
+  }
+
+  return (
+    <div className="grow flex flex-col">
+      <div className="flex flex-row gap-0.5 -mb-[1px]">
+        {tabs.map((button) => (
+          <Button
+            key={button.key}
+            className={clsx(
+              "w-1/2 z-10 border-none",
+              button.key === tab && "bg-slate-800",
+              button.key !== tab && "bg-slate-900",
+            )}
+            onClick={() => setTab(button.key)}
+          >
+            {button.label}
+          </Button>
+        ))}
       </div>
+      {tab === "properties" && renderProperties()}
+      {tab === "pattern" && renderPattern()}
     </div>
   );
 }

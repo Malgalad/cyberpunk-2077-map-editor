@@ -1,4 +1,4 @@
-import { SquareMinus, SquarePlus } from "lucide-react";
+import { CircleDotDashed, SquareMinus, SquarePlus } from "lucide-react";
 import * as React from "react";
 
 import { useAppDispatch, useAppSelector } from "../hooks.ts";
@@ -71,10 +71,20 @@ function Group({ node }: GroupProps) {
         >
           {expanded ? <SquareMinus /> : <SquarePlus />}
         </Button>
-        <div className="grow">
-          {node.label}{" "}
-          <span className="text-gray-400">({nodeChildren.i.length})</span>{" "}
-          {node.pattern && <> {node.pattern.enabled ? "★" : "☆"}</>}
+        <div className="grow flex flex-row justify-between items-center">
+          <span>
+            {node.label}{" "}
+            <span className="text-gray-400">({nodeChildren.i.length})</span>
+          </span>
+          {node.pattern?.enabled && (
+            <div
+              className="tooltip"
+              data-tooltip="Has pattern"
+              data-flow="left"
+            >
+              <CircleDotDashed />
+            </div>
+          )}
         </div>
       </div>
       {expanded && children.length > 0 && (
