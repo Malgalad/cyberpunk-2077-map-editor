@@ -12,7 +12,11 @@ export const useAppDispatch: () => AppDispatch = useDispatch;
 export const useAppSelector: TypedUseSelectorHook<AppState> = useSelector;
 
 const storageKey = "cp-2077-map-editor";
-export function useSyncNodes(nodes: MapNode[], district?: keyof Districts) {
+export function useSyncNodes(
+  nodes: MapNode[],
+  removals: number[],
+  district?: keyof Districts,
+) {
   const dispatch = useAppDispatch();
   const timer = React.useRef<number>(null);
 
@@ -25,8 +29,11 @@ export function useSyncNodes(nodes: MapNode[], district?: keyof Districts) {
       try {
         const parsed = JSON.parse(data);
 
-        if (parsed[district]) {
-          dispatch(NodesActions.setNodes(parsed[district]));
+        if (parsed[district].nodes) {
+          dispatch(NodesActions.setNodes(parsed[district].nodes));
+        }
+        if (parsed[district].removals) {
+          dispatch(NodesActions.setRemovals(parsed[district].removals));
         }
       } catch {
         // noop
@@ -51,13 +58,13 @@ export function useSyncNodes(nodes: MapNode[], district?: keyof Districts) {
             storageKey,
             JSON.stringify({
               ...parsed,
-              [district]: nodes,
+              [district]: { nodes, removals },
             }),
           );
         } catch {
           localStorage.setItem(
             storageKey,
-            JSON.stringify({ [district]: nodes }),
+            JSON.stringify({ [district]: { nodes, removals } }),
           );
         }
       } else {

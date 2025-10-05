@@ -79,11 +79,13 @@ export function createInstancedMesh(
   position: THREE.Vector3,
   transformMin: THREE.Vector4,
   transformMax: THREE.Vector4,
+  excludedIndexes: number[] = [],
 ) {
   const matrix = new THREE.Matrix4();
   const geometry = new THREE.BoxGeometry(cubeSize, cubeSize, cubeSize);
   const mesh = new THREE.InstancedMesh(geometry, material, instances.length);
   const boundingBox = transformMax.sub(transformMin);
+  const color = new THREE.Color(0xffffff);
 
   mesh.userData.count = instances.length;
   mesh.position.set(
@@ -110,8 +112,13 @@ export function createInstancedMesh(
       instances[index].scale.y,
     ).multiplyScalar(2);
 
+    if (excludedIndexes.includes(index)) {
+      scale.set(0, 0, 0);
+    }
+
     matrix.compose(position, rotation, scale);
     mesh.setMatrixAt(index, matrix);
+    mesh.setColorAt(index, color);
   }
 
   return mesh;
@@ -124,6 +131,7 @@ export async function importDDS(
   position: THREE.Vector3,
   transformMin: THREE.Vector4,
   transformMax: THREE.Vector4,
+  excludedIndexes: number[] = [],
 ) {
   const imageData = await loadImageData(url);
   const instances = decodeImageData(imageData);
@@ -135,5 +143,6 @@ export async function importDDS(
     position,
     transformMin,
     transformMax,
+    excludedIndexes,
   );
 }

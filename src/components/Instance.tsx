@@ -17,8 +17,8 @@ function Instance({ node }: InstanceProps) {
   return (
     <div
       className={clsx(
-        "flex flex-row items-center gap-2 border-2 -m-0.5 border-dotted border-slate-800",
-        "cursor-pointer",
+        "flex flex-row items-center gap-2 border-2 -m-0.5",
+        "border-dotted border-transparent cursor-pointer",
         editing?.id === node.id && "border-slate-100!",
       )}
       tabIndex={-1}

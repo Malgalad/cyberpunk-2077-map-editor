@@ -20,7 +20,7 @@ export class Map3D {
   readonly #controls: MapControls;
   readonly #raycaster: THREE.Raycaster;
   #aspect: number = 1;
-  #buildings: THREE.Mesh | null = null;
+  #buildings: THREE.InstancedMesh | null = null;
   #box: THREE.BoxHelper | null = null;
   #edits: THREE.InstancedMesh | null = null;
   #selectedIndexes: number[] = [];
@@ -31,6 +31,8 @@ export class Map3D {
   #canvasRect: DOMRect | null = null;
   #pointer: THREE.Vector2 = new THREE.Vector2(1, 1);
   #hoveringId: number | null = null;
+  #mode: "add" | "remove" = "add";
+  #willRemoveNode = false;
 
   constructor(canvas: HTMLCanvasElement) {
     this.#scene = new THREE.Scene();
@@ -73,37 +75,51 @@ export class Map3D {
 
     // lights
 
-    const light1 = new THREE.DirectionalLight(0xffffff);
-    light1.position.set(100, -70, 100).normalize();
-    this.#scene.add(light1);
-
-    const light2 = new THREE.DirectionalLight(0xffffff);
-    light2.position.set(100, 70, 100).normalize();
-    this.#scene.add(light2);
-
-    const light3 = new THREE.DirectionalLight(0xffffff);
-    light3.intensity = 0.5;
-    light3.position.set(-100, 70, 100).normalize();
-    this.#scene.add(light3);
-
-    // const dirLight1 = new THREE.DirectionalLight(0xffffff, 3);
-    // dirLight1.position.set(1, 1, 1);
-    // this.#scene.add(dirLight1);
+    // const light1 = new THREE.DirectionalLight(0xffffff);
+    // light1.position.set(100, -70, 100).normalize();
+    // this.#scene.add(light1);
     //
-    // const dirLight2 = new THREE.DirectionalLight(0x002288, 3);
-    // dirLight2.position.set(-1, -1, -1);
-    // this.#scene.add(dirLight2);
+    // const light2 = new THREE.DirectionalLight(0xffffff);
+    // light2.position.set(100, 70, 100).normalize();
+    // this.#scene.add(light2);
     //
-    // const ambientLight = new THREE.AmbientLight(0x555555);
-    // this.#scene.add(ambientLight);
+    // const light3 = new THREE.DirectionalLight(0xffffff);
+    // light3.intensity = 0.5;
+    // light3.position.set(-100, 70, 100).normalize();
+    // this.#scene.add(light3);
+
+    const dirLight1 = new THREE.DirectionalLight(0xffffff, 3);
+    dirLight1.position.set(1, 1, 1);
+    this.#scene.add(dirLight1);
+
+    const dirLight2 = new THREE.DirectionalLight(0x002288, 3);
+    dirLight2.position.set(-1, -1, -1);
+    this.#scene.add(dirLight2);
+
+    const ambientLight = new THREE.AmbientLight(0x555555);
+    this.#scene.add(ambientLight);
 
     //
 
     window.addEventListener("resize", this.#onWindowResize);
     canvas.addEventListener("mousemove", this.#onMouseMove);
     canvas.addEventListener("click", this.#onClick);
+    canvas.addEventListener("dblclick", this.#onDoubleClick);
 
     this.#render();
+  }
+
+  dispose() {
+    const canvas = this.#renderer.domElement;
+    window.removeEventListener("resize", this.#onWindowResize);
+    canvas.removeEventListener("mousemove", this.#onMouseMove);
+    canvas.removeEventListener("click", this.#onClick);
+    canvas.removeEventListener("dblclick", this.#onDoubleClick);
+    this.#renderer.dispose();
+    this.#buildings?.geometry.dispose();
+    this.#box?.geometry.dispose();
+    this.#edits?.geometry.dispose();
+    this.#virtualEdits?.geometry.dispose();
   }
 
   #onWindowResize = () => {
@@ -128,7 +144,7 @@ export class Map3D {
     this.#pointer.x = ((event.clientX - left) / width) * 2 - 1;
     this.#pointer.y = -((event.clientY - top) / height) * 2 + 1;
 
-    if (this.#edits) {
+    if (this.#mode === "add" && this.#edits) {
       this.#raycaster.setFromCamera(this.#pointer, this.#camera);
 
       const intersection = this.#raycaster.intersectObject(this.#edits);
@@ -138,6 +154,16 @@ export class Map3D {
 
         if (instanceId !== undefined) {
           const color = new THREE.Color(0x88ff88);
+
+          if (this.#hoveringId !== null) {
+            const color = new THREE.Color(0xffff00);
+
+            if (this.#selectedIndexes.includes(this.#hoveringId)) {
+              color.setHex(0x00ff00);
+            }
+
+            this.#edits.setColorAt(this.#hoveringId, color);
+          }
 
           this.#hoveringId = instanceId;
           this.#edits.setColorAt(instanceId, color);
@@ -162,13 +188,62 @@ export class Map3D {
         this.#hoveringId = null;
         requestAnimationFrame(this.#render);
       }
+    } else if (this.#mode === "remove" && this.#buildings) {
+      this.#raycaster.setFromCamera(this.#pointer, this.#camera);
+
+      const intersection = this.#raycaster.intersectObject(this.#buildings);
+
+      if (intersection.length > 0) {
+        const instanceId = intersection[0].instanceId;
+
+        if (instanceId !== undefined) {
+          const color = new THREE.Color(0x888888);
+
+          if (this.#hoveringId !== null) {
+            const color = new THREE.Color(0xffffff);
+
+            this.#buildings.setColorAt(this.#hoveringId, color);
+          }
+
+          this.#buildings.setColorAt(instanceId, color);
+
+          if (this.#buildings.instanceColor)
+            this.#buildings.instanceColor.needsUpdate = true;
+
+          this.#hoveringId = instanceId;
+          requestAnimationFrame(this.#render);
+        }
+      } else if (this.#hoveringId !== null) {
+        const color = new THREE.Color(0xffffff);
+
+        this.#buildings.setColorAt(this.#hoveringId, color);
+
+        if (this.#buildings.instanceColor)
+          this.#buildings.instanceColor.needsUpdate = true;
+
+        this.#hoveringId = null;
+        requestAnimationFrame(this.#render);
+      }
     }
   };
 
   #onClick = () => {
-    if (this.#edits && this.#hoveringId != null) {
+    if (this.#mode === "add" && this.#edits && this.#hoveringId != null) {
       window.dispatchEvent(
         new CustomEvent("select-node", { detail: { index: this.#hoveringId } }),
+      );
+    }
+  };
+
+  #onDoubleClick = () => {
+    if (
+      this.#mode === "remove" &&
+      this.#buildings &&
+      this.#hoveringId != null
+    ) {
+      this.#willRemoveNode = true;
+      window.dispatchEvent(
+        new CustomEvent("remove-node", { detail: { index: this.#hoveringId } }),
       );
     }
   };
@@ -187,6 +262,20 @@ export class Map3D {
     this.#cameraLookAt.copy(this.#controls.target);
     this.#cameraZoom = this.#camera.zoom;
   };
+
+  #lookAt(vector: THREE.Vector3, zoom?: number) {
+    this.#controls.target.copy(vector);
+    this.#camera.position.copy(vector.clone().setY(3000));
+    this.#camera.lookAt(vector);
+
+    if (zoom !== undefined) {
+      this.#camera.zoom = zoom;
+      this.#camera.updateProjectionMatrix();
+    }
+
+    this.#controls.dispatchEvent({ type: "change" });
+    this.#controls.dispatchEvent({ type: "end" });
+  }
 
   #lookAtBox(box: THREE.Box3 | null) {
     if (!box) return;
@@ -210,31 +299,35 @@ export class Map3D {
     this.#lookAt(this.#cameraLookAt, this.#cameraZoom);
   }
 
-  setBuildingsData(district?: District) {
-    if (this.#buildings) {
-      this.#scene.remove(this.#buildings);
-      this.#buildings.geometry.dispose();
-
-      if (this.#box) {
-        this.#scene.remove(this.#box);
-        this.#box.geometry.dispose();
-      }
-      requestAnimationFrame(this.#render);
-    }
-
+  setBuildingsData(district?: District, excludedIndexes: number[] = []) {
     if (district) {
       this.#loadResource(
-        importBuildings(district, buildingsMaterial).then((mesh) => {
-          this.#buildings = mesh;
+        importBuildings(district, buildingsMaterial, excludedIndexes).then(
+          (mesh) => {
+            if (this.#buildings) {
+              this.#scene.remove(this.#buildings);
+              this.#buildings.geometry.dispose();
 
-          this.#box = new THREE.BoxHelper(mesh, 0xffff00);
-          this.#scene.add(this.#box);
+              if (this.#box) {
+                this.#scene.remove(this.#box);
+                this.#box.geometry.dispose();
+              }
+            }
 
-          this.#box.geometry.computeBoundingBox();
-          this.#lookAtBox(this.#box.geometry.boundingBox);
+            this.#buildings = mesh;
 
-          return mesh;
-        }),
+            this.#box = new THREE.BoxHelper(mesh, 0xffff00);
+            this.#scene.add(this.#box);
+
+            this.#box.geometry.computeBoundingBox();
+            if (!this.#willRemoveNode) {
+              this.#lookAtBox(this.#box.geometry.boundingBox);
+            }
+            this.#willRemoveNode = false;
+
+            return mesh;
+          },
+        ),
       );
     }
   }
@@ -297,17 +390,7 @@ export class Map3D {
     requestAnimationFrame(this.#render);
   }
 
-  #lookAt(vector: THREE.Vector3, zoom?: number) {
-    this.#controls.target.copy(vector);
-    this.#camera.position.copy(vector.clone().setY(3000));
-    this.#camera.lookAt(vector);
-
-    if (zoom !== undefined) {
-      this.#camera.zoom = zoom;
-      this.#camera.updateProjectionMatrix();
-    }
-
-    this.#controls.dispatchEvent({ type: "change" });
-    this.#controls.dispatchEvent({ type: "end" });
+  setMode(mode: "add" | "remove") {
+    this.#mode = mode;
   }
 }

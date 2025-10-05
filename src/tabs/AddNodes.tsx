@@ -68,7 +68,7 @@ function AddNodes() {
 
   return (
     <>
-      <div className="flex flex-col gap-2 flex-1/2 overflow-auto bg-slate-800">
+      <div className="flex flex-col gap-2 flex-1/2 overflow-auto bg-slate-800 relative">
         <div
           className="grow p-2 flex flex-col"
           onClick={() => dispatch(NodesActions.setEditing(null))}
@@ -83,7 +83,7 @@ function AddNodes() {
           ))}
         </div>
 
-        <div className="flex flex-row gap-2 justify-end border-t border-slate-900">
+        <div className="flex flex-row gap-2 sticky pr-1 bottom-0 justify-end border-t border-slate-900 bg-slate-800">
           {editing && (
             <>
               <Button

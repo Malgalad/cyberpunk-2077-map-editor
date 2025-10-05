@@ -23,11 +23,19 @@ export function importData(dispatch: AppDispatch, district?: keyof Districts) {
           throw new Error("File does not contain data for this district");
         }
 
-        if (!Array.isArray(data[district])) {
-          throw new Error("Invalid data format. Expected array of nodes");
+        if (
+          !(
+            Array.isArray(data[district].nodes) &&
+            Array.isArray(data[district].removals)
+          )
+        ) {
+          throw new Error(
+            "Invalid data format. Expected arrays of nodes and removals",
+          );
         }
 
-        dispatch(NodesActions.setNodes(data[district]));
+        dispatch(NodesActions.setNodes(data[district].nodes));
+        dispatch(NodesActions.setRemovals(data[district].removals));
       } catch (error: unknown) {
         dispatch(
           ModalsActions.openModal(
@@ -46,10 +54,14 @@ export function importData(dispatch: AppDispatch, district?: keyof Districts) {
   input.click();
 }
 
-export function exportData(nodes: MapNode[], district?: keyof Districts) {
+export function exportData(
+  nodes: MapNode[],
+  removals: number[],
+  district?: keyof Districts,
+) {
   if (!district) return;
 
-  const blob = new Blob([JSON.stringify({ [district]: nodes })], {
+  const blob = new Blob([JSON.stringify({ [district]: { nodes, removals } })], {
     type: "application/json",
   });
   const url = URL.createObjectURL(blob);

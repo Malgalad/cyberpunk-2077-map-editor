@@ -45,7 +45,7 @@ function Group({ node }: GroupProps) {
     <div
       className={clsx(
         "flex flex-col gap-1.5",
-        "border-2 border-dotted border-slate-800 p-0.5",
+        "border-2 -m-0.5 border-dotted border-transparent",
         editing?.id === node.id && "border-slate-100!",
       )}
     >

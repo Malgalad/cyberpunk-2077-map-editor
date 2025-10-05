@@ -11,6 +11,7 @@ import { cloneNode } from "../utilities.ts";
 
 interface NodesState {
   nodes: MapNode[];
+  removals: number[];
   editing: MapNode["id"] | null;
 }
 
@@ -22,6 +23,7 @@ type AddNodeParams = {
 
 const initialState = {
   nodes: [],
+  removals: [],
   editing: null,
 } satisfies NodesState as NodesState;
 
@@ -81,10 +83,22 @@ const nodesSlice = createSlice({
     setNodes: create.reducer((state, action: PayloadAction<MapNode[]>) => {
       state.nodes = action.payload;
     }),
+    excludeTransform: create.reducer((state, action: PayloadAction<number>) => {
+      state.removals.push(action.payload);
+    }),
+    includeTransform: create.reducer((state, action: PayloadAction<number>) => {
+      state.removals = state.removals.filter((n) => n !== action.payload);
+    }),
+    setRemovals: create.reducer((state, action: PayloadAction<number[]>) => {
+      state.removals = action.payload;
+    }),
   }),
   selectors: {
     getNodes(state): MapNode[] {
       return state.nodes;
+    },
+    getRemovals(state): number[] {
+      return state.removals;
     },
     getChildNodesCache: createSelector(
       [(sliceState: NodesState) => sliceState.nodes],

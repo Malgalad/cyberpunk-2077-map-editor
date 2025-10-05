@@ -38,18 +38,25 @@ function App() {
   const nodes = useAppSelector(NodesSelectors.getNodes);
   const editing = useAppSelector(NodesSelectors.getEditing);
   const cache = useAppSelector(NodesSelectors.getChildNodesCache);
+  const removals = useAppSelector(NodesSelectors.getRemovals);
   const canvasRef = React.useRef<HTMLCanvasElement>(null);
   const [map3D, setMap3D] = React.useState<Map3D | null>(null);
   const [instanceTransforms, setInstanceTransforms] = React.useState<
     InstanceTransforms[]
   >([]);
   const [tab, setTab] = React.useState<Tabs>("add");
-  useSyncNodes(nodes, district);
+  useSyncNodes(nodes, removals, district);
 
   // Init map and set Map3D state
   React.useEffect(() => {
     if (!canvasRef.current) return;
-    setMap3D(new Map3D(canvasRef.current));
+    const map = new Map3D(canvasRef.current);
+
+    setMap3D(map);
+
+    return () => {
+      map.dispose();
+    };
   }, []);
 
   // open Select District modal on launch
@@ -66,8 +73,8 @@ function App() {
   // Draw buildings on district change and set mesh state
   React.useEffect(() => {
     if (!map3D || !district) return;
-    map3D.setBuildingsData(mapData.soup[district]);
-  }, [district, map3D]);
+    map3D.setBuildingsData(mapData.soup[district], removals);
+  }, [district, map3D, removals]);
 
   // Reduce nodes to instanced mesh transforms and set instanceTransforms state
   React.useEffect(() => {
@@ -182,7 +189,7 @@ function App() {
   React.useEffect(() => {
     if (!map3D || !instanceTransforms.length) return;
 
-    const listener = ((event: CustomEvent<{ index: number }>) => {
+    const onSelect = ((event: CustomEvent<{ index: number }>) => {
       if (event.detail) {
         const index = event.detail.index;
         const id = instanceTransforms[index].id;
@@ -192,13 +199,30 @@ function App() {
         }
       }
     }) as EventListener;
+    const onRemove = ((event: CustomEvent<{ index: number }>) => {
+      if (event.detail) {
+        const index = event.detail.index;
 
-    window.addEventListener("select-node", listener);
+        if (index != null) {
+          dispatch(NodesActions.excludeTransform(index));
+        }
+      }
+    }) as EventListener;
+
+    window.addEventListener("select-node", onSelect);
+    window.addEventListener("remove-node", onRemove);
 
     return () => {
-      window.removeEventListener("select-node", listener);
+      window.removeEventListener("select-node", onSelect);
+      window.removeEventListener("remove-node", onRemove);
     };
   }, [map3D, dispatch, instanceTransforms]);
+
+  // Set map mode to change raycast behavior on mousemove
+  React.useEffect(() => {
+    if (!map3D) return;
+    map3D.setMode(tab === "add" ? "add" : "remove");
+  }, [map3D, tab]);
 
   return (
     <div className="flex flex-row gap-2 w-screen h-screen bg-slate-900 text-white">
@@ -226,7 +250,7 @@ function App() {
           </Button>
           <Button
             className="border-none tooltip"
-            onClick={() => exportData(nodes, district)}
+            onClick={() => exportData(nodes, removals, district)}
             data-tooltip="Export to JSON file"
             data-flow="bottom"
           >
