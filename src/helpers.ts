@@ -1,8 +1,13 @@
+import {
+  decodeImageData,
+  exportDDS,
+  type InstanceTransforms,
+} from "./map3d/importDDS.ts";
 import { ModalsActions } from "./store/modals.ts";
 import { NodesActions } from "./store/nodes.ts";
-import type { AppDispatch, Districts, MapNode } from "./types.ts";
+import type { AppDispatch, DistrictData, MapNode } from "./types.ts";
 
-export function importData(dispatch: AppDispatch, district?: keyof Districts) {
+export function importData(dispatch: AppDispatch, district?: string) {
   const input = document.createElement("input");
   input.type = "file";
   input.accept = ".json";
@@ -57,7 +62,7 @@ export function importData(dispatch: AppDispatch, district?: keyof Districts) {
 export function exportData(
   nodes: MapNode[],
   removals: number[],
-  district?: keyof Districts,
+  district?: string,
 ) {
   if (!district) return;
 
@@ -68,6 +73,22 @@ export function exportData(
   const anchorElement = document.createElement("a");
   anchorElement.href = url;
   anchorElement.download = `${district}.json`;
+  anchorElement.click();
+  URL.revokeObjectURL(url);
+}
+
+export async function exportToDDS(
+  additions: InstanceTransforms[],
+  removals: number[],
+  districtData?: DistrictData,
+) {
+  if (!districtData) return;
+  const instances = decodeImageData(new Uint16Array(districtData.imageData));
+  const blob = exportDDS(instances, additions, removals);
+  const url = URL.createObjectURL(blob);
+  const anchorElement = document.createElement("a");
+  anchorElement.href = url;
+  anchorElement.download = `${districtData.name}.dds`;
   anchorElement.click();
   URL.revokeObjectURL(url);
 }

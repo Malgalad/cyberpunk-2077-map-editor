@@ -5,11 +5,10 @@ import {
 } from "@reduxjs/toolkit";
 import * as THREE from "three";
 
-import mapData from "../mapData.min.json";
-import type { Districts } from "../types.ts";
+import type { DistrictData } from "../types.ts";
 
 interface GlobalState {
-  district: keyof Districts | undefined;
+  district: DistrictData | undefined;
 }
 
 const initialState = {
@@ -20,33 +19,32 @@ const globalsSlice = createSlice({
   name: "global",
   initialState,
   reducers: {
-    setDistrict(state, action: PayloadAction<GlobalState["district"]>) {
+    setDistrict(state, action: PayloadAction<DistrictData>) {
       state.district = action.payload;
     },
   },
   selectors: {
-    getDistrict(state) {
-      return state.district;
+    getDistrict(state): string | undefined {
+      return state.district?.name;
     },
     getDistrictData: createSelector(
       [(sliceState: GlobalState) => sliceState.district],
       (district) => {
-        if (!district) return null;
+        if (!district) return undefined;
 
-        const data = mapData.soup[district];
         const minMax = new THREE.Vector4()
-          .fromArray(data.transMax)
-          .sub(new THREE.Vector4().fromArray(data.transMin));
+          .fromArray(district.transMax)
+          .sub(new THREE.Vector4().fromArray(district.transMin));
         const origin = new THREE.Vector3()
-          .fromArray(data.position)
-          .add(new THREE.Vector4().fromArray(data.transMin));
+          .fromArray(district.position)
+          .add(new THREE.Vector4().fromArray(district.transMin));
         const center = origin.clone().add(minMax.clone().multiplyScalar(0.5));
 
         return {
+          ...district,
           origin,
           minMax,
           center,
-          cubeSize: data.cubeSize,
         };
       },
     ),

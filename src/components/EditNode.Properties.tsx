@@ -23,13 +23,21 @@ function EditNodeProperties({ node }: EditNodePropertiesProps) {
   const nodes = useAppSelector(NodesSelectors.getNodes);
   const district = useAppSelector(Selectors.getDistrict) as keyof Districts;
   const parents = React.useMemo(
-    () => [
-      { label: district, value: district },
-      ...nodes
-        .filter((other) => other.type === "group" && other.id !== node.id)
-        .map((node) => ({ label: node.label, value: node.id })),
-    ],
-    [district, nodes, node.id],
+    () =>
+      [
+        { label: "<Root>", value: district },
+        ...nodes
+          .filter((other) => other.type === "group" && other.id !== node.id)
+          .map((other) => ({
+            label: other.label,
+            value: other.id,
+          })),
+      ].map((other) => ({
+        ...other,
+        label: `${other.label}${node.parent === other.value ? " (current)" : ""}`,
+        disabled: node.parent === other.value,
+      })),
+    [district, nodes, node],
   );
   const [useLocal, setUseLocal] = React.useState(false);
   const wasLocal = usePreviousValue(useLocal);

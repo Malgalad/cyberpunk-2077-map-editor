@@ -1,14 +1,13 @@
-import { BoxIcon } from "lucide-react";
+import { BoxIcon, FileDown } from "lucide-react";
 import * as React from "react";
 import * as THREE from "three";
 
 import Button from "./components/Button.tsx";
-import { exportData, importData } from "./helpers.ts";
+import { exportData, exportToDDS, importData } from "./helpers.ts";
 import { useAppDispatch, useAppSelector, useSyncNodes } from "./hooks.ts";
 import type { InstanceTransforms } from "./map3d/importDDS.ts";
 import { Map3D } from "./map3d/map3d.ts";
-import mapData from "./mapData.min.json";
-import { Actions, Selectors } from "./store/globals.ts";
+import { Selectors } from "./store/globals.ts";
 import { ModalsActions } from "./store/modals.ts";
 import { NodesActions, NodesSelectors } from "./store/nodes.ts";
 import AddNodes from "./tabs/AddNodes.tsx";
@@ -62,9 +61,7 @@ function App() {
   // open Select District modal on launch
   React.useEffect(() => {
     if (district === undefined) {
-      dispatch(ModalsActions.openModal("select-district")).then((choice) => {
-        dispatch(Actions.setDistrict(choice));
-      });
+      dispatch(ModalsActions.openModal("select-district"));
     } else {
       dispatch(NodesActions.setEditing(null));
     }
@@ -72,16 +69,15 @@ function App() {
 
   // Draw buildings on district change and set mesh state
   React.useEffect(() => {
-    if (!map3D || !district) return;
-    map3D.setBuildingsData(mapData.soup[district], removals);
-  }, [district, map3D, removals]);
+    if (!map3D || !districtData) return;
+    map3D.setBuildingsData(districtData, removals);
+  }, [districtData, map3D, removals]);
 
   // Reduce nodes to instanced mesh transforms and set instanceTransforms state
   React.useEffect(() => {
     if (!map3D || !districtData || !district) return;
 
     const instanceTransforms: InstanceTransforms[] = [];
-    const virtualTransforms: InstanceTransforms[] = [];
     const reversedNodes: MapNodeParsed[] = nodes.toReversed().map(prepareNode);
     const { origin, minMax, cubeSize } = districtData;
 
@@ -145,23 +141,18 @@ function App() {
           cubeSize,
         );
 
-        if (current.virtual) {
-          virtualTransforms.push(transformedNode);
-        } else {
-          instanceTransforms.push(transformedNode);
-        }
+        instanceTransforms.push(transformedNode);
       }
     }
 
-    map3D.setVirtualEditsData(mapData.soup[district], virtualTransforms);
     setInstanceTransforms(instanceTransforms);
   }, [nodes, district, districtData, map3D]);
 
   // Draw nodes on instanceTransforms change
   React.useEffect(() => {
-    if (!map3D || !district) return;
-    map3D.setEditsData(mapData.soup[district], instanceTransforms);
-  }, [district, instanceTransforms, map3D]);
+    if (!map3D || !districtData) return;
+    map3D.setEditsData(districtData, instanceTransforms);
+  }, [districtData, map3D, instanceTransforms]);
 
   // Highlight nodes on editing change
   React.useEffect(() => {
@@ -222,7 +213,8 @@ function App() {
   React.useEffect(() => {
     if (!map3D) return;
     map3D.setMode(tab === "add" ? "add" : "remove");
-  }, [map3D, tab]);
+    dispatch(NodesActions.setEditing(null));
+  }, [map3D, tab, dispatch]);
 
   return (
     <div className="flex flex-row gap-2 w-screen h-screen bg-slate-900 text-white">
@@ -230,13 +222,7 @@ function App() {
         <div className="flex flex-row gap-2 px-2">
           <Button
             className="border-none"
-            onClick={() => {
-              dispatch(ModalsActions.openModal("select-district")).then(
-                (choice) => {
-                  dispatch(Actions.setDistrict(choice));
-                },
-              );
-            }}
+            onClick={() => dispatch(ModalsActions.openModal("select-district"))}
           >
             Select district
           </Button>
@@ -255,6 +241,15 @@ function App() {
             data-flow="bottom"
           >
             Export
+          </Button>
+          <Button
+            className="border-none"
+            onClick={() =>
+              exportToDDS(instanceTransforms, removals, districtData)
+            }
+          >
+            <FileDown />
+            Save as DDS
           </Button>
         </div>
         <div className="grow relative">
@@ -287,9 +282,9 @@ function App() {
             </Button>
           ))}
         </div>
-        <div className="flex flex-col flex-grow gap-2 p-2 border border-slate-600">
+        <div className="flex flex-col flex-grow gap-2 p-2 border border-slate-500">
           {tab === "add" && <AddNodes />}
-          {tab === "remove" && <RemoveNodes />}
+          {tab === "remove" && <RemoveNodes map3D={map3D} />}
         </div>
       </div>
     </div>

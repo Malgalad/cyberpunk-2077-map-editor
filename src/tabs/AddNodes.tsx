@@ -68,7 +68,7 @@ function AddNodes() {
 
   return (
     <>
-      <div className="flex flex-col gap-2 flex-1/2 overflow-auto bg-slate-800 relative">
+      <div className="flex flex-col gap-2 grow overflow-auto bg-slate-800 relative">
         <div
           className="grow p-2 flex flex-col"
           onClick={() => dispatch(NodesActions.setEditing(null))}
@@ -129,7 +129,7 @@ function AddNodes() {
         </div>
       </div>
 
-      <div className="flex flex-col flex-1/2 overflow-auto">
+      <div className="flex flex-col basis-[275px] overflow-auto">
         {!editing && (
           <div className="grow flex items-center justify-center italic bg-slate-800">
             Select node

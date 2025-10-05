@@ -7,8 +7,16 @@ import store from "./store/store.ts";
 export type MapData = typeof mapData;
 export type Districts = MapData["soup"];
 export type District = Districts[keyof Districts];
+export type DistrictData = District & {
+  name: string;
+  imageData: ArrayBuffer;
+};
 
-export type ModalType = "alert" | "confirm" | "select-district";
+export type ModalType =
+  | "alert"
+  | "confirm"
+  | "select-district"
+  | "custom-district";
 export type Modal = {
   type: ModalType;
   data: unknown;

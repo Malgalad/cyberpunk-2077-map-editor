@@ -6,7 +6,7 @@ import {
 } from "react-redux";
 
 import { NodesActions } from "./store/nodes.ts";
-import type { AppDispatch, AppState, Districts, MapNode } from "./types.ts";
+import type { AppDispatch, AppState, MapNode } from "./types.ts";
 
 export const useAppDispatch: () => AppDispatch = useDispatch;
 export const useAppSelector: TypedUseSelectorHook<AppState> = useSelector;
@@ -15,7 +15,7 @@ const storageKey = "cp-2077-map-editor";
 export function useSyncNodes(
   nodes: MapNode[],
   removals: number[],
-  district?: keyof Districts,
+  district?: string,
 ) {
   const dispatch = useAppDispatch();
   const timer = React.useRef<number>(null);
@@ -36,7 +36,8 @@ export function useSyncNodes(
           dispatch(NodesActions.setRemovals(parsed[district].removals));
         }
       } catch {
-        // noop
+        dispatch(NodesActions.setNodes([]));
+        dispatch(NodesActions.setRemovals([]));
       }
     }
   }, [district, dispatch]);
@@ -71,7 +72,7 @@ export function useSyncNodes(
         localStorage.setItem(storageKey, JSON.stringify({ [district]: nodes }));
       }
     }, 200);
-  }, [district, nodes]);
+  }, [district, nodes, removals]);
 }
 
 export function usePreviousValue<T>(value: T): T | null {

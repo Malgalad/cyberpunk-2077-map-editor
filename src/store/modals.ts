@@ -1,6 +1,11 @@
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 
-import type { AppThunkAction, Districts, Modal, ModalType } from "../types.ts";
+import type {
+  AppThunkAction,
+  DistrictData,
+  Modal,
+  ModalType,
+} from "../types.ts";
 
 interface ModalsState {
   modal: Modal | undefined;
@@ -34,7 +39,10 @@ function openModal(
 ): AppThunkAction<Promise<boolean>>;
 function openModal(
   type: "select-district",
-): AppThunkAction<Promise<keyof Districts>>;
+): AppThunkAction<Promise<DistrictData>>;
+function openModal(
+  type: "custom-district",
+): AppThunkAction<Promise<DistrictData>>;
 function openModal<T>(
   type: ModalType,
   data?: unknown,

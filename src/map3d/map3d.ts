@@ -1,7 +1,7 @@
 import * as THREE from "three";
 import { MapControls } from "three/addons/controls/MapControls.js";
 
-import type { District } from "../types.ts";
+import type { District, DistrictData } from "../types.ts";
 import { createInstancedMesh, type InstanceTransforms } from "./importDDS.ts";
 import {
   buildingsMaterial,
@@ -32,7 +32,7 @@ export class Map3D {
   #pointer: THREE.Vector2 = new THREE.Vector2(1, 1);
   #hoveringId: number | null = null;
   #mode: "add" | "remove" = "add";
-  #willRemoveNode = false;
+  willRemoveNode = false;
 
   constructor(canvas: HTMLCanvasElement) {
     this.#scene = new THREE.Scene();
@@ -241,7 +241,7 @@ export class Map3D {
       this.#buildings &&
       this.#hoveringId != null
     ) {
-      this.#willRemoveNode = true;
+      this.willRemoveNode = true;
       window.dispatchEvent(
         new CustomEvent("remove-node", { detail: { index: this.#hoveringId } }),
       );
@@ -299,7 +299,7 @@ export class Map3D {
     this.#lookAt(this.#cameraLookAt, this.#cameraZoom);
   }
 
-  setBuildingsData(district?: District, excludedIndexes: number[] = []) {
+  setBuildingsData(district?: DistrictData, excludedIndexes: number[] = []) {
     if (district) {
       this.#loadResource(
         importBuildings(district, buildingsMaterial, excludedIndexes).then(
@@ -320,10 +320,10 @@ export class Map3D {
             this.#scene.add(this.#box);
 
             this.#box.geometry.computeBoundingBox();
-            if (!this.#willRemoveNode) {
+            if (!this.willRemoveNode) {
               this.#lookAtBox(this.#box.geometry.boundingBox);
             }
-            this.#willRemoveNode = false;
+            this.willRemoveNode = false;
 
             return mesh;
           },
@@ -333,41 +333,59 @@ export class Map3D {
   }
 
   setEditsData(district: District, data: InstanceTransforms[]) {
-    if (this.#edits) {
-      this.#scene.remove(this.#edits);
-      this.#edits.geometry.dispose();
-      requestAnimationFrame(this.#render);
-    }
-
-    this.#edits = createInstancedMesh(
-      data,
-      editorMaterial,
-      district.cubeSize,
-      new THREE.Vector3(...district.position),
-      new THREE.Vector4(...district.transMin),
-      new THREE.Vector4(...district.transMax),
+    const [real, virtual] = data.reduce(
+      (acc, instance) => {
+        acc[instance.virtual ? 1 : 0].push(instance);
+        return acc;
+      },
+      [[], []] as [InstanceTransforms[], InstanceTransforms[]],
     );
-    this.#scene.add(this.#edits);
-    requestAnimationFrame(this.#render);
+
+    this.#setRealEdits(district, real);
+    this.#setVirtualEdits(district, virtual);
   }
 
-  setVirtualEditsData(district: District, data: InstanceTransforms[]) {
-    if (this.#virtualEdits) {
-      this.#scene.remove(this.#virtualEdits);
-      this.#virtualEdits.geometry.dispose();
-      requestAnimationFrame(this.#render);
+  #setEditsData(
+    mesh: THREE.InstancedMesh | null,
+    material: THREE.Material,
+    district: District,
+    data: InstanceTransforms[],
+  ) {
+    if (mesh) {
+      this.#scene.remove(mesh);
+      mesh.geometry.dispose();
     }
 
-    this.#virtualEdits = createInstancedMesh(
+    const newMesh = createInstancedMesh(
       data,
-      virtualBlocksMaterial,
+      material,
       district.cubeSize,
       new THREE.Vector3(...district.position),
       new THREE.Vector4(...district.transMin),
       new THREE.Vector4(...district.transMax),
     );
-    this.#scene.add(this.#virtualEdits);
+    this.#scene.add(newMesh);
     requestAnimationFrame(this.#render);
+
+    return newMesh;
+  }
+
+  #setRealEdits(district: District, data: InstanceTransforms[]) {
+    this.#edits = this.#setEditsData(
+      this.#edits,
+      editorMaterial,
+      district,
+      data,
+    );
+  }
+
+  #setVirtualEdits(district: District, data: InstanceTransforms[]) {
+    this.#virtualEdits = this.#setEditsData(
+      this.#virtualEdits,
+      virtualBlocksMaterial,
+      district,
+      data,
+    );
   }
 
   selectEditsData(indexes: number[]) {

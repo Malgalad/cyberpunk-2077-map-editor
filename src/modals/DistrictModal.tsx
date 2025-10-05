@@ -1,10 +1,14 @@
+import { Settings } from "lucide-react";
 import * as React from "react";
 
 import Button from "../components/Button.tsx";
 import Modal from "../components/Modal.tsx";
 import { DISTRICT_LABELS } from "../constants.ts";
 import { useAppDispatch } from "../hooks.ts";
+import { STATIC_ASSETS } from "../map3d/constants.ts";
+import { loadImageData } from "../map3d/importDDS.ts";
 import mapData from "../mapData.min.json";
+import { Actions } from "../store/globals.ts";
 import { ModalsActions } from "../store/modals.ts";
 import type { Districts } from "../types.ts";
 
@@ -20,6 +24,25 @@ function DistrictModal() {
     undefined,
   );
   const src = `${import.meta.env.BASE_URL}${hovering ?? "none"}.jpg`;
+  const importDistrictData = async (key: keyof Districts) => {
+    const district = mapData.soup[key];
+    const imageData = await loadImageData(
+      `${STATIC_ASSETS}/textures/${district.texture.replace(".xbm", ".dds")}`,
+    );
+
+    return {
+      ...district,
+      imageData,
+      name: key,
+    };
+  };
+
+  const onClose = (key: keyof Districts) => {
+    importDistrictData(key).then((data) => {
+      dispatch(ModalsActions.closeModal());
+      dispatch(Actions.setDistrict(data));
+    });
+  };
 
   return (
     <Modal className="w-[800px] h-[460px]" title={"Select district to edit:"}>
@@ -33,13 +56,16 @@ function DistrictModal() {
               key={item.key}
               onMouseOver={() => setHovering(item.key)}
               onMouseOut={() => setHovering(undefined)}
-              onClick={() => dispatch(ModalsActions.closeModal(item.key))}
+              onClick={() => onClose(item.key)}
             >
               {item.label}
             </Button>
           ))}
-          <Button className="col-span-2" disabled>
-            Customize parameters <i className="lni lni-gear-1 align-middle" />
+          <Button
+            className="col-span-2"
+            onClick={() => dispatch(ModalsActions.openModal("custom-district"))}
+          >
+            Customize parameters <Settings />
           </Button>
         </div>
       </div>

@@ -104,6 +104,7 @@ export function nodeToTransform(
 
   return {
     id: node.id,
+    virtual: node.virtual,
     position,
     orientation,
     scale,

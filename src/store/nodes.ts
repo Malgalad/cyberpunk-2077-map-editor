@@ -124,6 +124,9 @@ const nodesSlice = createSlice({
         return cache;
       },
     ),
+    getEditingId(state): string | null {
+      return state.editing;
+    },
     getEditing: createSelector(
       [
         (sliceState: NodesState) => sliceState.editing,

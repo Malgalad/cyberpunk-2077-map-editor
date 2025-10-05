@@ -1,21 +1,20 @@
 import * as THREE from "three";
 
-import type { Districts } from "../types.ts";
-import { STATIC_ASSETS } from "./constants.ts";
+import type { DistrictData } from "../types.ts";
 import { importDDS } from "./importDDS.ts";
 
 export function importBuildings(
-  region: Districts[keyof Districts],
+  districtData: DistrictData,
   material: THREE.Material,
   excludedIndexes: number[] = [],
 ) {
   return importDDS(
-    `${STATIC_ASSETS}/textures/${region.texture.replace(".xbm", ".dds")}`,
+    districtData.imageData,
     material,
-    region.cubeSize,
-    new THREE.Vector3(...region.position),
-    new THREE.Vector4(...region.transMin),
-    new THREE.Vector4(...region.transMax),
+    districtData.cubeSize,
+    new THREE.Vector3(...districtData.position),
+    new THREE.Vector4(...districtData.transMin),
+    new THREE.Vector4(...districtData.transMax),
     excludedIndexes,
   );
 }

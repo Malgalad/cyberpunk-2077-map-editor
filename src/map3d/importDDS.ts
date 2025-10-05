@@ -8,19 +8,19 @@ const dataOffset = (headerLength + 1) * 2 + extendedHeaderLength * 2;
 
 export type InstanceTransforms = {
   id?: string;
+  virtual?: boolean;
   position: { x: number; y: number; z: number; w: number };
   orientation: { x: number; y: number; z: number; w: number };
   scale: { x: number; y: number; z: number; w: number };
 };
 
-async function loadImageData(url: string) {
+export async function loadImageData(url: string): Promise<ArrayBuffer> {
   const response = await fetch(url);
   const blob = await response.blob();
-  const buffer = await blob.arrayBuffer();
-  return new Uint16Array(buffer);
+  return blob.arrayBuffer();
 }
 
-function decodeImageData(data: Uint16Array): InstanceTransforms[] {
+export function decodeImageData(data: Uint16Array): InstanceTransforms[] {
   const instances = [];
   const width = data[8];
   const height = data[6];
@@ -69,7 +69,56 @@ function decodeImageData(data: Uint16Array): InstanceTransforms[] {
   }
 
   return result;
-  // return instances;
+}
+
+const magic = [
+  17476, 8275, 124, 0, 4111, 2, 205, 0, 615, 0, 4920, 0, 1, 0, 1, 0, 0, 0, 0, 0,
+  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 32, 0, 4, 0, 22596,
+  12337, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4096, 0, 0, 0, 0, 0, 0, 0, 0, 0, 11, 0,
+  3, 0, 0, 0, 1, 0, 0, 0,
+];
+function encodeImageData(data: InstanceTransforms[]): Uint16Array<ArrayBuffer> {
+  const height = Math.ceil(Math.sqrt(data.length));
+  const width = height * 3;
+  const totalSize = dataOffset + width * height * 4;
+  const result = new Uint16Array(totalSize);
+
+  for (let i = 0; i < magic.length; i++) {
+    result[i] = magic[i];
+  }
+
+  // Set header values
+  result[8] = width;
+  result[6] = height;
+
+  for (let i = 0; i < data.length; i++) {
+    const instance = data[i];
+    const offset =
+      dataOffset + ((i % height) * width + Math.floor(i / height)) * 4;
+
+    // Position
+    result[offset] = instance.position.x * 65536;
+    result[offset + 1] = instance.position.y * 65536;
+    result[offset + 2] = instance.position.z * 65536;
+    result[offset + 3] = instance.position.w * 65536;
+
+    // Orientation
+    result[offset + 4 * height] = ((instance.orientation.x + 1) / 2) * 65536;
+    result[offset + 1 + 4 * height] =
+      ((instance.orientation.y + 1) / 2) * 65536;
+    result[offset + 2 + 4 * height] =
+      ((instance.orientation.z + 1) / 2) * 65536;
+    result[offset + 3 + 4 * height] =
+      ((instance.orientation.w + 1) / 2) * 65536;
+
+    // Scale
+    result[offset + 8 * height] = instance.scale.x * 65536;
+    result[offset + 1 + 8 * height] = instance.scale.y * 65536;
+    result[offset + 2 + 8 * height] = instance.scale.z * 65536;
+    result[offset + 3 + 8 * height] = instance.scale.w * 65536;
+  }
+
+  return result;
 }
 
 export function createInstancedMesh(
@@ -125,7 +174,7 @@ export function createInstancedMesh(
 }
 
 export async function importDDS(
-  url: string,
+  imageData: ArrayBuffer,
   material: THREE.Material,
   cubeSize: number,
   position: THREE.Vector3,
@@ -133,8 +182,7 @@ export async function importDDS(
   transformMax: THREE.Vector4,
   excludedIndexes: number[] = [],
 ) {
-  const imageData = await loadImageData(url);
-  const instances = decodeImageData(imageData);
+  const instances = decodeImageData(new Uint16Array(imageData));
 
   return createInstancedMesh(
     instances,
@@ -145,4 +193,26 @@ export async function importDDS(
     transformMax,
     excludedIndexes,
   );
+}
+
+export function exportDDS(
+  instances: InstanceTransforms[],
+  additions: InstanceTransforms[],
+  removals: number[],
+) {
+  const data = [
+    ...instances
+      .filter((_, index) => !removals.includes(index))
+      .filter(
+        (instance) =>
+          instance.scale.x !== 0 &&
+          instance.scale.y !== 0 &&
+          instance.scale.z !== 0,
+      ),
+    ...additions,
+  ];
+
+  const imageData = encodeImageData(data);
+
+  return new Blob([imageData.buffer], { type: "image/dds" });
 }

@@ -15,7 +15,8 @@ const store = configureStore({
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
       serializableCheck: {
-        ignoredActions: ["nodes/patchNode"],
+        ignoredActions: ["nodes/patchNode", "global/setDistrict"],
+        ignoredPaths: ["global.district.imageData"],
       },
     }),
 });
