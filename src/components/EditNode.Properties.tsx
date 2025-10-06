@@ -3,14 +3,14 @@ import * as React from "react";
 import * as THREE from "three";
 
 import { useAppDispatch, useAppSelector, usePreviousValue } from "../hooks.ts";
-import { Selectors } from "../store/globals.ts";
+import { DistrictSelectors } from "../store/district.ts";
 import { NodesActions, NodesSelectors } from "../store/nodes.ts";
 import type { Districts, MapNode } from "../types.ts";
 import { clsx, prepareTransform } from "../utilities.ts";
-import Button from "./Button.tsx";
-import DraggableInput from "./DraggableInput.tsx";
-import Input from "./Input.tsx";
-import Select from "./Select.tsx";
+import Button from "./common/Button.tsx";
+import DraggableInput from "./common/DraggableInput.tsx";
+import Input from "./common/Input.tsx";
+import Select from "./common/Select.tsx";
 
 interface EditNodePropertiesProps {
   node: MapNode;
@@ -21,7 +21,9 @@ const axii = [0, 1, 2] as const;
 function EditNodeProperties({ node }: EditNodePropertiesProps) {
   const dispatch = useAppDispatch();
   const nodes = useAppSelector(NodesSelectors.getNodes);
-  const district = useAppSelector(Selectors.getDistrict) as keyof Districts;
+  const district = useAppSelector(
+    DistrictSelectors.getDistrict,
+  ) as keyof Districts;
   const parents = React.useMemo(
     () =>
       [

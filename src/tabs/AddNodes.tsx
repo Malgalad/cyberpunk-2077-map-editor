@@ -1,11 +1,11 @@
 import { CopyPlus, FilePlus, FolderPlus, Trash2 } from "lucide-react";
 import * as React from "react";
 
-import Button from "../components/Button.tsx";
+import Button from "../components/common/Button.tsx";
 import EditNode from "../components/EditNode.tsx";
 import Node from "../components/Node.tsx";
 import { useAppDispatch, useAppSelector } from "../hooks.ts";
-import { Selectors } from "../store/globals.ts";
+import { DistrictSelectors } from "../store/district.ts";
 import { ModalsActions } from "../store/modals.ts";
 import { NodesActions, NodesSelectors } from "../store/nodes.ts";
 import type { MapNode } from "../types.ts";
@@ -15,14 +15,14 @@ function AddNodes() {
   const dispatch = useAppDispatch();
   const nodes = useAppSelector(NodesSelectors.getNodes);
   const editing = useAppSelector(NodesSelectors.getEditing);
-  const district = useAppSelector(Selectors.getDistrict);
-  const districtData = useAppSelector(Selectors.getDistrictData);
+  const district = useAppSelector(DistrictSelectors.getDistrict);
+  const districtCenter = useAppSelector(DistrictSelectors.getDistrictCenter);
   const rootNodes = React.useMemo(
     () => nodes.filter((node) => node.parent === district),
     [nodes, district],
   );
 
-  if (!district || !districtData) return null;
+  if (!district || !districtCenter) return null;
 
   const onDelete = () => {
     if (!editing) return;
@@ -54,7 +54,7 @@ function AddNodes() {
   const onAdd = (type: MapNode["type"]) => {
     const parent = editing ? editing.id : district;
     const position = (
-      editing ? ["0", "0", "0"] : districtData.center.toArray().map(toString)
+      editing ? ["0", "0", "0"] : districtCenter.center.toArray().map(toString)
     ) as MapNode["position"];
     const action = dispatch(
       NodesActions.addNode({

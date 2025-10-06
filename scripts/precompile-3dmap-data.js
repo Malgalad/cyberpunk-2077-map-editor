@@ -5,7 +5,6 @@ import * as THREE from "three";
 
 import triangleSoup from "../external/3dmap_triangle_soup.json" with { type: "json" };
 import mapEntity from "../external/3dmap_view.json" with { type: "json" };
-// import { MAP_DIMENSIONS } from '../shared/constants.js';
 
 const MAP_DIMENSIONS = [16000, 16000];
 const fixedToFloat = (value, bits) => value / (1 << bits);

@@ -1,12 +1,12 @@
 import * as React from "react";
 
-import { clsx } from "../utilities.ts";
+import { clsx } from "../../utilities.ts";
 
 interface ModalProps {
   children?: React.ReactNode;
   className?: string;
   footer?: React.ReactNode;
-  title: string;
+  title: React.ReactNode;
 }
 
 function Modal(props: ModalProps) {

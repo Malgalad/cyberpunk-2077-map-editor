@@ -1,11 +1,11 @@
 import { combineSlices, configureStore } from "@reduxjs/toolkit";
 
-import globalsSlice from "./globals.ts";
+import districtSlice from "./district.ts";
 import modalsSlice from "./modals";
 import nodesSlice from "./nodes";
 
 export const combinedReducer = combineSlices(
-  globalsSlice,
+  districtSlice,
   modalsSlice,
   nodesSlice,
 );
@@ -15,8 +15,8 @@ const store = configureStore({
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
       serializableCheck: {
-        ignoredActions: ["nodes/patchNode", "global/setDistrict"],
-        ignoredPaths: ["global.district.imageData"],
+        ignoredActions: ["nodes/patchNode", "district/setDistrict"],
+        ignoredPaths: ["district.districtData.imageData"],
       },
     }),
 });

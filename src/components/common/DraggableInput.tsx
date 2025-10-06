@@ -1,6 +1,6 @@
 import * as React from "react";
 
-import { clsx } from "../utilities.ts";
+import { clsx } from "../../utilities.ts";
 
 interface DraggableInputProps {
   value: string;

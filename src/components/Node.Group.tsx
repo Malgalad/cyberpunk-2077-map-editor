@@ -5,7 +5,7 @@ import { useAppDispatch, useAppSelector } from "../hooks.ts";
 import { NodesActions, NodesSelectors } from "../store/nodes.ts";
 import type { MapNode } from "../types.ts";
 import { clsx } from "../utilities.ts";
-import Button from "./Button.tsx";
+import Button from "./common/Button.tsx";
 import Node from "./Node.tsx";
 
 interface GroupProps {

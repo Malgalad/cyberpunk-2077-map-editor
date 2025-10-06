@@ -2,8 +2,8 @@ import { isDraft, original, type WritableDraft } from "immer";
 import { nanoid } from "nanoid";
 import * as THREE from "three";
 
-import type { InstanceTransforms } from "./map3d/importDDS.ts";
 import type {
+  InstancedMeshTransforms,
   MapNode,
   MapNodeParsed,
   Transform,
@@ -79,7 +79,7 @@ export function nodeToTransform(
   origin: THREE.Vector3,
   minMax: THREE.Vector4,
   cubeSize: number,
-): InstanceTransforms {
+): InstancedMeshTransforms {
   const position = {
     x: (node.position[0] - origin.x) / minMax.x,
     y: (node.position[1] - origin.y) / minMax.y,

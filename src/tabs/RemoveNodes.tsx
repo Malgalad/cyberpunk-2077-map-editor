@@ -1,6 +1,6 @@
 import { SquareX } from "lucide-react";
 
-import Button from "../components/Button.tsx";
+import Button from "../components/common/Button.tsx";
 import { useAppDispatch, useAppSelector } from "../hooks.ts";
 import type { Map3D } from "../map3d/map3d.ts";
 import { NodesActions, NodesSelectors } from "../store/nodes.ts";
@@ -10,6 +10,8 @@ interface RemoveNodesProps {
   map3D: Map3D | null;
 }
 
+// TODO show transforms for removed nodes
+// TODO copy removed nodes to add for editing
 function RemoveNodes({ map3D }: RemoveNodesProps) {
   const dispatch = useAppDispatch();
   const removals = useAppSelector(NodesSelectors.getRemovals);
@@ -53,7 +55,7 @@ function RemoveNodes({ map3D }: RemoveNodesProps) {
           <Button
             className="p-0! border-none"
             onClick={() => {
-              if (map3D) map3D.willRemoveNode = true;
+              if (map3D) map3D.dontLookAt = true;
               dispatch(NodesActions.includeTransform(index));
               dispatch(NodesActions.setEditing(null));
             }}

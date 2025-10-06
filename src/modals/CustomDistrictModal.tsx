@@ -1,14 +1,16 @@
 import { produce } from "immer";
+import { ArrowLeft } from "lucide-react";
 import * as React from "react";
 
-import Button from "../components/Button.tsx";
-import Input from "../components/Input.tsx";
-import Modal from "../components/Modal.tsx";
-import Select from "../components/Select.tsx";
+import Button from "../components/common/Button.tsx";
+import Input from "../components/common/Input.tsx";
+import Modal from "../components/common/Modal.tsx";
+import Select from "../components/common/Select.tsx";
 import { DISTRICT_LABELS } from "../constants.ts";
+import { loadFileAsArrayBuffer } from "../helpers.ts";
 import { useAppDispatch } from "../hooks.ts";
 import mapData from "../mapData.min.json";
-import { Actions } from "../store/globals.ts";
+import { DistrictActions } from "../store/district.ts";
 import { ModalsActions } from "../store/modals.ts";
 import type { Districts } from "../types.ts";
 
@@ -23,7 +25,7 @@ function CustomDistrictModal() {
   const dispatch = useAppDispatch();
   const [district, setDistrict] =
     React.useState<keyof Districts>("city_center_data");
-  const [name, setName] = React.useState<string>("city_center_data");
+  const [name, setName] = React.useState<string>("Custom city_center_data");
   const [imageData, setImageData] = React.useState<ArrayBuffer | undefined>();
   const [districtData, setDistrictData] = React.useState(() =>
     structuredClone(mapData.soup[district]),
@@ -34,7 +36,7 @@ function CustomDistrictModal() {
 
     dispatch(ModalsActions.closeModal());
     dispatch(
-      Actions.setDistrict({
+      DistrictActions.setDistrict({
         ...districtData,
         imageData,
         name,
@@ -43,7 +45,22 @@ function CustomDistrictModal() {
   };
 
   return (
-    <Modal className="w-[800px]" title={"Create district to edit:"}>
+    <Modal
+      className="w-[800px]"
+      title={
+        <div className="flex flex-row gap-2 items-center">
+          <Button
+            className="font-normal text-base"
+            onClick={() => {
+              dispatch(ModalsActions.openModal("select-district"));
+            }}
+          >
+            <ArrowLeft /> Return
+          </Button>
+          Create district to edit:
+        </div>
+      }
+    >
       <div className="grid grid-cols-[120px_auto] items-center gap-2">
         <div>Template:</div>
         <div>
@@ -53,7 +70,7 @@ function CustomDistrictModal() {
             onChange={(event) => {
               const value = event.target.value as keyof Districts;
               setDistrict(value as keyof Districts);
-              setName(value);
+              setName(`Custom ${value}`);
               setDistrictData(structuredClone(mapData.soup[value]));
             }}
           />
@@ -157,34 +174,17 @@ function CustomDistrictModal() {
         </div>
         <div>Texture file:</div>
         <div>
-          <Input
-            key={district}
-            className="cursor-pointer"
-            type="file"
-            accept=".dds"
-            onChange={(event) => {
-              const file = event.target.files?.[0];
-
-              if (!file || !district) return;
-
-              const reader = new FileReader();
-              reader.onload = (event) => {
-                const content = event.target?.result;
-                if (content instanceof ArrayBuffer) {
-                  setImageData(content);
-                }
-              };
-              reader.readAsArrayBuffer(file);
+          <Button
+            onClick={async () => {
+              const content = await loadFileAsArrayBuffer(".dds");
+              setImageData(content);
             }}
-          />
+          >
+            Select file
+          </Button>
         </div>
       </div>
       <div className="flex flex-row gap-2 justify-end">
-        <Button
-          onClick={() => dispatch(ModalsActions.openModal("select-district"))}
-        >
-          Return
-        </Button>
         <Button onClick={() => onClose()}>Import</Button>
       </div>
     </Modal>

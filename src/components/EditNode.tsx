@@ -4,7 +4,7 @@ import { useAppSelector } from "../hooks.ts";
 import { NodesSelectors } from "../store/nodes.ts";
 import type { MapNode } from "../types.ts";
 import { clsx } from "../utilities.ts";
-import Button from "./Button.tsx";
+import Button from "./common/Button.tsx";
 import EditNodePattern from "./EditNode.Pattern.tsx";
 import EditNodeProperties from "./EditNode.Properties.tsx";
 
@@ -14,6 +14,7 @@ const tabs = [
   { key: "pattern", label: "Pattern" },
 ] as { key: Tabs; label: string }[];
 
+// TODO verify nodes are not out of bounds
 function EditNode() {
   const node = useAppSelector(NodesSelectors.getEditing) as MapNode;
   const [tab, setTab] = React.useState<Tabs>("properties");

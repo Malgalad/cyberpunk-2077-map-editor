@@ -2,7 +2,7 @@ import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 
 import type {
   AppThunkAction,
-  DistrictData,
+  DistrictLoaded,
   Modal,
   ModalType,
 } from "../types.ts";
@@ -39,10 +39,10 @@ function openModal(
 ): AppThunkAction<Promise<boolean>>;
 function openModal(
   type: "select-district",
-): AppThunkAction<Promise<DistrictData>>;
+): AppThunkAction<Promise<DistrictLoaded>>;
 function openModal(
   type: "custom-district",
-): AppThunkAction<Promise<DistrictData>>;
+): AppThunkAction<Promise<DistrictLoaded>>;
 function openModal<T>(
   type: ModalType,
   data?: unknown,
@@ -67,7 +67,7 @@ function openModal<T>(
   };
 }
 
-function closeModal(reason?: unknown): AppThunkAction<void> {
+function closeModal(reason?: unknown): AppThunkAction {
   return (dispatch) => {
     if (deferred) {
       deferred.resolve(reason);

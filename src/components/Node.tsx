@@ -1,6 +1,6 @@
 import type { MapNode } from "../types.ts";
-import Group from "./Group.tsx";
-import Instance from "./Instance.tsx";
+import Group from "./Node.Group.tsx";
+import Instance from "./Node.Instance.tsx";
 
 interface NodeProps {
   node: MapNode;

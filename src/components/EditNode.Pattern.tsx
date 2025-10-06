@@ -1,8 +1,8 @@
 import { useAppDispatch } from "../hooks.ts";
 import { NodesActions } from "../store/nodes.ts";
 import type { MapNode } from "../types.ts";
-import Button from "./Button.tsx";
-import DraggableInput from "./DraggableInput.tsx";
+import Button from "./common/Button.tsx";
+import DraggableInput from "./common/DraggableInput.tsx";
 
 interface EditNodePatternProps {
   node: MapNode;

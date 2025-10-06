@@ -1,14 +1,14 @@
 import { Settings } from "lucide-react";
 import * as React from "react";
 
-import Button from "../components/Button.tsx";
-import Modal from "../components/Modal.tsx";
+import Button from "../components/common/Button.tsx";
+import Modal from "../components/common/Modal.tsx";
 import { DISTRICT_LABELS } from "../constants.ts";
+import { loadURLAsArrayBuffer } from "../helpers.ts";
 import { useAppDispatch } from "../hooks.ts";
 import { STATIC_ASSETS } from "../map3d/constants.ts";
-import { loadImageData } from "../map3d/importDDS.ts";
 import mapData from "../mapData.min.json";
-import { Actions } from "../store/globals.ts";
+import { DistrictActions } from "../store/district.ts";
 import { ModalsActions } from "../store/modals.ts";
 import type { Districts } from "../types.ts";
 
@@ -24,28 +24,23 @@ function DistrictModal() {
     undefined,
   );
   const src = `${import.meta.env.BASE_URL}${hovering ?? "none"}.jpg`;
-  const importDistrictData = async (key: keyof Districts) => {
+
+  const onClickDistrict = async (key: keyof Districts) => {
     const district = mapData.soup[key];
-    const imageData = await loadImageData(
+    const imageData = await loadURLAsArrayBuffer(
       `${STATIC_ASSETS}/textures/${district.texture.replace(".xbm", ".dds")}`,
     );
-
-    return {
+    const data = {
       ...district,
       imageData,
       name: key,
     };
-  };
-
-  const onClose = (key: keyof Districts) => {
-    importDistrictData(key).then((data) => {
-      dispatch(ModalsActions.closeModal());
-      dispatch(Actions.setDistrict(data));
-    });
+    dispatch(ModalsActions.closeModal());
+    dispatch(DistrictActions.setDistrict(data));
   };
 
   return (
-    <Modal className="w-[800px] h-[460px]" title={"Select district to edit:"}>
+    <Modal className="w-[800px] h-[460px]" title="Select district to edit:">
       <div className="flex flex-row">
         <div className="flex-1/2 aspect-square">
           <img src={src} alt="Preview" className="w-full h-full" />
@@ -56,14 +51,16 @@ function DistrictModal() {
               key={item.key}
               onMouseOver={() => setHovering(item.key)}
               onMouseOut={() => setHovering(undefined)}
-              onClick={() => onClose(item.key)}
+              onClick={() => onClickDistrict(item.key)}
             >
               {item.label}
             </Button>
           ))}
           <Button
             className="col-span-2"
-            onClick={() => dispatch(ModalsActions.openModal("custom-district"))}
+            onClick={() => {
+              dispatch(ModalsActions.openModal("custom-district"));
+            }}
           >
             Customize parameters <Settings />
           </Button>

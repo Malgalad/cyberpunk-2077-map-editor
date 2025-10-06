@@ -1,5 +1,5 @@
-import Button from "../components/Button.tsx";
-import Modal from "../components/Modal.tsx";
+import Button from "../components/common/Button.tsx";
+import Modal from "../components/common/Modal.tsx";
 import { useAppDispatch } from "../hooks.ts";
 import { ModalsActions } from "../store/modals.ts";
 
