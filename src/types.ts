@@ -63,6 +63,9 @@ export type InstancedMeshTransforms = {
   scale: { x: number; y: number; z: number; w: number };
 };
 
+export type EditingMode = "add" | "remove";
+export type PatternView = "none" | "wireframe" | "solid";
+
 export type AppStore = typeof store;
 export type AppState = ReturnType<AppStore["getState"]>;
 export type AppDispatch = AppStore["dispatch"];

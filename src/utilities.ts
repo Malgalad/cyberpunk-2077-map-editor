@@ -111,6 +111,18 @@ export function nodeToTransform(
   };
 }
 
+export function getTransformPosition(
+  transform: InstancedMeshTransforms,
+  origin: THREE.Vector3,
+  minMax: THREE.Vector4,
+): THREE.Vector3 {
+  return new THREE.Vector3().fromArray([
+    transform.position.x * minMax.x + origin.x,
+    transform.position.z * minMax.z + origin.z,
+    -(transform.position.y * minMax.y + origin.y),
+  ]);
+}
+
 export function clsx(...args: unknown[]) {
   return args.flat().filter(Boolean).join(" ");
 }

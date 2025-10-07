@@ -4,15 +4,7 @@ export const buildingsMaterial = new THREE.MeshLambertMaterial({
   color: 0xba1c1f,
 });
 
-export const additionsMaterial = new THREE.MeshLambertMaterial({
-  color: 0xffffff,
-});
-
-export const virtualAdditionsMaterial = new THREE.MeshBasicMaterial({
-  color: 0xffff00,
-  wireframe: true,
-});
-
+// Adjust shader program to add gradient based on vPos.y
 buildingsMaterial.onBeforeCompile = (shader) => {
   shader.uniforms.vColorBase = { value: new THREE.Color("#5a262e") };
   shader.uniforms.vColorUp = { value: new THREE.Color("#ff375a") };
@@ -51,6 +43,26 @@ buildingsMaterial.onBeforeCompile = (shader) => {
     );
   buildingsMaterial.userData.shader = shader;
 };
+
+export const additionsMaterial = new THREE.MeshLambertMaterial({
+  color: 0xffffff,
+});
+
+export const wireframeMaterial = new THREE.MeshBasicMaterial({
+  color: 0xffff00,
+  wireframe: true,
+});
+
+export const hiddenMaterial = new THREE.MeshBasicMaterial({
+  color: 0x000000,
+  opacity: 0.0,
+  transparent: true,
+  depthTest: false,
+});
+
+export const removalsMaterial = new THREE.MeshBasicMaterial({
+  color: 0xff00ff,
+});
 
 export const terrainMaterial = new THREE.MeshPhongMaterial({
   color: 0x051b4f,

@@ -3,6 +3,7 @@ import * as React from "react";
 
 import Button from "./components/common/Button.tsx";
 import { useAppDispatch, useAppSelector, useSyncNodes } from "./hooks.ts";
+import { Map3DContext } from "./map3d/map3d.context.ts";
 import { Map3D } from "./map3d/map3d.ts";
 import { getDistrictInstancedMeshTransforms } from "./store/district.selectors.ts";
 import { DistrictSelectors } from "./store/district.ts";
@@ -141,51 +142,53 @@ function App() {
   // Set map mode to change raycast behavior on mousemove
   React.useEffect(() => {
     if (!map3D) return;
-    map3D.setMode(tab === "add" ? "add" : "remove");
+    map3D.setEditingMode(tab === "add" ? "add" : "remove");
     dispatch(NodesActions.setEditing(null));
   }, [map3D, tab, dispatch]);
 
   return (
-    <div className="flex flex-row gap-2 w-screen h-screen bg-slate-900 text-white">
-      <div className="grow flex flex-col gap-2">
-        <Menu />
+    <Map3DContext value={map3D}>
+      <div className="flex flex-row gap-2 w-screen h-screen bg-slate-900 text-white">
+        <div className="grow flex flex-col gap-2">
+          <Menu />
 
-        <div className="grow relative">
-          <canvas className="w-full h-full block" ref={canvasRef} />
-          <Button
-            className="absolute! bg-slate-800 left-4 top-4 tooltip"
-            onClick={() => {
-              map3D?.resetCamera();
-            }}
-            data-tooltip="Reset camera"
-            data-flow="right"
-          >
-            <BoxIcon />
-          </Button>
-        </div>
-      </div>
-      <div className="w-[420px] flex flex-col py-2 pr-2 overflow-y-auto">
-        <div className="flex flex-row gap-0.5 -mb-[1px]">
-          {tabs.map((button) => (
+          <div className="grow relative">
+            <canvas className="w-full h-full block" ref={canvasRef} />
             <Button
-              key={button.key}
-              className={clsx(
-                "w-1/2 z-10",
-                button.key === tab && "border-b-slate-900",
-                button.key !== tab && "border-transparent",
-              )}
-              onClick={() => setTab(button.key)}
+              className="absolute! bg-slate-800 left-4 top-4 tooltip"
+              onClick={() => {
+                map3D?.resetCamera();
+              }}
+              data-tooltip="Reset camera"
+              data-flow="right"
             >
-              {button.label}
+              <BoxIcon />
             </Button>
-          ))}
+          </div>
         </div>
-        <div className="flex flex-col flex-grow gap-2 p-2 border border-slate-500">
-          {tab === "add" && <AddNodes />}
-          {tab === "remove" && <RemoveNodes map3D={map3D} />}
+        <div className="w-[420px] h-full flex flex-col py-2 pr-2">
+          <div className="flex flex-row gap-0.5 -mb-[1px]">
+            {tabs.map((button) => (
+              <Button
+                key={button.key}
+                className={clsx(
+                  "w-1/2 z-10",
+                  button.key === tab && "border-b-slate-900",
+                  button.key !== tab && "border-transparent",
+                )}
+                onClick={() => setTab(button.key)}
+              >
+                {button.label}
+              </Button>
+            ))}
+          </div>
+          <div className="flex flex-col h-[calc(100%_-_37.33px)] gap-2 p-2 border border-slate-500">
+            {tab === "add" && <AddNodes />}
+            {tab === "remove" && <RemoveNodes />}
+          </div>
         </div>
       </div>
-    </div>
+    </Map3DContext>
   );
 }
 

@@ -1,14 +1,26 @@
 import * as THREE from "three";
 
-import type { DistrictData, InstancedMeshTransforms } from "../types.ts";
+import type {
+  DistrictData,
+  EditingMode,
+  InstancedMeshTransforms,
+  PatternView,
+} from "../types.ts";
+import { createInstancedMeshForDistrict } from "./createInstancedMeshForDistrict.ts";
 import { Map3DBase } from "./map3d.base.ts";
 import {
   additionsMaterial,
   buildingsMaterial,
-  virtualAdditionsMaterial,
+  hiddenMaterial,
+  wireframeMaterial,
 } from "./materials.ts";
-import { setupBuildings } from "./setupBuildings.ts";
 import { setupTerrain } from "./setupTerrain.ts";
+
+const virtualEditsMaterial: Record<PatternView, THREE.Material> = {
+  none: hiddenMaterial,
+  wireframe: wireframeMaterial,
+  solid: additionsMaterial,
+};
 
 export class Map3D extends Map3DBase {
   readonly #raycaster: THREE.Raycaster;
@@ -20,7 +32,8 @@ export class Map3D extends Map3DBase {
   #canvasRect: DOMRect | null = null;
   #pointer: THREE.Vector2 = new THREE.Vector2(1, 1);
   #hoveringId: number | null = null;
-  #mode: "add" | "remove" = "add";
+  #editingMode: EditingMode = "add";
+  #patternView: PatternView = "wireframe";
   dontLookAt = false;
 
   constructor(canvas: HTMLCanvasElement) {
@@ -58,95 +71,66 @@ export class Map3D extends Map3DBase {
 
   #onMouseMove = (event: MouseEvent) => {
     const { left, top, width, height } = this.#canvasRect!;
+    const mode = this.#editingMode;
+    let shouldRender = false;
 
     this.#pointer.x = ((event.clientX - left) / width) * 2 - 1;
     this.#pointer.y = -((event.clientY - top) / height) * 2 + 1;
 
-    if (this.#mode === "add" && this.#edits) {
-      this.#raycaster.setFromCamera(this.#pointer, this.camera);
+    if (mode === "add" && !this.#edits) return;
+    if (mode === "remove" && !this.#buildings) return;
 
-      const intersection = this.#raycaster.intersectObject(this.#edits);
+    const mesh = (
+      mode === "add" ? this.#edits : this.#buildings
+    ) as THREE.InstancedMesh;
 
-      if (intersection.length > 0) {
-        const instanceId = intersection[0].instanceId;
+    this.#raycaster.setFromCamera(this.#pointer, this.camera);
+    const intersection = this.#raycaster.intersectObject(mesh);
+    const previousHoveringId = this.#hoveringId;
 
-        if (instanceId !== undefined) {
-          const color = new THREE.Color(0x88ff88);
+    if (intersection.length > 0) {
+      const instanceId = intersection[0].instanceId;
 
-          if (this.#hoveringId !== null) {
-            const color = new THREE.Color(0xffff00);
+      if (instanceId !== undefined) {
+        const color = new THREE.Color(mode === "add" ? 0x88ff88 : 0x888888);
 
-            if (this.#selectedIndexes.includes(this.#hoveringId)) {
-              color.setHex(0x00ff00);
-            }
+        this.#hoveringId = instanceId;
 
-            this.#edits.setColorAt(this.#hoveringId, color);
-          }
-
-          this.#hoveringId = instanceId;
-          this.#edits.setColorAt(instanceId, color);
-
-          if (this.#edits.instanceColor)
-            this.#edits.instanceColor.needsUpdate = true;
-
-          requestAnimationFrame(this.render);
-        }
-      } else if (this.#hoveringId !== null) {
-        const color = new THREE.Color(0xffff00);
-
-        if (this.#selectedIndexes.includes(this.#hoveringId)) {
-          color.setHex(0x00ff00);
-        }
-
-        this.#edits.setColorAt(this.#hoveringId, color);
-
-        if (this.#edits.instanceColor)
-          this.#edits.instanceColor.needsUpdate = true;
-
-        this.#hoveringId = null;
-        requestAnimationFrame(this.render);
+        mesh.setColorAt(instanceId, color);
+        if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
+        shouldRender = true;
       }
-    } else if (this.#mode === "remove" && this.#buildings) {
-      this.#raycaster.setFromCamera(this.#pointer, this.camera);
-
-      const intersection = this.#raycaster.intersectObject(this.#buildings);
-
-      if (intersection.length > 0) {
-        const instanceId = intersection[0].instanceId;
-
-        if (instanceId !== undefined) {
-          const color = new THREE.Color(0x888888);
-
-          if (this.#hoveringId !== null) {
-            const color = new THREE.Color(0xffffff);
-
-            this.#buildings.setColorAt(this.#hoveringId, color);
-          }
-
-          this.#buildings.setColorAt(instanceId, color);
-
-          if (this.#buildings.instanceColor)
-            this.#buildings.instanceColor.needsUpdate = true;
-
-          this.#hoveringId = instanceId;
-          requestAnimationFrame(this.render);
-        }
-      } else if (this.#hoveringId !== null) {
-        const color = new THREE.Color(0xffffff);
-
-        this.#buildings.setColorAt(this.#hoveringId, color);
-
-        if (this.#buildings.instanceColor)
-          this.#buildings.instanceColor.needsUpdate = true;
-
-        this.#hoveringId = null;
-        requestAnimationFrame(this.render);
-      }
+    } else {
+      this.#hoveringId = null;
     }
+
+    if (
+      previousHoveringId !== null &&
+      previousHoveringId !== this.#hoveringId
+    ) {
+      const color = new THREE.Color(mode === "add" ? 0xffff00 : 0xffffff);
+
+      if (
+        mode === "add" &&
+        this.#selectedIndexes.includes(previousHoveringId)
+      ) {
+        color.setHex(0x00ff00);
+      }
+
+      mesh.setColorAt(previousHoveringId, color);
+      if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
+      shouldRender = true;
+    }
+
+    if (shouldRender) requestAnimationFrame(this.render);
   };
 
   #onClick = () => {
-    if (this.#mode === "add" && this.#edits && this.#hoveringId != null) {
+    if (
+      this.#editingMode === "add" &&
+      this.#edits &&
+      this.#hoveringId != null
+    ) {
       window.dispatchEvent(
         new CustomEvent("select-node", { detail: { index: this.#hoveringId } }),
       );
@@ -154,12 +138,12 @@ export class Map3D extends Map3DBase {
   };
 
   #onDoubleClick = () => {
-    if (this.#mode === "add" && this.#hoveringId === null) {
+    if (this.#editingMode === "add" && this.#hoveringId === null) {
       window.dispatchEvent(
         new CustomEvent("select-node", { detail: { index: null } }),
       );
     } else if (
-      this.#mode === "remove" &&
+      this.#editingMode === "remove" &&
       this.#buildings &&
       this.#hoveringId != null
     ) {
@@ -186,7 +170,7 @@ export class Map3D extends Map3DBase {
     this.#remove(this.#box);
 
     this.#buildings = this.#add(
-      setupBuildings(data, buildingsMaterial, district),
+      createInstancedMeshForDistrict(district, data, buildingsMaterial),
     );
     this.#box = this.#add(new THREE.BoxHelper(this.#buildings, 0xffff00));
 
@@ -211,10 +195,40 @@ export class Map3D extends Map3DBase {
     this.#remove(this.#edits);
     this.#remove(this.#virtualEdits);
 
-    this.#edits = this.#add(setupBuildings(real, additionsMaterial, district));
-    this.#virtualEdits = this.#add(
-      setupBuildings(virtual, virtualAdditionsMaterial, district),
+    this.#edits = this.#add(
+      createInstancedMeshForDistrict(district, real, additionsMaterial),
     );
+    this.#virtualEdits = this.#add(
+      createInstancedMeshForDistrict(
+        district,
+        virtual,
+        virtualEditsMaterial[this.#patternView],
+      ),
+    );
+
+    if (this.#patternView === "solid") {
+      const color = new THREE.Color(0xffff00);
+
+      for (let i = 0; i < this.#virtualEdits.count; i++) {
+        this.#virtualEdits.setColorAt(i, color);
+      }
+    }
+
+    requestAnimationFrame(this.render);
+  }
+
+  #refreshEditsData() {
+    if (!this.#virtualEdits) return;
+
+    this.#virtualEdits.material = virtualEditsMaterial[this.#patternView];
+    const color = new THREE.Color(0xffff00);
+
+    for (let i = 0; i < this.#virtualEdits.count; i++) {
+      this.#virtualEdits.setColorAt(i, color);
+    }
+
+    if (this.#virtualEdits.instanceColor)
+      this.#virtualEdits.instanceColor.needsUpdate = true;
 
     requestAnimationFrame(this.render);
   }
@@ -239,7 +253,12 @@ export class Map3D extends Map3DBase {
     requestAnimationFrame(this.render);
   }
 
-  setMode(mode: "add" | "remove") {
-    this.#mode = mode;
+  setEditingMode(mode: EditingMode) {
+    this.#editingMode = mode;
+  }
+
+  setPatternView(view: PatternView) {
+    this.#patternView = view;
+    this.#refreshEditsData();
   }
 }

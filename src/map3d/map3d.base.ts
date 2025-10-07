@@ -1,7 +1,7 @@
 import * as THREE from "three";
 import { MapControls } from "three/addons/controls/MapControls.js";
 
-const frustumSize = 8_000;
+export const frustumSize = 8_000;
 
 export class Map3DBase {
   readonly #scene: THREE.Scene;

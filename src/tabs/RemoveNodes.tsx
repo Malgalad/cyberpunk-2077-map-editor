@@ -2,18 +2,15 @@ import { SquareX } from "lucide-react";
 
 import Button from "../components/common/Button.tsx";
 import { useAppDispatch, useAppSelector } from "../hooks.ts";
-import type { Map3D } from "../map3d/map3d.ts";
+import { useMap3D } from "../map3d/map3d.context.ts";
 import { NodesActions, NodesSelectors } from "../store/nodes.ts";
 import { clsx } from "../utilities.ts";
 
-interface RemoveNodesProps {
-  map3D: Map3D | null;
-}
-
 // TODO show transforms for removed nodes
 // TODO copy removed nodes to add for editing
-function RemoveNodes({ map3D }: RemoveNodesProps) {
+function RemoveNodes() {
   const dispatch = useAppDispatch();
+  const map3D = useMap3D();
   const removals = useAppSelector(NodesSelectors.getRemovals);
   const editing = useAppSelector(NodesSelectors.getEditingId);
 

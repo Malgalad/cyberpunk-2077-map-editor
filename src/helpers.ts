@@ -4,7 +4,11 @@ export async function loadURLAsArrayBuffer(url: string): Promise<ArrayBuffer> {
   return blob.arrayBuffer();
 }
 
-function createInput(accept: string, onchange: (file: File) => void) {
+function createInput(
+  accept: string,
+  onchange: (file: File) => void,
+  oncancel?: () => void,
+) {
   const input = document.createElement("input");
   input.type = "file";
   input.accept = accept;
@@ -12,6 +16,9 @@ function createInput(accept: string, onchange: (file: File) => void) {
     const file = (event.target as HTMLInputElement).files?.[0];
     if (!file) return;
     onchange(file);
+  };
+  input.oncancel = () => {
+    oncancel?.();
   };
   input.click();
 }
@@ -23,7 +30,11 @@ export function loadFileAsArrayBuffer(accept: string) {
     deferred.resolve(event.target?.result as ArrayBuffer);
   };
 
-  createInput(accept, (file) => reader.readAsArrayBuffer(file));
+  createInput(
+    accept,
+    (file) => reader.readAsArrayBuffer(file),
+    () => deferred.reject(),
+  );
 
   return deferred.promise;
 }
@@ -35,7 +46,11 @@ export function loadFileAsText(accept: string) {
     deferred.resolve(event.target?.result as string);
   };
 
-  createInput(accept, (file) => reader.readAsText(file));
+  createInput(
+    accept,
+    (file) => reader.readAsText(file),
+    () => deferred.reject(),
+  );
 
   return deferred.promise;
 }

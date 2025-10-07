@@ -2,10 +2,10 @@ import * as THREE from "three";
 
 import type { DistrictData, InstancedMeshTransforms } from "../types.ts";
 
-export function setupBuildings(
+export function createInstancedMeshForDistrict(
+  district: DistrictData,
   instances: InstancedMeshTransforms[],
   material: THREE.Material,
-  district: DistrictData,
 ): THREE.InstancedMesh {
   const position = new THREE.Vector3().fromArray(district.position);
   const transformMin = new THREE.Vector4().fromArray(district.transMin);

@@ -2,9 +2,13 @@ import { CircleDotDashed, SquareMinus, SquarePlus } from "lucide-react";
 import * as React from "react";
 
 import { useAppDispatch, useAppSelector } from "../hooks.ts";
+import { frustumSize } from "../map3d/map3d.base.ts";
+import { useMap3D } from "../map3d/map3d.context.ts";
+import { DistrictSelectors } from "../store/district.ts";
+import { getNodesInstancedMeshTransforms } from "../store/nodes.selectors.ts";
 import { NodesActions, NodesSelectors } from "../store/nodes.ts";
 import type { MapNode } from "../types.ts";
-import { clsx } from "../utilities.ts";
+import { clsx, getTransformPosition } from "../utilities.ts";
 import Button from "./common/Button.tsx";
 import Node from "./Node.tsx";
 
@@ -14,9 +18,16 @@ interface GroupProps {
 
 function Group({ node }: GroupProps) {
   const dispatch = useAppDispatch();
+  const map3D = useMap3D();
+
   const nodes = useAppSelector(NodesSelectors.getNodes);
   const editing = useAppSelector(NodesSelectors.getEditing);
   const cache = useAppSelector(NodesSelectors.getChildNodesCache);
+  const districtCenter = useAppSelector(DistrictSelectors.getDistrictCenter);
+  const nodesInstancedMeshTransforms = useAppSelector(
+    getNodesInstancedMeshTransforms,
+  );
+
   const nodeChildren = React.useMemo(() => {
     const nodeCache = cache[node.id];
     return {
@@ -29,6 +40,28 @@ function Group({ node }: GroupProps) {
     () => nodes.filter((child) => child.parent === node.id),
     [nodes, node.id],
   );
+
+  const lookAtNode = () => {
+    if (!map3D || !districtCenter) return;
+    const firstChildId = children[0]?.id;
+    const transform = nodesInstancedMeshTransforms.find(
+      ({ id }) => id === firstChildId,
+    );
+    if (transform) {
+      const position = getTransformPosition(
+        transform,
+        districtCenter.origin,
+        districtCenter.minMax,
+      );
+      const approximateScale =
+        ((transform.scale.x + transform.scale.y) / 2) * 2 * 200;
+      const zoom = Math.min(
+        100,
+        Math.floor(frustumSize / 2 / approximateScale),
+      );
+      map3D.lookAt(position, zoom);
+    }
+  };
 
   React.useEffect(() => {
     if (
@@ -57,6 +90,10 @@ function Group({ node }: GroupProps) {
           event.stopPropagation();
           dispatch(NodesActions.setEditing(node.id));
         }}
+        onDoubleClick={(event) => {
+          event.preventDefault();
+          lookAtNode();
+        }}
         onKeyDown={(event) => {
           if (event.key === "Enter" || event.key === " ") {
             dispatch(NodesActions.setEditing(node.id));
@@ -71,7 +108,7 @@ function Group({ node }: GroupProps) {
         >
           {expanded ? <SquareMinus /> : <SquarePlus />}
         </Button>
-        <div className="grow flex flex-row justify-between items-center">
+        <div className="grow flex flex-row justify-between items-center select-none">
           <span>
             {node.label}{" "}
             <span className="text-gray-400">({nodeChildren.i.length})</span>
