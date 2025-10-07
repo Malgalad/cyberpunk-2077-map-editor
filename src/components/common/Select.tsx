@@ -3,8 +3,14 @@ import * as React from "react";
 import { clsx } from "../../utilities.ts";
 
 type SelectProps = React.SelectHTMLAttributes<HTMLSelectElement> & {
-  items: Array<{ label: string; value: string; disabled?: boolean }>;
+  items: Array<{
+    label: string;
+    value: string;
+    disabled?: boolean;
+    level?: number;
+  }>;
 };
+const nbsp = "\u00A0";
 
 function Select({ items, ...props }: SelectProps) {
   return (
@@ -17,6 +23,7 @@ function Select({ items, ...props }: SelectProps) {
     >
       {items.map((item) => (
         <option key={item.value} value={item.value} disabled={item.disabled}>
+          {nbsp.repeat((item.level ?? 0) * 3)}
           {item.label}
         </option>
       ))}

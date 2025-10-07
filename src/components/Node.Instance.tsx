@@ -1,13 +1,12 @@
 import { CircleDotDashed } from "lucide-react";
 
 import { useAppDispatch, useAppSelector } from "../hooks.ts";
-import { frustumSize } from "../map3d/map3d.base.ts";
 import { useMap3D } from "../map3d/map3d.context.ts";
 import { DistrictSelectors } from "../store/district.ts";
 import { getNodesInstancedMeshTransforms } from "../store/nodes.selectors.ts";
 import { NodesActions, NodesSelectors } from "../store/nodes.ts";
 import type { MapNode } from "../types.ts";
-import { clsx, getTransformPosition } from "../utilities.ts";
+import { clsx, lookAtTransform } from "../utilities.ts";
 import Button from "./common/Button.tsx";
 
 interface InstanceProps {
@@ -30,16 +29,10 @@ function Instance({ node }: InstanceProps) {
       ({ id }) => id === node.id,
     );
     if (transform) {
-      const position = getTransformPosition(
+      const [position, zoom] = lookAtTransform(
         transform,
         districtCenter.origin,
         districtCenter.minMax,
-      );
-      const approximateScale =
-        ((transform.scale.x + transform.scale.y) / 2) * 2 * 200;
-      const zoom = Math.min(
-        100,
-        Math.floor(frustumSize / 2 / approximateScale),
       );
       map3D.lookAt(position, zoom);
     }

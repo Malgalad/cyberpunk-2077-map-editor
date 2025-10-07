@@ -2,6 +2,7 @@ import { isDraft, original, type WritableDraft } from "immer";
 import { nanoid } from "nanoid";
 import * as THREE from "three";
 
+import { frustumSize } from "./map3d/map3d.base.ts";
 import type {
   InstancedMeshTransforms,
   MapNode,
@@ -111,16 +112,21 @@ export function nodeToTransform(
   };
 }
 
-export function getTransformPosition(
+export function lookAtTransform(
   transform: InstancedMeshTransforms,
   origin: THREE.Vector3,
   minMax: THREE.Vector4,
-): THREE.Vector3 {
-  return new THREE.Vector3().fromArray([
+): [THREE.Vector3, number] {
+  const position = new THREE.Vector3().fromArray([
     transform.position.x * minMax.x + origin.x,
     transform.position.z * minMax.z + origin.z,
     -(transform.position.y * minMax.y + origin.y),
   ]);
+  const approximateScale =
+    ((transform.scale.x + transform.scale.y) / 2) * 2 * 200;
+  const zoom = Math.min(100, Math.floor(frustumSize / 2 / approximateScale));
+
+  return [position, zoom];
 }
 
 export function clsx(...args: unknown[]) {

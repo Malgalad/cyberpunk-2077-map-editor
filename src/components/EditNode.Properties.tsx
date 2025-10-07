@@ -5,7 +5,7 @@ import * as THREE from "three";
 import { useAppDispatch, useAppSelector, usePreviousValue } from "../hooks.ts";
 import { DistrictSelectors } from "../store/district.ts";
 import { NodesActions, NodesSelectors } from "../store/nodes.ts";
-import type { Districts, MapNode } from "../types.ts";
+import type { MapNode } from "../types.ts";
 import { clsx, prepareTransform } from "../utilities.ts";
 import Button from "./common/Button.tsx";
 import DraggableInput from "./common/DraggableInput.tsx";
@@ -21,26 +21,26 @@ const axii = [0, 1, 2] as const;
 function EditNodeProperties({ node }: EditNodePropertiesProps) {
   const dispatch = useAppDispatch();
   const nodes = useAppSelector(NodesSelectors.getNodes);
-  const district = useAppSelector(
-    DistrictSelectors.getDistrict,
-  ) as keyof Districts;
-  const parents = React.useMemo(
-    () =>
-      [
-        { label: "<Root>", value: district },
-        ...nodes
-          .filter((other) => other.type === "group" && other.id !== node.id)
-          .map((other) => ({
-            label: other.label,
-            value: other.id,
-          })),
-      ].map((other) => ({
-        ...other,
-        label: `${other.label}${node.parent === other.value ? " (current)" : ""}`,
-        disabled: node.parent === other.value,
+  const district = useAppSelector(DistrictSelectors.getDistrict);
+  const cache = useAppSelector(NodesSelectors.getChildNodesCache);
+  const parents = React.useMemo(() => {
+    const groups = nodes.filter((other) => other.type === "group");
+
+    if (!district) return [];
+
+    return [
+      { label: "<Root>", value: district },
+      ...groups.map((other) => ({
+        label: other.label,
+        value: other.id,
       })),
-    [district, nodes, node],
-  );
+    ].map((other) => ({
+      ...other,
+      level: cache[other.value].l,
+      label: `${other.label}${node.parent === other.value ? " (current)" : node.id === other.value ? " (self)" : ""}`,
+      disabled: node.parent === other.value || node.id === other.value,
+    }));
+  }, [district, nodes, node, cache]);
   const [useLocal, setUseLocal] = React.useState(false);
   const wasLocal = usePreviousValue(useLocal);
   const [local, setLocal] = React.useState(["0", "0", "0"]);

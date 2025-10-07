@@ -149,7 +149,7 @@ function App() {
   return (
     <Map3DContext value={map3D}>
       <div className="flex flex-row gap-2 w-screen h-screen bg-slate-900 text-white">
-        <div className="grow flex flex-col gap-2">
+        <div className="grow flex flex-col">
           <Menu />
 
           <div className="grow relative">

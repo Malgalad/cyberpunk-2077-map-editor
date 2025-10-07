@@ -104,15 +104,23 @@ const nodesSlice = createSlice({
       [(sliceState: NodesState) => sliceState.nodes],
       (nodes) => {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const cache: Record<string, { i: any[]; g: string[] }> = {};
+        const cache: Record<string, { i: any[]; g: string[]; l: number }> = {};
 
         for (const node of nodes) {
-          const group = cache[node.parent] ?? { i: [], g: [] };
+          const group = cache[node.parent] ?? { i: [], g: [], l: 0 };
 
           if (node.type === "instance") {
             group.i.push(node.id);
           } else {
-            const self = cache[node.id] ?? { i: [], g: [] };
+            let depth = 0;
+            let current: MapNode | undefined = node;
+            while (current) {
+              current = nodes.find((n) => n.id === current!.parent);
+              depth += 1;
+            }
+
+            const self = cache[node.id] ?? { i: [], g: [], l: 0 };
+            self.l = depth;
             group.g.push(node.id);
             group.i.push(self.i);
             cache[node.id] = self;

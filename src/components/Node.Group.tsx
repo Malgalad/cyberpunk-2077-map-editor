@@ -2,13 +2,12 @@ import { CircleDotDashed, SquareMinus, SquarePlus } from "lucide-react";
 import * as React from "react";
 
 import { useAppDispatch, useAppSelector } from "../hooks.ts";
-import { frustumSize } from "../map3d/map3d.base.ts";
 import { useMap3D } from "../map3d/map3d.context.ts";
 import { DistrictSelectors } from "../store/district.ts";
 import { getNodesInstancedMeshTransforms } from "../store/nodes.selectors.ts";
 import { NodesActions, NodesSelectors } from "../store/nodes.ts";
 import type { MapNode } from "../types.ts";
-import { clsx, getTransformPosition } from "../utilities.ts";
+import { clsx, lookAtTransform } from "../utilities.ts";
 import Button from "./common/Button.tsx";
 import Node from "./Node.tsx";
 
@@ -28,13 +27,13 @@ function Group({ node }: GroupProps) {
     getNodesInstancedMeshTransforms,
   );
 
-  const nodeChildren = React.useMemo(() => {
-    const nodeCache = cache[node.id];
-    return {
-      i: nodeCache.i.flat(99),
-      g: nodeCache.g,
-    };
-  }, [cache, node.id]);
+  const nodeChildren = React.useMemo(
+    () => ({
+      i: cache[node.id].i.flat(99),
+      g: cache[node.id].g,
+    }),
+    [cache, node.id],
+  );
   const [expanded, setExpanded] = React.useState(false);
   const children = React.useMemo(
     () => nodes.filter((child) => child.parent === node.id),
@@ -42,22 +41,16 @@ function Group({ node }: GroupProps) {
   );
 
   const lookAtNode = () => {
-    if (!map3D || !districtCenter) return;
-    const firstChildId = children[0]?.id;
+    if (!map3D || !districtCenter || !nodeChildren.i.length) return;
+    const firstChildId = nodeChildren.i[0];
     const transform = nodesInstancedMeshTransforms.find(
       ({ id }) => id === firstChildId,
     );
     if (transform) {
-      const position = getTransformPosition(
+      const [position, zoom] = lookAtTransform(
         transform,
         districtCenter.origin,
         districtCenter.minMax,
-      );
-      const approximateScale =
-        ((transform.scale.x + transform.scale.y) / 2) * 2 * 200;
-      const zoom = Math.min(
-        100,
-        Math.floor(frustumSize / 2 / approximateScale),
       );
       map3D.lookAt(position, zoom);
     }
