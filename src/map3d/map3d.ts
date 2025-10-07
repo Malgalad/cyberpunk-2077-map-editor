@@ -172,7 +172,18 @@ export class Map3D extends Map3DBase {
     this.#buildings = this.#add(
       createInstancedMeshForDistrict(district, data, buildingsMaterial),
     );
-    this.#box = this.#add(new THREE.BoxHelper(this.#buildings, 0xffff00));
+    const minMaxBox = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1));
+    minMaxBox.scale.set(
+      district.transMax[0] - district.transMin[0],
+      district.transMax[2] - district.transMin[2],
+      -district.transMax[1] + district.transMin[1],
+    );
+    minMaxBox.position.set(
+      district.position[0] + district.transMin[0] + minMaxBox.scale.x / 2,
+      district.position[2] + district.transMin[2] + minMaxBox.scale.y / 2,
+      -district.position[1] - district.transMin[1] + minMaxBox.scale.z / 2,
+    );
+    this.#box = this.#add(new THREE.BoxHelper(minMaxBox, 0xff8800));
 
     this.#box.geometry.computeBoundingBox();
     if (!this.dontLookAt) {
