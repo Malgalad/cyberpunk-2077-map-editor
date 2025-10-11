@@ -18,11 +18,11 @@ const hideExcludedIndexes =
 const noTransforms: InstancedMeshTransforms[] = [];
 
 export const getDistrictInstancedMeshTransforms = createSelector(
-  [districtSlice.selectors.getDistrictData, nodesSlice.selectors.getRemovals],
-  (districtData, excludedIndexes): InstancedMeshTransforms[] => {
-    if (!districtData) return noTransforms;
+  [districtSlice.selectors.getDistrict, nodesSlice.selectors.getRemovals],
+  (district, excludedIndexes): InstancedMeshTransforms[] => {
+    if (district?.isCustom || !district?.imageData) return noTransforms;
 
-    const transforms = decodeImageData(new Uint16Array(districtData.imageData));
+    const transforms = decodeImageData(new Uint16Array(district.imageData));
 
     return transforms.map(hideExcludedIndexes(excludedIndexes));
   },

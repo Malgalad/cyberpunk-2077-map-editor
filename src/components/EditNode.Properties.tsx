@@ -29,7 +29,7 @@ function EditNodeProperties({ node }: EditNodePropertiesProps) {
     if (!district) return [];
 
     return [
-      { label: "<Root>", value: district },
+      { label: "<Root>", value: district.name },
       ...groups.map((other) => ({
         label: other.label,
         value: other.id,

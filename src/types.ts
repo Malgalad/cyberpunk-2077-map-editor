@@ -6,12 +6,23 @@ import store from "./store/store.ts";
 
 export type MapData = typeof mapData;
 export type Districts = MapData["soup"];
-export type District = keyof MapData["soup"];
-export type DistrictData = MapData["soup"][District];
-export type DistrictLoaded = DistrictData & {
+export type DistrictData = {
   name: string;
-  imageData: ArrayBuffer;
-};
+  position: number[];
+  orientation: number[];
+  transMin: number[];
+  transMax: number[];
+  cubeSize: number;
+} & (
+  | {
+      isCustom: false;
+      texture: string;
+      imageData: ArrayBuffer;
+    }
+  | {
+      isCustom: true;
+    }
+);
 export type DistrictCenter = {
   center: THREE.Vector3;
   minMax: THREE.Vector4;
@@ -22,7 +33,8 @@ export type ModalType =
   | "alert"
   | "confirm"
   | "select-district"
-  | "custom-district";
+  | "custom-district"
+  | "district-info";
 export type Modal = {
   type: ModalType;
   data: unknown;
@@ -39,6 +51,10 @@ export type TransformParsed = {
   scale: THREE.Vector3Tuple;
 };
 
+type PatternProperties = {
+  count: number;
+  enabled: boolean;
+};
 type NodeProperties<T extends Transform | TransformParsed> = T & {
   id: string;
   label: string;
@@ -47,13 +63,19 @@ type NodeProperties<T extends Transform | TransformParsed> = T & {
   virtual?: boolean;
   pattern?: T & PatternProperties;
 };
-type PatternProperties = {
-  count: number;
-  enabled: boolean;
-};
 
 export type MapNode = NodeProperties<Transform>;
 export type MapNodeParsed = NodeProperties<TransformParsed>;
+
+export type GroupNodeCache = Record<
+  string,
+  {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    i: any[]; // array of child instance ids, nested per child group <- flatten
+    g: string[]; // array of child group ids
+    l: number; // depth level
+  }
+>;
 
 export type InstancedMeshTransforms = {
   id?: string;
@@ -61,6 +83,11 @@ export type InstancedMeshTransforms = {
   position: { x: number; y: number; z: number; w: number };
   orientation: { x: number; y: number; z: number; w: number };
   scale: { x: number; y: number; z: number; w: number };
+};
+
+export type DistrictWithTransforms = {
+  district: DistrictData;
+  transforms: InstancedMeshTransforms[];
 };
 
 export type EditingMode = "add" | "remove";

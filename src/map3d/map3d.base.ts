@@ -1,6 +1,8 @@
 import * as THREE from "three";
 import { MapControls } from "three/addons/controls/MapControls.js";
 
+import { saveBlobToFile } from "../helpers.ts";
+
 export const frustumSize = 8_000;
 
 export class Map3DBase {
@@ -75,6 +77,14 @@ export class Map3DBase {
   dispose() {
     window.removeEventListener("resize", this.#onWindowResize);
     this.#renderer.dispose();
+  }
+
+  screenshot() {
+    this.#render();
+    this.canvas.toBlob((blob) => {
+      if (!blob) return;
+      saveBlobToFile(blob, "screenshot.png");
+    }, "image/png");
   }
 
   #onWindowResize = () => {

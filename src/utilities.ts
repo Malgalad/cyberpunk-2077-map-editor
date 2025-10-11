@@ -13,7 +13,7 @@ import type {
 
 export const hadamardProduct = (a: number[], b: number[]) =>
   a.map((x, i) => x * b[i]);
-export const hadamardSum = (a: number[], b: number[]) =>
+export const addTuples = (a: number[], b: number[]) =>
   a.map((x, i) => x + b[i]);
 
 export function toNumber(value: string) {
@@ -85,7 +85,7 @@ export function nodeToTransform(
     x: (node.position[0] - origin.x) / minMax.x,
     y: (node.position[1] - origin.y) / minMax.y,
     z: (node.position[2] - origin.z) / minMax.z,
-    w: 0,
+    w: 1,
   };
   const quaternion = new THREE.Quaternion().setFromEuler(
     new THREE.Euler().fromArray(node.rotation),
@@ -110,6 +110,48 @@ export function nodeToTransform(
     orientation,
     scale,
   };
+}
+export function transformToNode(
+  id: string,
+  parentId: string,
+  transform: InstancedMeshTransforms,
+  origin: THREE.Vector3,
+  minMax: THREE.Vector4,
+  cubeSize: number,
+): MapNode {
+  const position = [
+    transform.position.x * minMax.x + origin.x,
+    transform.position.y * minMax.y + origin.y,
+    transform.position.z * minMax.z + origin.z,
+  ].map(toString) as [string, string, string];
+  const rotation = new THREE.Euler()
+    .setFromQuaternion(
+      new THREE.Quaternion(
+        transform.orientation.x,
+        transform.orientation.y,
+        transform.orientation.z,
+        transform.orientation.w,
+      ),
+    )
+    .toArray()
+    .map((angle) => THREE.MathUtils.radToDeg(angle as number))
+    .map(toString) as [string, string, string];
+  const scale = [
+    transform.scale.x * 2 * cubeSize,
+    transform.scale.y * 2 * cubeSize,
+    transform.scale.z * 2 * cubeSize,
+  ].map(toString) as [string, string, string];
+
+  return {
+    id,
+    virtual: transform.virtual,
+    type: "instance",
+    label: id,
+    parent: parentId,
+    position,
+    rotation,
+    scale,
+  } satisfies MapNode as MapNode;
 }
 
 export function lookAtTransform(
@@ -137,15 +179,12 @@ export const cloneNode = <T extends MapNode | MapNodeParsed>(
   nodes: WritableDraft<T>[],
   node: WritableDraft<T>,
   parentId: string,
-  options: { cloneLabel?: boolean } = { cloneLabel: true },
 ): T[] => {
   const clone = structuredClone(isDraft(node) ? (original(node) as T) : node);
   const childClones: T[] = [];
 
   clone.id = nanoid(8);
-  clone.label = options.cloneLabel
-    ? `${clone.type === "instance" ? "Box" : "Group"}`
-    : "";
+  clone.label = `${clone.type === "instance" ? "Box" : "Group"}`;
   clone.parent = parentId;
 
   if (clone.type === "group") {
@@ -166,4 +205,34 @@ export function invariant(
   if (!condition) {
     throw new Error(message);
   }
+}
+
+export async function zip(jsonString: string): Promise<Blob> {
+  const textEncoder = new TextEncoder();
+  const encodedData = textEncoder.encode(jsonString);
+
+  const readableStream = new ReadableStream({
+    start(controller) {
+      controller.enqueue(encodedData);
+      controller.close();
+    },
+  });
+
+  const compressedStream = readableStream.pipeThrough(
+    new CompressionStream("gzip"),
+  );
+
+  return new Response(compressedStream).blob();
+}
+
+export async function unzip(compressedData: ReadableStream): Promise<string> {
+  const decompressedStream = compressedData.pipeThrough(
+    new DecompressionStream("gzip"),
+  );
+  const decompressedBlob = await new Response(decompressedStream).blob();
+
+  const decompressedArrayBuffer = await decompressedBlob.arrayBuffer();
+  const textDecoder = new TextDecoder();
+
+  return textDecoder.decode(decompressedArrayBuffer);
 }

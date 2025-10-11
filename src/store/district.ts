@@ -5,33 +5,30 @@ import {
 } from "@reduxjs/toolkit";
 import * as THREE from "three";
 
-import type { DistrictCenter, DistrictLoaded } from "../types.ts";
+import type { DistrictCenter, DistrictData } from "../types.ts";
 
 interface DistrictState {
-  districtData: DistrictLoaded | undefined;
+  current: DistrictData | undefined;
 }
 
-const initialState = {
-  districtData: undefined,
-} satisfies DistrictState as DistrictState;
+const initialState: DistrictState = {
+  current: undefined,
+};
 
 const districtSlice = createSlice({
   name: "district",
   initialState,
   reducers: {
-    setDistrict(state, action: PayloadAction<DistrictLoaded>) {
-      state.districtData = action.payload;
+    setDistrict(state, action: PayloadAction<DistrictData>) {
+      state.current = action.payload;
     },
   },
   selectors: {
-    getDistrict(state): string | undefined {
-      return state.districtData?.name;
-    },
-    getDistrictData(state): DistrictLoaded | undefined {
-      return state.districtData;
+    getDistrict(state): DistrictData | undefined {
+      return state.current;
     },
     getDistrictCenter: createSelector(
-      [(sliceState: DistrictState) => sliceState.districtData],
+      [(sliceState: DistrictState) => sliceState.current],
       (districtData): DistrictCenter | undefined => {
         if (!districtData) return undefined;
 

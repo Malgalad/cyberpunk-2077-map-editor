@@ -23,19 +23,13 @@ function createInput(
   input.click();
 }
 
-export function loadFileAsArrayBuffer(accept: string) {
-  const deferred = Promise.withResolvers<ArrayBuffer>();
-  const reader = new FileReader();
-  reader.onload = (event) => {
-    deferred.resolve(event.target?.result as ArrayBuffer);
-  };
-
+export function loadFile(accept: string) {
+  const deferred = Promise.withResolvers<File>();
   createInput(
     accept,
-    (file) => reader.readAsArrayBuffer(file),
+    (file) => deferred.resolve(file),
     () => deferred.reject(),
   );
-
   return deferred.promise;
 }
 

@@ -2,7 +2,7 @@ import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 
 import type {
   AppThunkAction,
-  DistrictLoaded,
+  DistrictData,
   Modal,
   ModalType,
 } from "../types.ts";
@@ -11,9 +11,9 @@ interface ModalsState {
   modal: Modal | undefined;
 }
 
-const initialState = {
+const initialState: ModalsState = {
   modal: undefined,
-} satisfies ModalsState as ModalsState;
+};
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 let deferred: ReturnType<typeof Promise.withResolvers<any>> | undefined;
 
@@ -39,10 +39,11 @@ function openModal(
 ): AppThunkAction<Promise<boolean>>;
 function openModal(
   type: "select-district",
-): AppThunkAction<Promise<DistrictLoaded>>;
+): AppThunkAction<Promise<DistrictData>>;
 function openModal(
   type: "custom-district",
-): AppThunkAction<Promise<DistrictLoaded>>;
+): AppThunkAction<Promise<DistrictData>>;
+function openModal(type: "district-info"): AppThunkAction<Promise<void>>;
 function openModal<T>(
   type: ModalType,
   data?: unknown,

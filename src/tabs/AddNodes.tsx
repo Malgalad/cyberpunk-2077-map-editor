@@ -18,7 +18,7 @@ function AddNodes() {
   const district = useAppSelector(DistrictSelectors.getDistrict);
   const districtCenter = useAppSelector(DistrictSelectors.getDistrictCenter);
   const rootNodes = React.useMemo(
-    () => nodes.filter((node) => node.parent === district),
+    () => nodes.filter((node) => node.parent === district?.name),
     [nodes, district],
   );
 
@@ -52,7 +52,7 @@ function AddNodes() {
   };
 
   const onAdd = (type: MapNode["type"]) => {
-    const parent = editing ? editing.id : district;
+    const parent = editing ? editing.id : district.name;
     const position = (
       editing ? ["0", "0", "0"] : districtCenter.center.toArray().map(toString)
     ) as MapNode["position"];

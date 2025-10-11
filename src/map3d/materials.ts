@@ -48,6 +48,10 @@ export const additionsMaterial = new THREE.MeshLambertMaterial({
   color: 0xffffff,
 });
 
+export const patternMaterial = additionsMaterial.clone();
+patternMaterial.opacity = 0.75;
+patternMaterial.transparent = true;
+
 export const wireframeMaterial = new THREE.MeshBasicMaterial({
   color: 0xffff00,
   wireframe: true,

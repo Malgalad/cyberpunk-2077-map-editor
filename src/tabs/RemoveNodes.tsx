@@ -13,6 +13,7 @@ function RemoveNodes() {
   const map3D = useMap3D();
   const removals = useAppSelector(NodesSelectors.getRemovals);
   const editing = useAppSelector(NodesSelectors.getEditingId);
+  console.log(removals);
 
   return (
     <div

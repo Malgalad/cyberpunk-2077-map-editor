@@ -6,7 +6,7 @@ import {
 import type { WritableDraft } from "immer";
 import { nanoid } from "nanoid";
 
-import type { MapNode } from "../types.ts";
+import type { GroupNodeCache, MapNode } from "../types.ts";
 import { cloneNode } from "../utilities.ts";
 
 interface NodesState {
@@ -21,11 +21,11 @@ type AddNodeParams = {
   position: [string, string, string];
 };
 
-const initialState = {
+const initialState: NodesState = {
   nodes: [],
   removals: [],
   editing: null,
-} satisfies NodesState as NodesState;
+};
 
 const nodesSlice = createSlice({
   name: "nodes",
@@ -64,9 +64,7 @@ const nodesSlice = createSlice({
         action: PayloadAction<(draft: WritableDraft<MapNode>) => void>,
       ) => {
         const node = state.nodes.find((node) => node.id === state.editing);
-
         if (!node) return;
-
         action.payload(node);
       },
     ),
@@ -100,17 +98,19 @@ const nodesSlice = createSlice({
     getRemovals(state): number[] {
       return state.removals;
     },
+    getEditingId(state): string | null {
+      return state.editing;
+    },
     getChildNodesCache: createSelector(
       [(sliceState: NodesState) => sliceState.nodes],
       (nodes) => {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const cache: Record<string, { i: any[]; g: string[]; l: number }> = {};
+        const cache: GroupNodeCache = {};
 
         for (const node of nodes) {
-          const group = cache[node.parent] ?? { i: [], g: [], l: 0 };
+          const parent = cache[node.parent] ?? { i: [], g: [], l: 0 };
 
           if (node.type === "instance") {
-            group.i.push(node.id);
+            parent.i.push(node.id);
           } else {
             let depth = 0;
             let current: MapNode | undefined = node;
@@ -121,20 +121,17 @@ const nodesSlice = createSlice({
 
             const self = cache[node.id] ?? { i: [], g: [], l: 0 };
             self.l = depth;
-            group.g.push(node.id);
-            group.i.push(self.i);
+            parent.g.push(node.id);
+            parent.i.push(self.i); // push reference to array of own children ids
             cache[node.id] = self;
           }
 
-          cache[node.parent] = group;
+          cache[node.parent] = parent;
         }
 
         return cache;
       },
     ),
-    getEditingId(state): string | null {
-      return state.editing;
-    },
     getEditing: createSelector(
       [
         (sliceState: NodesState) => sliceState.editing,

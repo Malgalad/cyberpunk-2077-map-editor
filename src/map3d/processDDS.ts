@@ -12,7 +12,7 @@ const magic = [
   12337, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4096, 0, 0, 0, 0, 0, 0, 0, 0, 0, 11, 0,
   3, 0, 0, 0, 1, 0, 0, 0,
 ];
-const uint16 = 2 ** 16; // 65536
+const uint16 = 2 ** 16 - 1; // 65535
 
 /**
  * XYZW data is encoded in 16-bit texture as RGBA channels
