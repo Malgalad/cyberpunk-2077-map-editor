@@ -3,9 +3,9 @@ import * as THREE from "three";
 import type {
   DistrictWithTransforms,
   EditingMode,
-  InstancedMeshTransforms,
   PatternView,
 } from "../types.ts";
+import { partition } from "../utilities.ts";
 import { createInstancedMeshForDistrict } from "./createInstancedMeshForDistrict.ts";
 import { Map3DBase } from "./map3d.base.ts";
 import {
@@ -26,6 +26,7 @@ const virtualEditsMaterial: Record<PatternView, THREE.Material> = {
 export class Map3D extends Map3DBase {
   readonly #raycaster: THREE.Raycaster;
   #currentDistrict: THREE.InstancedMesh | null = null;
+  #currentDistrictRemovals: THREE.InstancedMesh | null = null;
   #currentDistrictBoundaries: THREE.BoxHelper | null = null;
   #visibleDistricts: THREE.Group = new THREE.Group();
   #additions: THREE.InstancedMesh | null = null;
@@ -33,7 +34,8 @@ export class Map3D extends Map3DBase {
   #virtualGeometry: THREE.InstancedMesh | null = null;
   #canvasRect: DOMRect | null = null;
   #pointer: THREE.Vector2 = new THREE.Vector2(1, 1);
-  #hoveringIndex: number | null = null;
+  #startedPointingAt: number | null = null;
+  #pointingAt: number | null = null;
   #editingMode: EditingMode = "add";
   #patternView: PatternView = "wireframe";
   dontLookAt = false;
@@ -47,9 +49,9 @@ export class Map3D extends Map3DBase {
     setupTerrain(this.loadResource);
     this.scene.add(this.#visibleDistricts);
 
+    this.canvas.addEventListener("mousedown", this.#onMouseDown);
     this.canvas.addEventListener("mousemove", this.#onMouseMove);
     this.canvas.addEventListener("click", this.#onClick);
-    this.canvas.addEventListener("dblclick", this.#onDoubleClick);
 
     this.render();
   }
@@ -57,9 +59,9 @@ export class Map3D extends Map3DBase {
   dispose() {
     super.dispose();
 
+    this.canvas.removeEventListener("mousedown", this.#onMouseDown);
     this.canvas.removeEventListener("mousemove", this.#onMouseMove);
     this.canvas.removeEventListener("click", this.#onClick);
-    this.canvas.removeEventListener("dblclick", this.#onDoubleClick);
 
     this.#currentDistrict?.geometry.dispose();
     this.#currentDistrictBoundaries?.geometry.dispose();
@@ -81,26 +83,22 @@ export class Map3D extends Map3DBase {
   }
 
   /** Apply selected material to virtual geometry */
-  #refreshVirtualGeometry() {
+  #setVirtualGeometryMaterial() {
     if (!this.#virtualGeometry) return;
 
     this.#virtualGeometry.material = virtualEditsMaterial[this.#patternView];
-    const color = new THREE.Color(0xffff00);
-
-    for (let i = 0; i < this.#virtualGeometry.count; i++) {
-      this.#virtualGeometry.setColorAt(i, color);
-    }
-
-    if (this.#virtualGeometry.instanceColor)
-      this.#virtualGeometry.instanceColor.needsUpdate = true;
 
     requestAnimationFrame(this.render);
   }
 
+  #onMouseDown = (event: MouseEvent) => {
+    if (event.button !== 0) return;
+    this.#startedPointingAt = this.#pointingAt;
+  };
+
   #onMouseMove = (event: MouseEvent) => {
     const { left, top, width, height } = this.#canvasRect!;
     const mode = this.#editingMode;
-    let shouldRender = false;
 
     this.#pointer.x = ((event.clientX - left) / width) * 2 - 1;
     this.#pointer.y = -((event.clientY - top) / height) * 2 + 1;
@@ -108,147 +106,185 @@ export class Map3D extends Map3DBase {
     if (mode === "add" && !this.#additions) return;
     if (mode === "remove" && !this.#currentDistrict) return;
 
-    const mesh = (
-      mode === "add" ? this.#additions : this.#currentDistrict
-    ) as THREE.InstancedMesh;
+    const mesh = mode === "add" ? this.#additions! : this.#currentDistrict!;
 
     this.#raycaster.setFromCamera(this.#pointer, this.camera);
     const intersection = this.#raycaster.intersectObject(mesh);
-    const previousHoveringId = this.#hoveringIndex;
+    const previousPointingAt = this.#pointingAt;
 
     if (intersection.length > 0) {
       const instanceId = intersection[0].instanceId;
 
       if (instanceId !== undefined) {
-        const color = new THREE.Color(mode === "add" ? 0x88ff88 : 0x888888);
-
-        this.#hoveringIndex = instanceId;
-
-        mesh.setColorAt(instanceId, color);
-        if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
-        shouldRender = true;
+        this.#pointingAt = instanceId;
       }
     } else {
-      this.#hoveringIndex = null;
+      this.#pointingAt = null;
     }
 
-    if (
-      previousHoveringId !== null &&
-      previousHoveringId !== this.#hoveringIndex
-    ) {
-      const color = new THREE.Color(mode === "add" ? 0xffff00 : 0xffffff);
-
-      if (
-        mode === "add" &&
-        this.#selectedIndexes.includes(previousHoveringId)
-      ) {
-        color.setHex(0x00ff00);
-      }
-
-      mesh.setColorAt(previousHoveringId, color);
-      if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
-      shouldRender = true;
-    }
-
-    if (shouldRender) requestAnimationFrame(this.render);
+    if (this.#pointingAt !== previousPointingAt)
+      requestAnimationFrame(this.render);
   };
 
-  #onClick = () => {
-    if (
-      this.#editingMode === "add" &&
-      this.#additions &&
-      this.#hoveringIndex != null
-    ) {
-      window.dispatchEvent(
-        new CustomEvent("select-node", {
-          detail: { index: this.#hoveringIndex },
-        }),
-      );
-    }
-  };
+  #onClick = (event: MouseEvent) => {
+    if (this.#startedPointingAt !== this.#pointingAt) return;
 
-  #onDoubleClick = () => {
-    if (this.#editingMode === "add" && this.#hoveringIndex === null) {
+    if (this.#pointingAt == null) {
       window.dispatchEvent(
         new CustomEvent("select-node", { detail: { index: null } }),
       );
-    } else if (
-      this.#editingMode === "remove" &&
-      this.#currentDistrict &&
-      this.#hoveringIndex != null
-    ) {
-      this.dontLookAt = true;
+      return;
+    }
+
+    const index = this.#pointingAt;
+
+    if (this.#editingMode === "add") {
+      window.dispatchEvent(
+        new CustomEvent("select-node", { detail: { index } }),
+      );
+    } else if (this.#editingMode === "remove") {
       window.dispatchEvent(
         new CustomEvent("remove-node", {
-          detail: { index: this.#hoveringIndex },
+          detail: {
+            index,
+            position: [event.clientX, event.clientY],
+          },
         }),
       );
     }
   };
 
-  selectAdditionsInstances(indexes: number[]) {
-    if (!this.#additions) return;
+  // TODO optimize via previousPointerAt
+  refreshInstancesColors() {
+    const current = new THREE.Color(0xffffff);
 
-    const yellow = new THREE.Color(0xffff00);
-    const green = new THREE.Color(0x00ff00);
+    if (this.#additions) {
+      const unselected = new THREE.Color(0xffff00);
+      const pointingAt = new THREE.Color(0x88ff88);
+      const selected = new THREE.Color(0x00ff00);
+      let needsUpdate = false;
 
-    for (let i = 0; i < this.#additions.count; i++) {
-      if (indexes.includes(i)) {
-        this.#additions.setColorAt(i, green);
-      } else {
-        this.#additions.setColorAt(i, yellow);
+      for (let i = 0; i < this.#additions.count; i++) {
+        const color =
+          this.#editingMode === "add" && i === this.#pointingAt
+            ? pointingAt
+            : this.#editingMode === "add" && this.#selectedIndexes.includes(i)
+              ? selected
+              : unselected;
+
+        this.#additions.getColorAt(i, current);
+        if (!current.equals(color)) {
+          this.#additions.setColorAt(i, color);
+          needsUpdate = true;
+        }
       }
+
+      if (needsUpdate) this.#additions.instanceColor!.needsUpdate = true;
     }
 
+    if (this.#virtualGeometry) {
+      const color = new THREE.Color(0xffff00);
+      let needsUpdate = false;
+
+      for (let i = 0; i < this.#virtualGeometry.count; i++) {
+        this.#virtualGeometry.getColorAt(i, current);
+        if (!current.equals(color)) {
+          this.#virtualGeometry.setColorAt(i, color);
+          needsUpdate = true;
+        }
+      }
+
+      if (needsUpdate) this.#virtualGeometry.instanceColor!.needsUpdate = true;
+    }
+
+    if (this.#currentDistrict) {
+      const unselected = new THREE.Color(0xffffff);
+      const pointingAt = new THREE.Color(0x888888);
+      let needsUpdate = false;
+
+      for (let i = 0; i < this.#currentDistrict.count; i++) {
+        const color =
+          this.#editingMode === "remove" && this.#pointingAt === i
+            ? pointingAt
+            : unselected;
+
+        this.#currentDistrict.getColorAt(i, current);
+        if (!current.equals(color)) {
+          this.#currentDistrict.setColorAt(i, color);
+          needsUpdate = true;
+        }
+      }
+
+      if (needsUpdate) this.#currentDistrict.instanceColor!.needsUpdate = true;
+    }
+
+    if (this.#currentDistrictRemovals) {
+      const unselected = new THREE.Color(0xff00ff);
+      const selected = new THREE.Color(0xffffff);
+      let needsUpdate = false;
+
+      for (let i = 0; i < this.#currentDistrictRemovals.count; i++) {
+        const color =
+          this.#editingMode === "remove" && this.#selectedIndexes.includes(i)
+            ? selected
+            : unselected;
+
+        this.#currentDistrictRemovals.getColorAt(i, current);
+        if (!current.equals(color)) {
+          this.#currentDistrictRemovals.setColorAt(i, color);
+          needsUpdate = true;
+        }
+      }
+
+      if (needsUpdate)
+        this.#currentDistrictRemovals.instanceColor!.needsUpdate = true;
+    }
+  }
+
+  selectInstances(indexes: number[]) {
     this.#selectedIndexes = indexes;
-    if (this.#additions.instanceColor)
-      this.#additions.instanceColor.needsUpdate = true;
 
     requestAnimationFrame(this.render);
   }
 
   setAdditions(data: DistrictWithTransforms) {
-    const [real, virtual] = data.transforms.reduce(
-      (acc, instance) => {
-        acc[instance.virtual ? 1 : 0].push(instance);
-        return acc;
-      },
-      [[], []] as [InstancedMeshTransforms[], InstancedMeshTransforms[]],
-    );
-
     this.#remove(this.#additions);
     this.#remove(this.#virtualGeometry);
 
+    const { district, transforms } = data;
+    const [real, virtual] = partition(transforms, (item) => !item.virtual);
+
     this.#additions = this.#add(
-      createInstancedMeshForDistrict(data.district, real, additionsMaterial),
+      createInstancedMeshForDistrict(district, real, additionsMaterial),
     );
     this.#virtualGeometry = this.#add(
       createInstancedMeshForDistrict(
-        data.district,
+        district,
         virtual,
         virtualEditsMaterial[this.#patternView],
       ),
     );
-
-    if (this.#patternView === "solid") {
-      const color = new THREE.Color(0xffff00);
-
-      for (let i = 0; i < this.#virtualGeometry.count; i++) {
-        this.#virtualGeometry.setColorAt(i, color);
-      }
-    }
 
     requestAnimationFrame(this.render);
   }
 
   setCurrentDistrict(data: DistrictWithTransforms) {
     this.#remove(this.#currentDistrict);
+    this.#remove(this.#currentDistrictRemovals);
     this.#remove(this.#currentDistrictBoundaries);
 
     const { district, transforms } = data;
-    this.#currentDistrict = this.#add(
-      createInstancedMeshForDistrict(district, transforms, buildingsMaterial),
+    const hidden = transforms.filter((item) => item.hidden);
+    const visible = transforms.map((item) =>
+      item.hidden ? { ...item, scale: { x: 0, y: 0, z: 0, w: 1 } } : item,
     );
+    this.#currentDistrict = this.#add(
+      createInstancedMeshForDistrict(district, visible, buildingsMaterial),
+    );
+    this.#currentDistrictRemovals = this.#add(
+      createInstancedMeshForDistrict(district, hidden, wireframeMaterial),
+    );
+
     const minMaxBox = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1));
     minMaxBox.scale.set(
       district.transMax[0] - district.transMin[0],
@@ -279,7 +315,7 @@ export class Map3D extends Map3DBase {
 
   setPatternView(view: PatternView) {
     this.#patternView = view;
-    this.#refreshVirtualGeometry();
+    this.#setVirtualGeometryMaterial();
   }
 
   setVisibleDistricts(districts: DistrictWithTransforms[]) {
@@ -316,6 +352,7 @@ export class Map3D extends Map3DBase {
   }
 
   render = () => {
+    this.refreshInstancesColors();
     super.render();
     this.#canvasRect = this.canvas.getBoundingClientRect();
   };

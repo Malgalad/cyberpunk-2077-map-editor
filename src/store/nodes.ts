@@ -51,6 +51,9 @@ const nodesSlice = createSlice({
         state.nodes.push(action.payload);
       },
     ),
+    insertNode: create.reducer((state, action: PayloadAction<MapNode>) => {
+      state.nodes.push(action.payload);
+    }),
     cloneNode: create.reducer((state, action: PayloadAction<MapNode["id"]>) => {
       const node = state.nodes.find((node) => node.id === action.payload);
       if (!node) return;
@@ -95,9 +98,10 @@ const nodesSlice = createSlice({
     getNodes(state): MapNode[] {
       return state.nodes;
     },
-    getRemovals(state): number[] {
-      return state.removals;
-    },
+    getRemovals: createSelector(
+      [(sliceState: NodesState) => sliceState.removals],
+      (removals) => removals.toSorted(),
+    ),
     getEditingId(state): string | null {
       return state.editing;
     },

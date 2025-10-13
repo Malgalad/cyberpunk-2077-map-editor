@@ -115,12 +115,7 @@ export function useExportDDS() {
   return React.useCallback(() => {
     if (!district) return;
     const data = [
-      ...districtInstancedMeshTransforms.filter(
-        (instance) =>
-          instance.scale.x !== 0 &&
-          instance.scale.y !== 0 &&
-          instance.scale.z !== 0,
-      ),
+      ...districtInstancedMeshTransforms.filter((instance) => !instance.hidden),
       ...nodesInstancedMeshTransforms,
     ];
     const imageData = encodeImageData(data);

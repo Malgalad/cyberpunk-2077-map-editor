@@ -4,6 +4,7 @@ import * as React from "react";
 import {
   useDrawAdditions,
   useDrawCurrentDistrict,
+  useDrawSelection,
   useInitMap3D,
   useMap3DEvents,
 } from "./App.hooks.ts";
@@ -43,6 +44,7 @@ function App() {
 
   useDrawCurrentDistrict(map3d);
   useDrawAdditions(map3d);
+  useDrawSelection(map3d, tab);
   useMap3DEvents(map3d);
 
   // Set map mode to change raycast behavior on mousemove

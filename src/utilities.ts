@@ -112,13 +112,14 @@ export function nodeToTransform(
   };
 }
 export function transformToNode(
-  id: string,
-  parentId: string,
   transform: InstancedMeshTransforms,
+  label: string,
+  parent: string,
   origin: THREE.Vector3,
   minMax: THREE.Vector4,
   cubeSize: number,
 ): MapNode {
+  const id = nanoid(8);
   const position = [
     transform.position.x * minMax.x + origin.x,
     transform.position.y * minMax.y + origin.y,
@@ -134,6 +135,7 @@ export function transformToNode(
       ),
     )
     .toArray()
+    .slice(0, 3)
     .map((angle) => THREE.MathUtils.radToDeg(angle as number))
     .map(toString) as [string, string, string];
   const scale = [
@@ -146,8 +148,8 @@ export function transformToNode(
     id,
     virtual: transform.virtual,
     type: "instance",
-    label: id,
-    parent: parentId,
+    label,
+    parent,
     position,
     rotation,
     scale,
@@ -205,6 +207,15 @@ export function invariant(
   if (!condition) {
     throw new Error(message);
   }
+}
+
+export function partition<T>(array: T[], predicate: (item: T) => boolean) {
+  const pass: T[] = [];
+  const fail: T[] = [];
+  for (const item of array) {
+    (predicate(item) ? pass : fail).push(item);
+  }
+  return [pass, fail];
 }
 
 export async function zip(jsonString: string): Promise<Blob> {

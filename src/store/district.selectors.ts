@@ -11,7 +11,7 @@ const hideExcludedIndexes =
     excludedIndexes.includes(index)
       ? {
           ...instance,
-          scale: { x: 0, y: 0, z: 0, w: 0 },
+          hidden: true,
         }
       : instance;
 

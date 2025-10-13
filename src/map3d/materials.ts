@@ -53,7 +53,7 @@ patternMaterial.opacity = 0.75;
 patternMaterial.transparent = true;
 
 export const wireframeMaterial = new THREE.MeshBasicMaterial({
-  color: 0xffff00,
+  color: 0xffffff,
   wireframe: true,
 });
 
@@ -62,10 +62,6 @@ export const hiddenMaterial = new THREE.MeshBasicMaterial({
   opacity: 0.0,
   transparent: true,
   depthTest: false,
-});
-
-export const removalsMaterial = new THREE.MeshBasicMaterial({
-  color: 0xff00ff,
 });
 
 export const terrainMaterial = new THREE.MeshPhongMaterial({

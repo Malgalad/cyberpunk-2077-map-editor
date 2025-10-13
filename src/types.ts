@@ -34,7 +34,8 @@ export type ModalType =
   | "confirm"
   | "select-district"
   | "custom-district"
-  | "district-info";
+  | "district-info"
+  | "confirm-instance-exclusion";
 export type Modal = {
   type: ModalType;
   data: unknown;
@@ -80,6 +81,7 @@ export type GroupNodeCache = Record<
 export type InstancedMeshTransforms = {
   id?: string;
   virtual?: boolean;
+  hidden?: boolean;
   position: { x: number; y: number; z: number; w: number };
   orientation: { x: number; y: number; z: number; w: number };
   scale: { x: number; y: number; z: number; w: number };

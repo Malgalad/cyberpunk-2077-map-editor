@@ -16,7 +16,6 @@ export function createInstancedMeshForDistrict(
   const geometry = new THREE.BoxGeometry(cubeSize, cubeSize, cubeSize);
   const mesh = new THREE.InstancedMesh(geometry, material, instances.length);
   const positionRange = transformMax.sub(transformMin);
-  const color = new THREE.Color(0xffffff);
 
   mesh.userData.count = instances.length;
   mesh.position.set(
@@ -45,8 +44,9 @@ export function createInstancedMeshForDistrict(
 
     matrix.compose(position, rotation, scale);
     mesh.setMatrixAt(index, matrix);
-    mesh.setColorAt(index, color);
   }
+
+  mesh.setColorAt(0, new THREE.Color(0xffffff));
 
   return mesh;
 }

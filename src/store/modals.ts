@@ -44,6 +44,13 @@ function openModal(
   type: "custom-district",
 ): AppThunkAction<Promise<DistrictData>>;
 function openModal(type: "district-info"): AppThunkAction<Promise<void>>;
+function openModal(
+  type: "confirm-instance-exclusion",
+  data: {
+    index: number;
+    position: [number, number];
+  },
+): AppThunkAction<Promise<boolean>>;
 function openModal<T>(
   type: ModalType,
   data?: unknown,

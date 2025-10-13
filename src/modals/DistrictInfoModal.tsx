@@ -24,12 +24,8 @@ function DistrictInfoModal() {
   );
   const height = React.useMemo(() => {
     const length =
-      districtInstancedMeshTransforms.filter(
-        (instance) =>
-          instance.scale.x !== 0 &&
-          instance.scale.y !== 0 &&
-          instance.scale.z !== 0,
-      ).length + nodesInstancedMeshTransforms.length;
+      districtInstancedMeshTransforms.filter((instance) => !instance.hidden)
+        .length + nodesInstancedMeshTransforms.length;
 
     return Math.ceil(Math.sqrt(length));
   }, [districtInstancedMeshTransforms, nodesInstancedMeshTransforms]);
