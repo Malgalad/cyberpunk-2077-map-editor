@@ -1,24 +1,16 @@
 import Button from "../components/common/Button.tsx";
 import Modal from "../components/common/Modal.tsx";
-import { useAppDispatch } from "../hooks.ts";
-import { ModalsActions } from "../store/modals.ts";
+import type { ModalProps } from "../types.ts";
 
-interface AlertModalProps {
-  data: unknown;
-}
-
-function AlertModal(props: AlertModalProps) {
-  const dispatch = useAppDispatch();
-
+function AlertModal(props: ModalProps) {
   return (
     <Modal
+      className="min-h-36"
       title={props.data as string}
+      alignFooter="center"
+      closeButton={false}
       footer={
-        <Button
-          rounded={true}
-          className="w-12"
-          onClick={() => dispatch(ModalsActions.closeModal())}
-        >
+        <Button rounded={true} className="w-12" onClick={() => props.onClose()}>
           OK
         </Button>
       }

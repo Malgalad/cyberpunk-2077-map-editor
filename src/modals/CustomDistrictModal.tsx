@@ -1,5 +1,5 @@
 import { produce } from "immer";
-import { ArrowLeft, HelpCircle } from "lucide-react";
+import { HelpCircle } from "lucide-react";
 import * as React from "react";
 
 import Button from "../components/common/Button.tsx";
@@ -9,7 +9,6 @@ import Modal from "../components/common/Modal.tsx";
 import { useAppDispatch } from "../hooks.ts";
 import { DistrictActions } from "../store/district.ts";
 import { ModalsActions } from "../store/modals.ts";
-import { NodesActions } from "../store/nodes.ts";
 import { toNumber, toString } from "../utilities.ts";
 
 const mapSize = 16_000;
@@ -26,6 +25,13 @@ function CustomDistrictModal() {
   });
   const [name, setName] = React.useState<string>("my_district");
   const renderRef = React.useRef<(current: typeof data) => void>(undefined);
+  // TODO validation of values
+  const validationErrors = (() => {
+    if (name.length === 0) return "Name cannot be empty";
+    if (name.length > 40) return "Name cannot be longer than 40 characters";
+    return "";
+  })();
+  const isValid = !validationErrors;
 
   React.useEffect(() => {
     const canvas = ref.current;
@@ -172,7 +178,7 @@ function CustomDistrictModal() {
   const createDistrict = () => {
     dispatch(ModalsActions.closeModal());
     dispatch(
-      DistrictActions.setDistrict({
+      DistrictActions.addDistrict({
         name,
         isCustom: true,
         position: data.pos.map(toNumber),
@@ -182,27 +188,16 @@ function CustomDistrictModal() {
         cubeSize: toNumber(data.cubeSize),
       }),
     );
-    dispatch(NodesActions.setNodes([]));
-    dispatch(NodesActions.setRemovals([]));
+    dispatch(DistrictActions.selectDistrict(name));
   };
 
   const title = (
-    <div className="flex flex-row justify-between items-center">
-      <div className="flex flex-row gap-2 items-center">
-        <Button
-          className="font-normal text-base"
-          onClick={() => {
-            dispatch(ModalsActions.openModal("select-district"));
-          }}
-        >
-          <ArrowLeft /> Return
-        </Button>
-        Create new district:
-      </div>
+    <div className="flex flex-row gap-2 items-center">
+      Create new district:
       <div
         className="tooltip text-base font-normal"
         data-tooltip="Draw bounding box on the map that will contain all future buildings. Buildings outside of the range would not be able to be encoded in texture."
-        data-flow="left"
+        data-flow="bottom"
       >
         <HelpCircle />
       </div>
@@ -212,7 +207,7 @@ function CustomDistrictModal() {
   return (
     <Modal className="w-[858px]" title={title}>
       <div className="flex flex-row gap-4">
-        <div className="w-[512px] aspect-square">
+        <div className="w-[512px] aspect-square shrink-0">
           <canvas
             ref={ref}
             width={512}
@@ -220,7 +215,8 @@ function CustomDistrictModal() {
             className="w-full h-full"
           />
         </div>
-        <div className="flex flex-col gap-2">
+
+        <div className="flex flex-col gap-2 grow">
           <div className="flex flex-row justify-between items-center">
             <div className="text-lg font-bold">District properties</div>
             <div
@@ -235,6 +231,7 @@ function CustomDistrictModal() {
           <div>
             <Input
               value={name}
+              maxLength={40}
               onChange={(event) => setName(event.target.value)}
             />
           </div>
@@ -304,7 +301,9 @@ function CustomDistrictModal() {
             />
           </div>
           <div className="ml-auto mt-auto">
-            <Button onClick={() => createDistrict()}>Create</Button>
+            <Button onClick={() => createDistrict()} disabled={!isValid}>
+              Create
+            </Button>
           </div>
         </div>
       </div>

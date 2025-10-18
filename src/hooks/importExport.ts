@@ -1,130 +1,109 @@
+import { produce } from "immer";
 import * as React from "react";
-import * as z from "zod";
 
-import { loadFile, loadURLAsArrayBuffer, saveBlobToFile } from "../helpers.ts";
-import { useAppDispatch, useAppSelector } from "../hooks.ts";
-import { STATIC_ASSETS } from "../map3d/constants.ts";
+import { DEFAULT_DISTRICT_DATA } from "../constants.ts";
+import { loadFile, saveBlobToFile } from "../helpers.ts";
+import { useAppSelector } from "../hooks.ts";
 import { encodeImageData } from "../map3d/processDDS.ts";
-import { getDistrictInstancedMeshTransforms } from "../store/district.selectors.ts";
-import { DistrictActions, DistrictSelectors } from "../store/district.ts";
+import { getInitialState, getPersistentState } from "../store/@selectors.ts";
+import { DistrictSelectors } from "../store/district.ts";
 import { getNodesInstancedMeshTransforms } from "../store/nodes.selectors.ts";
-import { NodesActions, NodesSelectors } from "../store/nodes.ts";
-import type { DistrictData } from "../types.ts";
-import { unzip, zip } from "../utilities.ts";
-
-const ProjectSchema = z.record(
-  z.string(),
-  z.object({
-    district: z.intersection(
-      z.object({
-        name: z.string(),
-        position: z.array(z.number()),
-        orientation: z.array(z.number()),
-        transMin: z.array(z.number()),
-        transMax: z.array(z.number()),
-        cubeSize: z.number(),
-      }),
-      z.discriminatedUnion("isCustom", [
-        z.object({
-          isCustom: z.literal(true),
-        }),
-        z.object({
-          isCustom: z.literal(false),
-          texture: z.string(),
-          imageData: z.any(),
-        }),
-      ]),
-    ),
-    nodes: z.array(
-      z.object({
-        id: z.string(),
-        label: z.string(),
-        type: z.union([z.literal("group"), z.literal("instance")]),
-        parent: z.string(),
-        virtual: z.boolean().optional(),
-        position: z.tuple([z.string(), z.string(), z.string()]),
-        rotation: z.tuple([z.string(), z.string(), z.string()]),
-        scale: z.tuple([z.string(), z.string(), z.string()]),
-        pattern: z
-          .object({
-            enabled: z.boolean(),
-            count: z.number(),
-            position: z.tuple([z.string(), z.string(), z.string()]),
-            rotation: z.tuple([z.string(), z.string(), z.string()]),
-            scale: z.tuple([z.string(), z.string(), z.string()]),
-          })
-          .optional(),
-      }),
-    ),
-    removals: z.array(z.number()),
-  }),
-);
+import { NodesSelectors } from "../store/nodes.ts";
+import type { PersistentAppState } from "../types.ts";
+import {
+  getDistrictInstancedMeshTransforms,
+  unzip,
+  zip,
+} from "../utilities.ts";
+import {
+  PersistentStateV1Schema,
+  PersistentStateV2Schema,
+} from "./importExport.schemas.ts";
 
 export function useSaveProject() {
-  const district = useAppSelector(DistrictSelectors.getDistrict);
-  const nodes = useAppSelector(NodesSelectors.getNodes);
-  const removals = useAppSelector(NodesSelectors.getRemovals);
+  const persistentState = useAppSelector(getPersistentState);
 
   return React.useCallback(async () => {
-    if (!district) return;
+    if (!persistentState.project.name) return;
 
-    const data = ProjectSchema.encode({
-      [district.name]: { district, nodes, removals },
-    });
-    const blob = await zip(JSON.stringify(data));
+    const data = PersistentStateV2Schema.encode(persistentState);
+    const stream = zip(JSON.stringify(data));
+    const blob = await new Response(stream).blob();
 
-    saveBlobToFile(blob, `${district.name}-${Date.now()}.ncmapedits`);
-  }, [district, nodes, removals]);
+    saveBlobToFile(
+      blob,
+      `${persistentState.project.name}_${Date.now()}.ncmapedits`,
+    );
+  }, [persistentState]);
 }
 
 export function useLoadProject() {
-  const dispatch = useAppDispatch();
-
-  return React.useCallback(async () => {
+  return React.useCallback(async (): Promise<
+    [string, PersistentAppState] | undefined
+  > => {
     const file = await loadFile(".ncmapedits");
     const content = await unzip(file.stream());
-    const project = ProjectSchema.parse(JSON.parse(content));
-    const districts = Object.values(project);
+    const data = JSON.parse(content);
 
-    if (districts.length === 1) {
-      const { district, nodes, removals } = districts[0];
+    if (!data.project?.version) {
+      // assume v1
+      const stateV1 = PersistentStateV1Schema.decode(data);
 
-      if (!district.isCustom) {
-        district.imageData = await loadURLAsArrayBuffer(
-          `${STATIC_ASSETS}/textures/${district.texture.replace(".xbm", ".dds")}`,
-        );
-      }
+      return [
+        file.name,
+        produce(getInitialState(undefined), (draft) => {
+          for (const [name, value] of Object.entries(stateV1)) {
+            const { district, nodes, removals } = value;
 
-      dispatch(DistrictActions.setDistrict(district));
-      dispatch(NodesActions.setNodes(nodes));
-      dispatch(NodesActions.setRemovals(removals));
+            draft.nodes.nodes.push(...nodes);
+            draft.nodes.removals.push(...removals);
+            draft.district.districts.push(...DEFAULT_DISTRICT_DATA);
+
+            const index = draft.district.districts.findIndex(
+              (district) => district.name === name,
+            );
+
+            if (index === -1) {
+              draft.district.districts.push(district);
+            } else {
+              draft.district.districts.splice(index, 1, district);
+            }
+          }
+        }),
+      ];
+    } else if (data.project?.version === 2) {
+      return [file.name, PersistentStateV2Schema.decode(data)];
     }
-  }, [dispatch]);
+  }, []);
 }
 
 // TODO export _m base color texture (?) or use Pacifica
 export function useExportDDS() {
   const district = useAppSelector(DistrictSelectors.getDistrict);
-  const districtInstancedMeshTransforms = useAppSelector(
-    getDistrictInstancedMeshTransforms,
-  );
+  const removals = useAppSelector(NodesSelectors.getRemovals);
   const nodesInstancedMeshTransforms = useAppSelector(
     getNodesInstancedMeshTransforms,
   );
 
-  return React.useCallback(() => {
+  return React.useCallback(async () => {
     if (!district) return;
+
+    const districtInstancedMeshTransforms =
+      await getDistrictInstancedMeshTransforms(district);
     const data = [
-      ...districtInstancedMeshTransforms.filter((instance) => !instance.hidden),
+      ...districtInstancedMeshTransforms.filter(
+        (_, index) => !removals.includes(index),
+      ),
       ...nodesInstancedMeshTransforms,
     ];
     const imageData = encodeImageData(data);
     const blob = new Blob([imageData.buffer], { type: "image/dds" });
 
     saveBlobToFile(blob, `${district.name}.dds`);
-  }, [district, districtInstancedMeshTransforms, nodesInstancedMeshTransforms]);
+  }, [district, removals, nodesInstancedMeshTransforms]);
 }
 
+/*
 export function useImportDDS() {
   const dispatch = useAppDispatch();
   const district = useAppSelector(DistrictSelectors.getDistrict);
@@ -143,3 +122,4 @@ export function useImportDDS() {
     dispatch(DistrictActions.setDistrict(data));
   }, [dispatch, district]);
 }
+*/

@@ -1,7 +1,11 @@
 import * as React from "react";
 
 import mapData from "./mapData.min.json";
-import type { Districts } from "./types.ts";
+import type { DistrictData, Districts } from "./types.ts";
+
+export const PROJECT_VERSION = 2 as const;
+
+export const MAX_DEPTH = 10 as const;
 
 export const DISTRICT_LABELS: Record<keyof Districts, string> = {
   watson_data: "Watson",
@@ -20,4 +24,12 @@ export const DISTRICTS: Array<{
 }> = Object.keys(mapData.soup).map((key) => ({
   key: key as keyof Districts,
   label: DISTRICT_LABELS[key as keyof Districts],
+}));
+
+export const DEFAULT_DISTRICT_DATA: DistrictData[] = Object.entries(
+  mapData.soup,
+).map(([key, value]) => ({
+  ...value,
+  isCustom: false,
+  name: key,
 }));

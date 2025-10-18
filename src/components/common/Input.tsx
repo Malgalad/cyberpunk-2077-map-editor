@@ -19,7 +19,7 @@ function Input(props: React.InputHTMLAttributes<HTMLInputElement>) {
       className={clsx(
         "border border-slate-600 p-1.5",
         "disabled:cursor-not-allowed disabled:opacity-50",
-        "read-only:cursor-default read-only:opacity-50",
+        "read-only:cursor-default read-only:opacity-85",
         props.className,
       )}
       value={props.onChange ? value : props.value}

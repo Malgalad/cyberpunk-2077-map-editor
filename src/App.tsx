@@ -3,16 +3,15 @@ import * as React from "react";
 
 import {
   useDrawAdditions,
+  useDrawAllDistricts,
   useDrawCurrentDistrict,
   useDrawSelection,
   useInitMap3D,
   useMap3DEvents,
 } from "./App.hooks.ts";
 import Button from "./components/common/Button.tsx";
-import { useAppDispatch, useAppSelector } from "./hooks.ts";
+import { useAppDispatch } from "./hooks.ts";
 import { Map3DContext } from "./map3d/map3d.context.ts";
-import { DistrictSelectors } from "./store/district.ts";
-import { ModalsActions } from "./store/modals.ts";
 import { NodesActions } from "./store/nodes.ts";
 import AddNodes from "./tabs/AddNodes.tsx";
 import Menu from "./tabs/Menu.tsx";
@@ -27,21 +26,12 @@ const tabs = [
 
 function App() {
   const dispatch = useAppDispatch();
-  const district = useAppSelector(DistrictSelectors.getDistrict);
 
   const canvasRef = React.useRef<HTMLCanvasElement>(null);
   const map3d = useInitMap3D(canvasRef);
   const [tab, setTab] = React.useState<Tabs>("add");
 
-  // open Select District modal on launch
-  React.useEffect(() => {
-    if (district === undefined) {
-      dispatch(ModalsActions.openModal("select-district"));
-    } else {
-      dispatch(NodesActions.setEditing(null));
-    }
-  }, [district, dispatch]);
-
+  useDrawAllDistricts(map3d);
   useDrawCurrentDistrict(map3d);
   useDrawAdditions(map3d);
   useDrawSelection(map3d, tab);
@@ -51,7 +41,7 @@ function App() {
   React.useEffect(() => {
     if (!map3d) return;
     map3d.setEditingMode(tab === "add" ? "add" : "remove");
-    dispatch(NodesActions.setEditing(null));
+    dispatch(NodesActions.setEditing(undefined));
   }, [map3d, tab, dispatch]);
 
   return (
@@ -74,6 +64,7 @@ function App() {
             </Button>
           </div>
         </div>
+
         <div className="w-[420px] h-full flex flex-col py-2 pr-2">
           <div className="flex flex-row gap-0.5 -mb-[1px]">
             {tabs.map((button) => (

@@ -8,10 +8,10 @@ import {
   cloneNode,
   invariant,
   nodeToTransform,
-  prepareNode,
+  parseNode,
 } from "../utilities.ts";
+import { getDistrictNodes } from "./@selectors.ts";
 import districtSlice from "./district.ts";
-import nodesSlice from "./nodes.ts";
 
 const scalePattern = (i: number) => (value: number) => value * (i + 1);
 const noTransforms: InstancedMeshTransforms[] = [];
@@ -20,7 +20,7 @@ export const getNodesInstancedMeshTransforms = createSelector(
   [
     districtSlice.selectors.getDistrict,
     districtSlice.selectors.getDistrictCenter,
-    nodesSlice.selectors.getNodes,
+    getDistrictNodes,
   ],
   (district, districtCenter, nodes): InstancedMeshTransforms[] => {
     if (!district || !districtCenter) return noTransforms;
@@ -28,7 +28,7 @@ export const getNodesInstancedMeshTransforms = createSelector(
     const instanceTransforms: InstancedMeshTransforms[] = [];
 
     // reverse array to ensure child patterns are resolved before parent patterns
-    const reversedNodes: MapNodeParsed[] = nodes.map(prepareNode).toReversed();
+    const reversedNodes: MapNodeParsed[] = nodes.map(parseNode).toReversed();
     const { cubeSize } = district;
     const { origin, minMax } = districtCenter;
 
@@ -70,31 +70,29 @@ export const getNodesInstancedMeshTransforms = createSelector(
     }
 
     for (const node of reversedNodes) {
-      if (node.type === "instance") {
-        let current = node;
-        let parentId = current.parent;
+      if (node.type === "group") continue;
 
-        while (parentId !== district.name) {
-          const parent = reversedNodes.find((parent) => parent.id === parentId);
-          invariant(
-            parent,
-            `Cannot find parent ${parentId} for node ${node.id}`,
-          );
-          current = applyParentTransform(current, parent);
-          parentId = parent.parent;
-        }
+      let current = node;
+      let parentId = current.parent;
 
-        current.position[2] += current.scale[2] / 2;
-
-        const transformedNode = nodeToTransform(
-          current,
-          origin,
-          minMax,
-          cubeSize,
-        );
-
-        instanceTransforms.push(transformedNode);
+      while (parentId !== district.name) {
+        const parent = reversedNodes.find((parent) => parent.id === parentId);
+        invariant(parent, `Cannot find parent ${parentId} for node ${node.id}`);
+        current = applyParentTransform(current, parent);
+        parentId = parent.parent;
       }
+
+      // set node Z transform origin to bottom instead of center
+      current.position[2] += current.scale[2] / 2;
+
+      const transformedNode = nodeToTransform(
+        current,
+        origin,
+        minMax,
+        cubeSize,
+      );
+
+      instanceTransforms.push(transformedNode);
     }
 
     return instanceTransforms;

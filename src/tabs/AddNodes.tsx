@@ -5,6 +5,7 @@ import Button from "../components/common/Button.tsx";
 import EditNode from "../components/EditNode.tsx";
 import Node from "../components/Node.tsx";
 import { useAppDispatch, useAppSelector } from "../hooks.ts";
+import { getDistrictNodes } from "../store/@selectors.ts";
 import { DistrictSelectors } from "../store/district.ts";
 import { ModalsActions } from "../store/modals.ts";
 import { NodesActions, NodesSelectors } from "../store/nodes.ts";
@@ -13,7 +14,7 @@ import { toString } from "../utilities.ts";
 
 function AddNodes() {
   const dispatch = useAppDispatch();
-  const nodes = useAppSelector(NodesSelectors.getNodes);
+  const nodes = useAppSelector(getDistrictNodes);
   const editing = useAppSelector(NodesSelectors.getEditing);
   const district = useAppSelector(DistrictSelectors.getDistrict);
   const districtCenter = useAppSelector(DistrictSelectors.getDistrictCenter);
@@ -71,7 +72,7 @@ function AddNodes() {
       <div className="flex flex-col gap-2 grow overflow-auto bg-slate-800 relative">
         <div
           className="grow p-2 flex flex-col"
-          onClick={() => dispatch(NodesActions.setEditing(null))}
+          onClick={() => dispatch(NodesActions.setEditing(undefined))}
         >
           {rootNodes.length === 0 && (
             <div className="grow flex items-center justify-center italic">

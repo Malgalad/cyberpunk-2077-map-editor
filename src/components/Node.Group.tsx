@@ -26,19 +26,12 @@ function Group({ node }: GroupProps) {
   const nodesInstancedMeshTransforms = useAppSelector(
     getNodesInstancedMeshTransforms,
   );
-
-  const nodeChildren = React.useMemo(
-    () => ({
-      i: cache[node.id].i.flat(99),
-      g: cache[node.id].g,
-    }),
-    [cache, node.id],
-  );
   const [expanded, setExpanded] = React.useState(false);
   const children = React.useMemo(
     () => nodes.filter((child) => child.parent === node.id),
     [nodes, node.id],
   );
+  const nodeChildren = cache[node.id];
 
   const lookAtNode = () => {
     if (!map3D || !districtCenter || !nodeChildren.i.length) return;
@@ -91,7 +84,7 @@ function Group({ node }: GroupProps) {
           if (event.key === "Enter" || event.key === " ") {
             dispatch(NodesActions.setEditing(node.id));
           } else if (event.key === "Escape") {
-            dispatch(NodesActions.setEditing(null));
+            dispatch(NodesActions.setEditing(undefined));
           }
         }}
       >

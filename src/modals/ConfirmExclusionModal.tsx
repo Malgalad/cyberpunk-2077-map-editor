@@ -1,14 +1,8 @@
 import Button from "../components/common/Button.tsx";
 import Modal from "../components/common/Modal.tsx";
-import { useAppDispatch } from "../hooks.ts";
-import { ModalsActions } from "../store/modals.ts";
+import type { ModalProps } from "../types.ts";
 
-interface ConfirmExclusionModalProps {
-  data: unknown;
-}
-
-function ConfirmExclusionModal(props: ConfirmExclusionModalProps) {
-  const dispatch = useAppDispatch();
+function ConfirmExclusionModal(props: ModalProps) {
   const { index, position } = props.data as {
     index: number;
     position: [number, number];
@@ -19,19 +13,13 @@ function ConfirmExclusionModal(props: ConfirmExclusionModalProps) {
       backdrop={false}
       className={`absolute w-64 -translate-y-1/2`}
       style={{ left: position[0] + 15, top: position[1] }}
-      title={`Exclude instance #${index}?`}
+      title={`Hide instance #${index}?`}
     >
       <div className="flex flex-row justify-between">
-        <Button
-          className="w-16"
-          onClick={() => dispatch(ModalsActions.closeModal(false))}
-        >
+        <Button className="w-16" onClick={() => props.onClose(false)}>
           No
         </Button>
-        <Button
-          className="w-16"
-          onClick={() => dispatch(ModalsActions.closeModal(true))}
-        >
+        <Button className="w-16" onClick={() => props.onClose(true)}>
           Yes
         </Button>
       </div>

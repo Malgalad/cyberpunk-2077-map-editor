@@ -1,29 +1,17 @@
 import Button from "../components/common/Button.tsx";
 import Modal from "../components/common/Modal.tsx";
-import { useAppDispatch } from "../hooks.ts";
-import { ModalsActions } from "../store/modals.ts";
+import type { ModalProps } from "../types.ts";
 
-interface ConfirmModalProps {
-  data: unknown;
-}
-
-function ConfirmModal(props: ConfirmModalProps) {
-  const dispatch = useAppDispatch();
-
+function ConfirmModal(props: ModalProps) {
   return (
     <Modal
       title={"Confirm action:"}
       footer={
         <>
-          <Button
-            className="mr-auto"
-            onClick={() => dispatch(ModalsActions.closeModal(false))}
-          >
+          <Button className="mr-auto" onClick={() => props.onClose(false)}>
             Cancel
           </Button>
-          <Button onClick={() => dispatch(ModalsActions.closeModal(true))}>
-            Confirm
-          </Button>
+          <Button onClick={() => props.onClose(true)}>Confirm</Button>
         </>
       }
     >

@@ -59,7 +59,7 @@ function Instance({ node }: InstanceProps) {
         if (event.key === "Enter" || event.key === " ") {
           dispatch(NodesActions.setEditing(node.id));
         } else if (event.key === "Escape") {
-          dispatch(NodesActions.setEditing(null));
+          dispatch(NodesActions.setEditing(undefined));
         }
       }}
     >

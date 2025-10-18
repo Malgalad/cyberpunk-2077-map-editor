@@ -5,8 +5,8 @@ import {
   useSelector,
 } from "react-redux";
 
+import { listFiles } from "./opfs.ts";
 import type { AppDispatch, AppState } from "./types.ts";
-import { unzip, zip } from "./utilities.ts";
 
 export const useAppDispatch: () => AppDispatch = useDispatch;
 export const useAppSelector: TypedUseSelectorHook<AppState> = useSelector;
@@ -21,33 +21,14 @@ export function usePreviousValue<T>(value: T): T | null {
   return ref.current;
 }
 
-export function useFS() {
-  const [root, setRoot] = React.useState<FileSystemDirectoryHandle | null>(
-    null,
-  );
-  const loadJSON = React.useCallback(
-    async (name: string) => {
-      if (!root) return;
-      const handle = await root.getFileHandle(name, { create: false });
-      const file = await handle.getFile();
-      return JSON.parse(await unzip(file.stream()));
-    },
-    [root],
-  );
-  const saveJSON = React.useCallback(
-    async (name: string, data: unknown) => {
-      if (!root) return;
-      const handle = await root.getFileHandle(name, { create: true });
-      const stream = await handle.createWritable();
-      await stream.write(await zip(JSON.stringify(data)));
-      await stream.close();
-    },
-    [root],
-  );
+export function useFilesList(directory?: string) {
+  const [files, setFiles] = React.useState<string[]>([]);
 
   React.useEffect(() => {
-    navigator.storage.getDirectory().then(setRoot);
-  }, []);
+    listFiles(directory)
+      .then(setFiles)
+      .catch(() => setFiles([]));
+  }, [directory]);
 
-  return [loadJSON, saveJSON] as const;
+  return files;
 }

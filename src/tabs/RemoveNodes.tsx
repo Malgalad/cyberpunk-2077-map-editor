@@ -4,10 +4,14 @@ import Button from "../components/common/Button.tsx";
 import RemovalsInstance from "../components/Removals.Instance.tsx";
 import { useAppDispatch, useAppSelector } from "../hooks.ts";
 import { useMap3D } from "../map3d/map3d.context.ts";
-import { getDistrictInstancedMeshTransforms } from "../store/district.selectors.ts";
 import { DistrictSelectors } from "../store/district.ts";
 import { NodesActions, NodesSelectors } from "../store/nodes.ts";
-import { invariant, toNumber, transformToNode } from "../utilities.ts";
+import {
+  getDistrictInstancedMeshTransforms,
+  invariant,
+  toNumber,
+  transformToNode,
+} from "../utilities.ts";
 
 function RemoveNodes() {
   const dispatch = useAppDispatch();
@@ -16,14 +20,13 @@ function RemoveNodes() {
   const districtCenter = useAppSelector(DistrictSelectors.getDistrictCenter);
   const removals = useAppSelector(NodesSelectors.getRemovals);
   const editing = useAppSelector(NodesSelectors.getEditingId);
-  const districtInstancedMeshTransforms = useAppSelector(
-    getDistrictInstancedMeshTransforms,
-  );
 
-  const copyTransform = () => {
+  const copyTransform = async () => {
     if (!editing) return;
     invariant(district, "District is not defined");
     invariant(districtCenter, "District center is not defined");
+    const districtInstancedMeshTransforms =
+      await getDistrictInstancedMeshTransforms(district);
     const node = transformToNode(
       districtInstancedMeshTransforms[toNumber(editing)],
       `${editing} Copy`,
@@ -33,14 +36,14 @@ function RemoveNodes() {
       district.cubeSize,
     );
     dispatch(NodesActions.insertNode(node));
-    dispatch(NodesActions.setEditing(null));
+    dispatch(NodesActions.setEditing(undefined));
   };
 
   return (
     <div className="flex flex-col gap-2 grow overflow-auto bg-slate-800 relative">
       <div
         className="grow p-2 flex flex-col"
-        onClick={() => dispatch(NodesActions.setEditing(null))}
+        onClick={() => dispatch(NodesActions.setEditing(undefined))}
       >
         {!removals.length && (
           <div className="grow flex items-center justify-center italic bg-slate-800">
@@ -68,7 +71,7 @@ function RemoveNodes() {
             onClick={() => {
               if (map3D) map3D.dontLookAt = true;
               dispatch(NodesActions.includeTransform(toNumber(editing)));
-              dispatch(NodesActions.setEditing(null));
+              dispatch(NodesActions.setEditing(undefined));
             }}
             data-tooltip="Delete from the list of removals"
             data-flow="left"

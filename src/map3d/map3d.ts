@@ -321,19 +321,23 @@ export class Map3D extends Map3DBase {
   setVisibleDistricts(districts: DistrictWithTransforms[]) {
     const visibleNames = districts.map((item) => item.district.name);
 
+    const objectsToRemove: THREE.Object3D[] = [];
     for (const object3d of this.#visibleDistricts.children) {
       const { name } = object3d.userData;
 
       if (!visibleNames.includes(name)) {
-        this.#visibleDistricts.remove(object3d);
+        objectsToRemove.push(object3d);
         (object3d as THREE.InstancedMesh).geometry.dispose();
       }
     }
+    if (objectsToRemove.length > 0)
+      this.#visibleDistricts.remove(...objectsToRemove);
 
     const currentNames = this.#visibleDistricts.children.map(
       (object3d) => object3d.userData.name as string,
     );
 
+    const objectsToAdd: THREE.Object3D[] = [];
     for (const item of districts) {
       const { district, transforms } = item;
 
@@ -344,9 +348,10 @@ export class Map3D extends Map3DBase {
           buildingsMaterial,
         );
         mesh.userData = { name: district.name };
-        this.#visibleDistricts.add(mesh);
+        objectsToAdd.push(mesh);
       }
     }
+    if (objectsToAdd.length > 0) this.#visibleDistricts.add(...objectsToAdd);
 
     requestAnimationFrame(this.render);
   }

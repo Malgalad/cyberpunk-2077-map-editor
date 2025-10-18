@@ -1,0 +1,55 @@
+import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
+
+import type {
+  DistrictView,
+  PatternView,
+  PersistentAppState,
+} from "../types.ts";
+import { hydrateState } from "./@actions.ts";
+
+interface OptionsState {
+  districtView: DistrictView;
+  patternView: PatternView;
+  visibleDistricts: string[];
+}
+
+const initialState: OptionsState = {
+  districtView: "current",
+  patternView: "wireframe",
+  visibleDistricts: [],
+};
+
+const optionsSlice = createSlice({
+  name: "options",
+  initialState,
+  reducers: {
+    setDistrictView(state, action: PayloadAction<DistrictView>) {
+      state.districtView = action.payload;
+    },
+    setPatternView(state, action: PayloadAction<PatternView>) {
+      state.patternView = action.payload;
+    },
+    toggleDistrictVisibility(state, action: PayloadAction<string>) {
+      const index = state.visibleDistricts.indexOf(action.payload);
+      if (index === -1) {
+        state.visibleDistricts.push(action.payload);
+      } else {
+        state.visibleDistricts.splice(index, 1);
+      }
+    },
+  },
+  extraReducers: (builder) =>
+    builder.addCase(
+      hydrateState,
+      (_, action: PayloadAction<PersistentAppState>) => action.payload.options,
+    ),
+  selectors: {
+    getDistrictView: (state) => state.districtView,
+    getPatternView: (state) => state.patternView,
+    getVisibleDistricts: (state) => state.visibleDistricts,
+  },
+});
+
+export const OptionsActions = optionsSlice.actions;
+export const OptionsSelectors = optionsSlice.selectors;
+export default optionsSlice;

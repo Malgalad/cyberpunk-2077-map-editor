@@ -1,5 +1,6 @@
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 
+import type { Tabs } from "../modals/ProjectModal.tsx";
 import type {
   AppThunkAction,
   DistrictData,
@@ -26,20 +27,20 @@ const modalsSlice = createSlice({
     },
   },
   selectors: {
-    getModal(state) {
-      return state.modal;
-    },
+    getModal: (state) => state.modal,
   },
 });
 
 function openModal(type: "alert", data: string): AppThunkAction<Promise<void>>;
 function openModal(
+  type: "critical",
+  data: string,
+): AppThunkAction<Promise<void>>;
+function openModal(
   type: "confirm",
   data: string,
 ): AppThunkAction<Promise<boolean>>;
-function openModal(
-  type: "select-district",
-): AppThunkAction<Promise<DistrictData>>;
+function openModal(type: "project", data?: Tabs): AppThunkAction<Promise<void>>;
 function openModal(
   type: "custom-district",
 ): AppThunkAction<Promise<DistrictData>>;

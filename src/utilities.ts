@@ -2,8 +2,12 @@ import { isDraft, original, type WritableDraft } from "immer";
 import { nanoid } from "nanoid";
 import * as THREE from "three";
 
+import { loadURLAsArrayBuffer } from "./helpers.ts";
+import { STATIC_ASSETS } from "./map3d/constants.ts";
 import { frustumSize } from "./map3d/map3d.base.ts";
+import { decodeImageData } from "./map3d/processDDS.ts";
 import type {
+  DistrictData,
   InstancedMeshTransforms,
   MapNode,
   MapNodeParsed,
@@ -20,11 +24,12 @@ export function toNumber(value: string) {
   const number = parseFloat(value.trim());
   return Number.isNaN(number) ? 0 : number;
 }
+
 export function toString(value: number) {
   return value.toString();
 }
 
-export function prepareTransform<K>(
+export function parseTransform<K>(
   transform: Transform & K,
 ): TransformParsed & K {
   return {
@@ -37,10 +42,10 @@ export function prepareTransform<K>(
   };
 }
 
-export function prepareNode(node: MapNode): MapNodeParsed {
+export function parseNode(node: MapNode): MapNodeParsed {
   return {
-    ...prepareTransform(node),
-    pattern: node.pattern ? prepareTransform(node.pattern) : undefined,
+    ...parseTransform(node),
+    pattern: node.pattern ? parseTransform(node.pattern) : undefined,
   };
 }
 
@@ -111,6 +116,7 @@ export function nodeToTransform(
     scale,
   };
 }
+
 export function transformToNode(
   transform: InstancedMeshTransforms,
   label: string,
@@ -218,7 +224,7 @@ export function partition<T>(array: T[], predicate: (item: T) => boolean) {
   return [pass, fail];
 }
 
-export async function zip(jsonString: string): Promise<Blob> {
+export function zip(jsonString: string): ReadableStream {
   const textEncoder = new TextEncoder();
   const encodedData = textEncoder.encode(jsonString);
 
@@ -229,11 +235,7 @@ export async function zip(jsonString: string): Promise<Blob> {
     },
   });
 
-  const compressedStream = readableStream.pipeThrough(
-    new CompressionStream("gzip"),
-  );
-
-  return new Response(compressedStream).blob();
+  return readableStream.pipeThrough(new CompressionStream("gzip"));
 }
 
 export async function unzip(compressedData: ReadableStream): Promise<string> {
@@ -246,4 +248,23 @@ export async function unzip(compressedData: ReadableStream): Promise<string> {
   const textDecoder = new TextDecoder();
 
   return textDecoder.decode(decompressedArrayBuffer);
+}
+
+// TODO move to own file
+const transformsCache = new Map<string, Promise<InstancedMeshTransforms[]>>();
+
+export function getDistrictInstancedMeshTransforms(district: DistrictData) {
+  if (district.isCustom) return Promise.resolve([]);
+
+  if (!transformsCache.has(district.name)) {
+    transformsCache.set(
+      district.name,
+      loadURLAsArrayBuffer(
+        `${STATIC_ASSETS}/textures/${district.texture.replace(".xbm", ".dds")}`,
+      ).then((arrayBuffer) => decodeImageData(new Uint16Array(arrayBuffer))),
+    );
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+  return transformsCache.get(district.name)!;
 }

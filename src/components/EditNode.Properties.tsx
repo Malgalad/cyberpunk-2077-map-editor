@@ -6,7 +6,7 @@ import { useAppDispatch, useAppSelector, usePreviousValue } from "../hooks.ts";
 import { DistrictSelectors } from "../store/district.ts";
 import { NodesActions, NodesSelectors } from "../store/nodes.ts";
 import type { MapNode } from "../types.ts";
-import { clsx, prepareTransform } from "../utilities.ts";
+import { clsx, parseTransform } from "../utilities.ts";
 import Button from "./common/Button.tsx";
 import DraggableInput from "./common/DraggableInput.tsx";
 import Input from "./common/Input.tsx";
@@ -24,21 +24,21 @@ function EditNodeProperties({ node }: EditNodePropertiesProps) {
   const district = useAppSelector(DistrictSelectors.getDistrict);
   const cache = useAppSelector(NodesSelectors.getChildNodesCache);
   const parents = React.useMemo(() => {
-    const groups = nodes.filter((other) => other.type === "group");
-
     if (!district) return [];
 
     return [
       { label: "<Root>", value: district.name },
-      ...groups.map((other) => ({
-        label: other.label,
-        value: other.id,
-      })),
-    ].map((other) => ({
-      ...other,
-      level: cache[other.value].l,
-      label: `${other.label}${node.parent === other.value ? " (current)" : node.id === other.value ? " (self)" : ""}`,
-      disabled: node.parent === other.value || node.id === other.value,
+      ...nodes
+        .filter((node) => node.type === "group")
+        .map((group) => ({
+          label: group.label,
+          value: group.id,
+        })),
+    ].map((item) => ({
+      ...item,
+      level: cache[item.value].l,
+      label: `${item.label}${node.parent === item.value ? " (current)" : node.id === item.value ? " (self)" : ""}`,
+      disabled: node.parent === item.value || node.id === item.value,
     }));
   }, [district, nodes, node, cache]);
   const [useLocal, setUseLocal] = React.useState(false);
@@ -118,8 +118,8 @@ function EditNodeProperties({ node }: EditNodePropertiesProps) {
 
                   if (!copy) return;
 
-                  const parsedNode = prepareTransform(copy);
-                  const parsedLocalPosition = prepareTransform({
+                  const parsedNode = parseTransform(copy);
+                  const parsedLocalPosition = parseTransform({
                     position: newLocal as [string, string, string],
                     rotation: ["0", "0", "0"],
                     scale: ["1", "1", "1"],

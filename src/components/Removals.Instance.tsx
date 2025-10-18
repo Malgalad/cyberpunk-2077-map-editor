@@ -1,9 +1,12 @@
 import { useAppDispatch, useAppSelector } from "../hooks.ts";
 import { useMap3D } from "../map3d/map3d.context.ts";
-import { getDistrictInstancedMeshTransforms } from "../store/district.selectors.ts";
 import { DistrictSelectors } from "../store/district.ts";
 import { NodesActions, NodesSelectors } from "../store/nodes.ts";
-import { clsx, lookAtTransform } from "../utilities.ts";
+import {
+  clsx,
+  getDistrictInstancedMeshTransforms,
+  lookAtTransform,
+} from "../utilities.ts";
 
 interface RemovalsInstanceProps {
   index: number;
@@ -13,12 +16,13 @@ function RemovalsInstance({ index }: RemovalsInstanceProps) {
   const dispatch = useAppDispatch();
   const map3d = useMap3D();
   const editingId = useAppSelector(NodesSelectors.getEditingId);
-  const transforms = useAppSelector(getDistrictInstancedMeshTransforms);
+  const district = useAppSelector(DistrictSelectors.getDistrict);
   const districtCenter = useAppSelector(DistrictSelectors.getDistrictCenter);
 
-  const lookAtNode = () => {
-    if (!map3d || !districtCenter) return;
+  const lookAtNode = async () => {
+    if (!map3d || !districtCenter || !district) return;
 
+    const transforms = await getDistrictInstancedMeshTransforms(district);
     const transform = transforms[index];
 
     if (transform) {
@@ -46,13 +50,13 @@ function RemovalsInstance({ index }: RemovalsInstanceProps) {
       }}
       onDoubleClick={(event) => {
         event.preventDefault();
-        lookAtNode();
+        void lookAtNode();
       }}
       onKeyDown={(event) => {
         if (event.key === "Enter" || event.key === " ") {
           dispatch(NodesActions.setEditing(`${index}`));
         } else if (event.key === "Escape") {
-          dispatch(NodesActions.setEditing(null));
+          dispatch(NodesActions.setEditing(undefined));
         }
       }}
     >

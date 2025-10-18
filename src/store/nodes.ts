@@ -6,13 +6,15 @@ import {
 import type { WritableDraft } from "immer";
 import { nanoid } from "nanoid";
 
-import type { GroupNodeCache, MapNode } from "../types.ts";
+import { MAX_DEPTH } from "../constants.ts";
+import type { GroupNodeCache, MapNode, PersistentAppState } from "../types.ts";
 import { cloneNode } from "../utilities.ts";
+import { hydrateState } from "./@actions.ts";
 
 interface NodesState {
   nodes: MapNode[];
   removals: number[];
-  editing: MapNode["id"] | null;
+  editingId: MapNode["id"] | undefined;
 }
 
 type AddNodeParams = {
@@ -24,7 +26,7 @@ type AddNodeParams = {
 const initialState: NodesState = {
   nodes: [],
   removals: [],
-  editing: null,
+  editingId: undefined,
 };
 
 const nodesSlice = createSlice({
@@ -59,14 +61,14 @@ const nodesSlice = createSlice({
       if (!node) return;
       const clones = cloneNode(state.nodes, node, node.parent);
       state.nodes.push(...clones);
-      state.editing = clones[0].id;
+      state.editingId = clones[0].id;
     }),
     patchNode: create.reducer(
       (
         state,
         action: PayloadAction<(draft: WritableDraft<MapNode>) => void>,
       ) => {
-        const node = state.nodes.find((node) => node.id === state.editing);
+        const node = state.nodes.find((node) => node.id === state.editingId);
         if (!node) return;
         action.payload(node);
       },
@@ -77,8 +79,8 @@ const nodesSlice = createSlice({
       },
     ),
     setEditing: create.reducer(
-      (state, action: PayloadAction<MapNode["id"] | null>) => {
-        state.editing = action.payload;
+      (state, action: PayloadAction<MapNode["id"] | undefined>) => {
+        state.editingId = action.payload;
       },
     ),
     setNodes: create.reducer((state, action: PayloadAction<MapNode[]>) => {
@@ -94,19 +96,23 @@ const nodesSlice = createSlice({
       state.removals = action.payload;
     }),
   }),
+  extraReducers: (builder) =>
+    builder.addCase(
+      hydrateState,
+      (_, action: PayloadAction<PersistentAppState>) => action.payload.nodes,
+    ),
   selectors: {
-    getNodes(state): MapNode[] {
-      return state.nodes;
-    },
+    getNodes: (state) => state.nodes,
+    getEditingId: (state) => state.editingId,
     getRemovals: createSelector(
       [(sliceState: NodesState) => sliceState.removals],
       (removals) => removals.toSorted(),
     ),
-    getEditingId(state): string | null {
-      return state.editing;
-    },
     getChildNodesCache: createSelector(
-      [(sliceState: NodesState) => sliceState.nodes],
+      [
+        (sliceState: NodesState): MapNode[] =>
+          nodesSlice.getSelectors().getNodes(sliceState),
+      ],
       (nodes) => {
         const cache: GroupNodeCache = {};
 
@@ -119,18 +125,25 @@ const nodesSlice = createSlice({
             let depth = 0;
             let current: MapNode | undefined = node;
             while (current) {
+              // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
               current = nodes.find((n) => n.id === current!.parent);
               depth += 1;
             }
 
             const self = cache[node.id] ?? { i: [], g: [], l: 0 };
             self.l = depth;
-            parent.g.push(node.id);
-            parent.i.push(self.i); // push reference to array of own children ids
+            // push reference to the array of own children ids
+            parent.g.push(node.id, self.g);
+            parent.i.push(self.i);
             cache[node.id] = self;
           }
 
           cache[node.parent] = parent;
+        }
+
+        for (const entry of Object.values(cache)) {
+          entry.g = entry.g.flat(MAX_DEPTH);
+          entry.i = entry.i.flat(MAX_DEPTH);
         }
 
         return cache;
@@ -138,8 +151,10 @@ const nodesSlice = createSlice({
     ),
     getEditing: createSelector(
       [
-        (sliceState: NodesState) => sliceState.editing,
-        (sliceState: NodesState) => sliceState.nodes,
+        (sliceState: NodesState): string | undefined =>
+          nodesSlice.getSelectors().getEditingId(sliceState),
+        (sliceState: NodesState): MapNode[] =>
+          nodesSlice.getSelectors().getNodes(sliceState),
       ],
       (editing, nodes) => nodes.find((node) => node.id === editing),
     ),

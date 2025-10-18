@@ -4,31 +4,34 @@ import * as React from "react";
 import Button from "../components/common/Button.tsx";
 import Input from "../components/common/Input.tsx";
 import Modal from "../components/common/Modal.tsx";
-import { useAppDispatch, useAppSelector } from "../hooks.ts";
-import { getDistrictInstancedMeshTransforms } from "../store/district.selectors.ts";
+import { useAppSelector } from "../hooks.ts";
 import { DistrictSelectors } from "../store/district.ts";
-import { ModalsActions } from "../store/modals.ts";
 import { getNodesInstancedMeshTransforms } from "../store/nodes.selectors.ts";
-import { invariant } from "../utilities.ts";
+import { NodesSelectors } from "../store/nodes.ts";
+import { getDistrictInstancedMeshTransforms, invariant } from "../utilities.ts";
 
 const axii = [0, 1, 2] as const;
 
 function DistrictInfoModal() {
-  const dispatch = useAppDispatch();
   const district = useAppSelector(DistrictSelectors.getDistrict);
-  const districtInstancedMeshTransforms = useAppSelector(
-    getDistrictInstancedMeshTransforms,
-  );
-  const nodesInstancedMeshTransforms = useAppSelector(
-    getNodesInstancedMeshTransforms,
-  );
-  const height = React.useMemo(() => {
-    const length =
-      districtInstancedMeshTransforms.filter((instance) => !instance.hidden)
-        .length + nodesInstancedMeshTransforms.length;
+  const removals = useAppSelector(NodesSelectors.getRemovals);
+  const nodesTransforms = useAppSelector(getNodesInstancedMeshTransforms);
+  const [height, setHeight] = React.useState<number>(0);
 
-    return Math.ceil(Math.sqrt(length));
-  }, [districtInstancedMeshTransforms, nodesInstancedMeshTransforms]);
+  React.useEffect(() => {
+    if (!district) return;
+
+    getDistrictInstancedMeshTransforms(district).then((districtTransforms) => {
+      const height = Math.ceil(
+        Math.sqrt(
+          districtTransforms.filter((_, index) => !removals.includes(index))
+            .length + nodesTransforms.length,
+        ),
+      );
+
+      setHeight(height);
+    });
+  }, [district, removals, nodesTransforms]);
   const [copied, setCopied] = React.useState<boolean>(false);
 
   invariant(district, "District is not set");
@@ -45,7 +48,7 @@ function DistrictInfoModal() {
           {axii.map((i) => (
             <Input
               key={i}
-              className="w-20"
+              className="w-24"
               value={district.position[i]}
               readOnly
             />
@@ -56,7 +59,7 @@ function DistrictInfoModal() {
           {axii.map((i) => (
             <Input
               key={i}
-              className="w-20"
+              className="w-24"
               value={district.transMin[i]}
               readOnly
             />
@@ -67,7 +70,7 @@ function DistrictInfoModal() {
           {axii.map((i) => (
             <Input
               key={i}
-              className="w-20"
+              className="w-24"
               value={district.transMax[i]}
               readOnly
             />
@@ -83,7 +86,7 @@ function DistrictInfoModal() {
         </div>
         <div className="justify-self-end col-span-2 flex flex-row gap-4">
           <Button
-            className="tooltip"
+            className="tooltip w-24"
             onClick={() => {
               const { name, position, transMin, transMax, cubeSize } = district;
               const positionFP = position.map((v) => v * (1 << 17));
@@ -108,10 +111,7 @@ function DistrictInfoModal() {
             data-tooltip={copied ? "Copied!" : "Copy to clipboard"}
             data-flow="top"
           >
-            <Clipboard />
-          </Button>
-          <Button onClick={() => dispatch(ModalsActions.closeModal())}>
-            Close
+            <Clipboard /> Copy
           </Button>
         </div>
       </div>
