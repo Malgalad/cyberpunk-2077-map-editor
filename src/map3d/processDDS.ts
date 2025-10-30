@@ -1,4 +1,4 @@
-import type { InstancedMeshTransforms } from "../types.ts";
+import type { InstancedMeshTransforms } from "../types/types.ts";
 
 // https://github.com/toji/webgl-texture-utils/blob/master/texture-util/dds.js
 /** @prop {import('three/examples/jsm/loaders/DDSLoader.js')} **/
@@ -22,18 +22,6 @@ const uint16 = 2 ** 16 - 1; // 65535
  * - the last part contains scale
  * Transform data from 0..65536 range to 0..1 (rotation to -1..1)
  *   to later transform scale according to district-specific bounding box
- */
-
-/**
- * 0, 0, 0
- * 0, 0, 0,
- * 0, 0, 0
- * x = 0, y = 0, i = 0
- * x = 1, y = 0, i = 4,
- * x = 2, y = 0, i = 8
- * x = 0, y = 1, i = 1
- * x = 1, y = 1, i = 5
- * i = x * height + y
  */
 
 export function decodeImageData(data: Uint16Array): InstancedMeshTransforms[] {
@@ -69,6 +57,7 @@ export function decodeImageData(data: Uint16Array): InstancedMeshTransforms[] {
     };
 
     instances[index] = {
+      id: `${index}`,
       position,
       orientation,
       scale,

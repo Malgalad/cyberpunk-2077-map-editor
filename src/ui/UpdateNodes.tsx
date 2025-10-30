@@ -1,29 +1,26 @@
-import { CopyPlus, FilePlus, FolderPlus, Trash2 } from "lucide-react";
+import { Trash2 } from "lucide-react";
 import * as React from "react";
 
 import Button from "../components/common/Button.tsx";
 import EditNode from "../components/EditNode.tsx";
 import Node from "../components/Node.tsx";
 import { useAppDispatch, useAppSelector } from "../hooks.ts";
-import { getDistrictNodes } from "../store/@selectors.ts";
+import { getUpdates } from "../store/@selectors.ts";
 import { DistrictSelectors } from "../store/district.ts";
 import { ModalsActions } from "../store/modals.ts";
 import { NodesActions, NodesSelectors } from "../store/nodes.ts";
-import type { MapNode } from "../types.ts";
-import { toString } from "../utilities.ts";
 
-function AddNodes() {
+function UpdateNodes() {
   const dispatch = useAppDispatch();
-  const nodes = useAppSelector(getDistrictNodes);
+  const nodes = useAppSelector(getUpdates);
   const editing = useAppSelector(NodesSelectors.getEditing);
   const district = useAppSelector(DistrictSelectors.getDistrict);
-  const districtCenter = useAppSelector(DistrictSelectors.getDistrictCenter);
   const rootNodes = React.useMemo(
     () => nodes.filter((node) => node.parent === district?.name),
     [nodes, district],
   );
 
-  if (!district || !districtCenter) return null;
+  if (!district) return null;
 
   const onDelete = () => {
     if (!editing) return;
@@ -52,27 +49,12 @@ function AddNodes() {
     });
   };
 
-  const onAdd = (type: MapNode["type"]) => {
-    const parent = editing ? editing.id : district.name;
-    const position = (
-      editing ? ["0", "0", "0"] : districtCenter.center.toArray().map(toString)
-    ) as MapNode["position"];
-    const action = dispatch(
-      NodesActions.addNode({
-        type,
-        parent,
-        position,
-      }),
-    );
-    dispatch(NodesActions.setEditing(action.payload.id));
-  };
-
   return (
     <>
       <div className="flex flex-col gap-2 grow overflow-auto bg-slate-800 relative">
         <div
           className="grow p-2 flex flex-col"
-          onClick={() => dispatch(NodesActions.setEditing(undefined))}
+          onClick={() => dispatch(NodesActions.setEditing(null))}
         >
           {rootNodes.length === 0 && (
             <div className="grow flex items-center justify-center italic">
@@ -86,47 +68,15 @@ function AddNodes() {
 
         <div className="flex flex-row gap-2 sticky pr-1 bottom-0 justify-end border-t border-slate-900 bg-slate-800">
           {editing && (
-            <>
-              <Button
-                className="border-none tooltip"
-                onClick={() => {
-                  dispatch(NodesActions.cloneNode(editing.id));
-                }}
-                data-tooltip="Clone node"
-                data-flow="top"
-              >
-                <CopyPlus />
-              </Button>
-              <Button
-                className="border-none tooltip"
-                onClick={onDelete}
-                data-tooltip="Delete node"
-                data-flow="top"
-              >
-                <Trash2 />
-              </Button>
-              <div className="border border-slate-600 w-[1px]" />
-            </>
+            <Button
+              className="border-none tooltip"
+              onClick={onDelete}
+              data-tooltip="Remove node updates"
+              data-flow="left"
+            >
+              <Trash2 />
+            </Button>
           )}
-
-          <Button
-            className="border-none tooltip"
-            onClick={() => onAdd("instance")}
-            disabled={editing?.type === "instance"}
-            data-tooltip="Add instance"
-            data-flow="top"
-          >
-            <FilePlus />
-          </Button>
-          <Button
-            className="border-none tooltip"
-            onClick={() => onAdd("group")}
-            disabled={editing?.type === "instance"}
-            data-tooltip="Add group"
-            data-flow="left"
-          >
-            <FolderPlus />
-          </Button>
         </div>
       </div>
 
@@ -142,4 +92,4 @@ function AddNodes() {
   );
 }
 
-export default AddNodes;
+export default UpdateNodes;

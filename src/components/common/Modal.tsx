@@ -3,7 +3,7 @@ import * as React from "react";
 
 import { useAppDispatch } from "../../hooks.ts";
 import { ModalsActions } from "../../store/modals.ts";
-import { clsx } from "../../utilities.ts";
+import { clsx } from "../../utilities/utilities.ts";
 import Button from "./Button.tsx";
 
 interface ModalProps {
@@ -14,7 +14,7 @@ interface ModalProps {
   closeButton?: boolean;
   footer?: React.ReactNode;
   style?: React.CSSProperties;
-  title: React.ReactNode;
+  title?: React.ReactNode;
 }
 
 function Modal(props: ModalProps) {
@@ -51,17 +51,28 @@ function Modal(props: ModalProps) {
           event.stopPropagation();
         }}
       >
-        <div className="flex flex-row justify-between items-center gap-4">
-          <div className="font-semibold text-lg grow">{props.title}</div>
-          {closeButton && (
-            <Button
-              className="p-1! rounded-xs"
-              onClick={() => dispatch(ModalsActions.closeModal())}
-            >
-              <XIcon />
-            </Button>
-          )}
-        </div>
+        {(props.title || closeButton) && (
+          <div
+            className={clsx(
+              "flex flex-row items-center gap-4",
+              props.title && !closeButton && "justify-start",
+              props.title && closeButton && "justify-between",
+              !props.title && closeButton && "justify-end",
+            )}
+          >
+            {props.title && (
+              <div className="font-semibold text-lg grow">{props.title}</div>
+            )}
+            {closeButton && (
+              <Button
+                className="p-1! rounded-xs"
+                onClick={() => dispatch(ModalsActions.closeModal())}
+              >
+                <XIcon />
+              </Button>
+            )}
+          </div>
+        )}
         {props.children}
         {props.footer && (
           <div

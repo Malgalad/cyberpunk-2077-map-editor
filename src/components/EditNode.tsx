@@ -2,8 +2,8 @@ import * as React from "react";
 
 import { useAppSelector } from "../hooks.ts";
 import { NodesSelectors } from "../store/nodes.ts";
-import type { MapNode } from "../types.ts";
-import { clsx } from "../utilities.ts";
+import type { MapNode } from "../types/types.ts";
+import { clsx } from "../utilities/utilities.ts";
 import Button from "./common/Button.tsx";
 import EditNodePattern from "./EditNode.Pattern.tsx";
 import EditNodeProperties from "./EditNode.Properties.tsx";

@@ -1,7 +1,6 @@
 import * as THREE from "three";
 
 import mapData from "../mapData.min.json";
-import type { MapData } from "../types.ts";
 import { STATIC_ASSETS } from "./constants.js";
 import { importDRC } from "./importDRC.ts";
 import * as materials from "./materials.ts";
@@ -9,7 +8,7 @@ import * as materials from "./materials.ts";
 const rotateCoordinates = ([x, y, z, w]: number[]) => [x, z, -y, w];
 
 async function importMesh(
-  name: keyof MapData["meshes"],
+  name: keyof (typeof mapData)["meshes"],
   material: THREE.Material,
 ) {
   const data = mapData.meshes[name];
@@ -40,16 +39,12 @@ export function setupTerrain(addMesh: (promise: Promise<THREE.Mesh>) => void) {
 
   addMesh(importMesh("water_mesh", materials.waterMaterial));
 
-  addMesh(importMesh("northoak_sign_a", materials.buildingsMaterial));
-  addMesh(importMesh("monument_ave_pyramid", materials.buildingsMaterial));
-  addMesh(importMesh("obelisk", materials.buildingsMaterial));
-  addMesh(
-    importMesh("cz_cz_building_h_icosphere", materials.buildingsMaterial),
-  );
-  addMesh(importMesh("statue_splash_a", materials.buildingsMaterial));
-  addMesh(importMesh("ferris_wheel_collapsed", materials.buildingsMaterial));
-  addMesh(importMesh("ferris_wheel_pacifica", materials.buildingsMaterial));
-  addMesh(
-    importMesh("ext_monument_av_building_b", materials.buildingsMaterial),
-  );
+  addMesh(importMesh("northoak_sign_a", materials.staticMaterial));
+  addMesh(importMesh("monument_ave_pyramid", materials.staticMaterial));
+  addMesh(importMesh("obelisk", materials.staticMaterial));
+  addMesh(importMesh("cz_cz_building_h_icosphere", materials.staticMaterial));
+  addMesh(importMesh("statue_splash_a", materials.staticMaterial));
+  addMesh(importMesh("ferris_wheel_collapsed", materials.staticMaterial));
+  addMesh(importMesh("ferris_wheel_pacifica", materials.staticMaterial));
+  addMesh(importMesh("ext_monument_av_building_b", materials.staticMaterial));
 }

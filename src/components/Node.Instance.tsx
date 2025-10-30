@@ -1,42 +1,19 @@
 import { CircleDotDashed } from "lucide-react";
 
 import { useAppDispatch, useAppSelector } from "../hooks.ts";
-import { useMap3D } from "../map3d/map3d.context.ts";
-import { DistrictSelectors } from "../store/district.ts";
-import { getNodesInstancedMeshTransforms } from "../store/nodes.selectors.ts";
 import { NodesActions, NodesSelectors } from "../store/nodes.ts";
-import type { MapNode } from "../types.ts";
-import { clsx, lookAtTransform } from "../utilities.ts";
+import type { MapNode } from "../types/types.ts";
+import { clsx } from "../utilities/utilities.ts";
 import Button from "./common/Button.tsx";
 
 interface InstanceProps {
+  lookAtNode: () => void;
   node: MapNode;
 }
 
-function Instance({ node }: InstanceProps) {
+function Instance({ lookAtNode, node }: InstanceProps) {
   const dispatch = useAppDispatch();
-  const map3D = useMap3D();
-
-  const districtCenter = useAppSelector(DistrictSelectors.getDistrictCenter);
   const editing = useAppSelector(NodesSelectors.getEditing);
-  const nodesInstancedMeshTransforms = useAppSelector(
-    getNodesInstancedMeshTransforms,
-  );
-
-  const lookAtNode = () => {
-    if (!map3D || !districtCenter) return;
-    const transform = nodesInstancedMeshTransforms.find(
-      ({ id }) => id === node.id,
-    );
-    if (transform) {
-      const [position, zoom] = lookAtTransform(
-        transform,
-        districtCenter.origin,
-        districtCenter.minMax,
-      );
-      map3D.lookAt(position, zoom);
-    }
-  };
 
   return (
     <div
@@ -59,7 +36,7 @@ function Instance({ node }: InstanceProps) {
         if (event.key === "Enter" || event.key === " ") {
           dispatch(NodesActions.setEditing(node.id));
         } else if (event.key === "Escape") {
-          dispatch(NodesActions.setEditing(undefined));
+          dispatch(NodesActions.setEditing(null));
         }
       }}
     >

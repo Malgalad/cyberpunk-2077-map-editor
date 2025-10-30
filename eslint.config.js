@@ -31,7 +31,10 @@ export default defineConfig([
       "import/newline-after-import": "error",
       "simple-import-sort/imports": "error",
       "simple-import-sort/exports": "error",
-      "@typescript-eslint/no-non-null-assertion": "error",
+      "@typescript-eslint/no-unused-vars": [
+        "error",
+        { ignoreRestSiblings: true },
+      ],
     },
     settings: {
       "import/resolver": {

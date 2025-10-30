@@ -1,17 +1,12 @@
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 
+import type { OptionsState } from "../types/schemas.ts";
 import type {
   DistrictView,
   PatternView,
-  PersistentAppState,
-} from "../types.ts";
+  RevivedAppState,
+} from "../types/types.ts";
 import { hydrateState } from "./@actions.ts";
-
-interface OptionsState {
-  districtView: DistrictView;
-  patternView: PatternView;
-  visibleDistricts: string[];
-}
 
 const initialState: OptionsState = {
   districtView: "current",
@@ -40,8 +35,8 @@ const optionsSlice = createSlice({
   },
   extraReducers: (builder) =>
     builder.addCase(
-      hydrateState,
-      (_, action: PayloadAction<PersistentAppState>) => action.payload.options,
+      hydrateState.fulfilled,
+      (_, action: PayloadAction<RevivedAppState>) => action.payload.options,
     ),
   selectors: {
     getDistrictView: (state) => state.districtView,

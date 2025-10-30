@@ -1,127 +1,136 @@
 import * as React from "react";
 
-import { useAppDispatch, useAppSelector } from "./hooks.ts";
+import { useAppDispatch, useAppSelector, useAppStore } from "./hooks.ts";
 import { Map3D } from "./map3d/map3d.ts";
+import {
+  getAdditionsTransforms,
+  getDeletions,
+  getDeletionsTransforms,
+  getUpdates,
+  getUpdatesTransforms,
+} from "./store/@selectors.ts";
 import { DistrictSelectors } from "./store/district.ts";
 import { ModalsActions } from "./store/modals.ts";
-import { getNodesInstancedMeshTransforms } from "./store/nodes.selectors.ts";
 import { NodesActions, NodesSelectors } from "./store/nodes.ts";
 import { OptionsSelectors } from "./store/options.ts";
-import type {
-  DistrictWithTransforms,
-  InstancedMeshTransforms,
-} from "./types.ts";
-import {
-  getDistrictInstancedMeshTransforms,
-  toNumber,
-  toString,
-} from "./utilities.ts";
+import { ProjectSelectors } from "./store/project.ts";
+import type { OptionsState } from "./types/schemas.ts";
+import type { District, DistrictWithTransforms } from "./types/types.ts";
+import { getFinalDistrictTransformsFromNodes } from "./utilities/district.ts";
+import { transformToNode } from "./utilities/transforms.ts";
+import { invariant, toNumber, toString } from "./utilities/utilities.ts";
 
 export function useInitMap3D(ref: React.RefObject<HTMLCanvasElement | null>) {
   const [map3d, setMap3D] = React.useState<Map3D | null>(null);
+  const store = useAppStore();
 
   React.useEffect(() => {
     if (!ref.current) return;
 
-    const map3d = new Map3D(ref.current);
+    const map3d = new Map3D(ref.current, store);
     setMap3D(map3d);
 
     return () => {
       map3d.dispose();
       setMap3D(null);
     };
-  }, [ref]);
+  }, [ref, store]);
 
   return map3d;
 }
 
 export function useDrawAllDistricts(map3d: Map3D | null) {
-  const district = useAppSelector(DistrictSelectors.getDistrict);
-  const districts = useAppSelector(DistrictSelectors.getAllDistricts);
+  const currentDistrict = useAppSelector(DistrictSelectors.getDistrict);
+  const allDistricts = useAppSelector(DistrictSelectors.getAllDistricts);
   const districtView = useAppSelector(OptionsSelectors.getDistrictView);
-  const visibleDistricts = useAppSelector(OptionsSelectors.getVisibleDistricts);
-  const [districtWithTransforms, setDistrictWithTransforms] = React.useState<
-    DistrictWithTransforms[]
-  >([]);
+  const visibleDistrictNames = useAppSelector(
+    OptionsSelectors.getVisibleDistricts,
+  );
+  const nodes = useAppSelector(NodesSelectors.getNodes);
+  const cache = useAppSelector(NodesSelectors.getChildNodesCache);
+  const restDistrictTransforms = React.useMemo(() => {
+    if (!allDistricts.length) return new Map();
 
-  React.useEffect(() => {
-    Promise.all(
-      districts.map((district) =>
-        getDistrictInstancedMeshTransforms(district).then((transforms) => ({
+    return new Map(
+      allDistricts.map((district) => [
+        district.name,
+        {
           district,
-          transforms,
-        })),
-      ),
-    ).then(setDistrictWithTransforms);
-  }, [districts]);
+          transforms: getFinalDistrictTransformsFromNodes(
+            nodes,
+            cache,
+            district,
+          ),
+        },
+      ]),
+    );
+    // only recalculate applied district transforms when the current district
+    // changes because we can 100% guarantee there will be no node changes
+    // for districts other than current
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentDistrict]);
 
   React.useEffect(() => {
-    if (!districtWithTransforms.length || !map3d) return;
+    if (!allDistricts.length || !currentDistrict || !map3d) return;
 
-    const set = {
-      all: districts
-        .filter((district) => !district.isCustom)
-        .map((district) => district.name),
-      current: [district?.name],
-      custom: visibleDistricts,
-    }[districtView];
-    const districtsToRender = set.filter((name) => name !== district?.name);
-    const group: DistrictWithTransforms[] = [];
+    const districtsVisibilityMap: Record<
+      OptionsState["districtView"],
+      District[]
+    > = {
+      all: allDistricts,
+      current: [currentDistrict],
+      custom: allDistricts.filter((district) =>
+        visibleDistrictNames.includes(district.name),
+      ),
+    };
+    const visibleDistricts = districtsVisibilityMap[districtView];
+    const districtsWithTransforms: DistrictWithTransforms[] = visibleDistricts
+      .filter((district) => district.name !== currentDistrict.name)
+      .map((district) => restDistrictTransforms.get(district.name)!);
 
-    for (const name of districtsToRender) {
-      const item = districtWithTransforms.find(
-        (item) => item.district.name === name,
-      );
-
-      if (!item || item.district.isCustom) continue;
-
-      group.push(item);
-    }
-
-    map3d.setVisibleDistricts(group);
-  }, [
-    districtWithTransforms,
-    visibleDistricts,
-    districts,
-    districtView,
-    district,
-    map3d,
-  ]);
+    map3d.setVisibleDistricts(districtsWithTransforms);
+    // only update visible districts when options or selection changes
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [visibleDistrictNames, districtView, currentDistrict]);
 }
 
-const hideExcludedIndexes =
-  (excludedIndexes: number[]) =>
-  (instance: InstancedMeshTransforms, index: number): InstancedMeshTransforms =>
-    excludedIndexes.includes(index)
-      ? {
-          ...instance,
-          hidden: true,
-        }
-      : instance;
-
 export function useDrawCurrentDistrict(map3d: Map3D | null) {
-  const dispatch = useAppDispatch();
   const district = useAppSelector(DistrictSelectors.getDistrict);
-  const removals = useAppSelector(NodesSelectors.getRemovals);
+  const updates = useAppSelector(getUpdates);
+  const deletions = useAppSelector(getDeletions);
+  const updateIds = React.useMemo(
+    () => new Set(updates.map((node) => node.id)),
+    [updates],
+  );
+  const deletionIds = React.useMemo(
+    () => new Set(deletions.map((node) => node.id)),
+    [deletions],
+  );
 
   React.useEffect(() => {
     if (!map3d || !district) return;
 
-    getDistrictInstancedMeshTransforms(district).then((transforms) => {
-      const visibleTransforms = transforms.map(hideExcludedIndexes(removals));
+    const transforms = district.transforms.map((instance) => {
+      if (updateIds.has(instance.id) || deletionIds.has(instance.id)) {
+        return { ...instance, scale: { x: 0, y: 0, z: 0, w: 0 } };
+      }
 
-      map3d.setCurrentDistrict({ district, transforms: visibleTransforms });
+      return instance;
     });
-  }, [map3d, district, removals]);
+
+    map3d.setCurrentDistrict({ district, transforms });
+  }, [map3d, district, updateIds, deletionIds]);
 
   React.useEffect(() => {
-    dispatch(NodesActions.setEditing(undefined));
-  }, [district, dispatch]);
+    if (!map3d || !district) return;
+
+    map3d.lookAtCurrentDistrict();
+  }, [map3d, district]);
 }
 
 export function useDrawAdditions(map3d: Map3D | null) {
   const district = useAppSelector(DistrictSelectors.getDistrict);
-  const transforms = useAppSelector(getNodesInstancedMeshTransforms);
+  const transforms = useAppSelector(getAdditionsTransforms);
 
   React.useEffect(() => {
     if (!map3d || !district) return;
@@ -130,46 +139,80 @@ export function useDrawAdditions(map3d: Map3D | null) {
   }, [map3d, district, transforms]);
 }
 
-export function useDrawSelection(map3d: Map3D | null, mode: "add" | "remove") {
-  const transforms = useAppSelector(getNodesInstancedMeshTransforms);
-  const removals = useAppSelector(NodesSelectors.getRemovals);
-  const editingId = useAppSelector(NodesSelectors.getEditingId);
+export function useDrawUpdates(map3d: Map3D | null) {
+  const district = useAppSelector(DistrictSelectors.getDistrict);
+  const transforms = useAppSelector(getUpdatesTransforms);
+
+  React.useEffect(() => {
+    if (!map3d || !district) return;
+
+    map3d.setUpdates({ district, transforms });
+  }, [map3d, district, transforms]);
+}
+
+export function useDrawDeletions(map3d: Map3D | null) {
+  const district = useAppSelector(DistrictSelectors.getDistrict);
+  const transforms = useAppSelector(getDeletionsTransforms);
+
+  React.useEffect(() => {
+    if (!map3d || !district) return;
+    map3d.setDeletions({ district, transforms });
+  }, [map3d, district, transforms]);
+}
+
+export function useDrawSelection(map3d: Map3D | null) {
+  const mode = useAppSelector(ProjectSelectors.getMode);
+  const additions = useAppSelector(getAdditionsTransforms);
+  const updates = useAppSelector(getUpdatesTransforms);
+  const deletions = useAppSelector(getDeletionsTransforms);
   const editing = useAppSelector(NodesSelectors.getEditing);
   const cache = useAppSelector(NodesSelectors.getChildNodesCache);
 
   React.useEffect(() => {
     if (!map3d) return;
 
-    if (editingId == null) {
+    if (editing == null) {
       map3d.selectInstances([]);
       return;
     }
 
     const indexes: number[] = [];
+    const selectedIds = new Set(
+      editing.type === "instance" ? [editing.id] : cache[editing.id].i,
+    );
 
-    if (mode === "add") {
-      if (!editing) return;
+    if (mode === "create") {
+      for (let index = 0; index < additions.length; index++) {
+        const transform = additions[index];
 
-      const selectedIds = new Set(
-        editing.type === "instance" ? [editing.id] : cache[editing.id].i,
-      );
-      for (const transform of transforms) {
         if (selectedIds.has(transform.id as string)) {
-          indexes.push(transforms.indexOf(transform));
+          indexes.push(index);
         }
       }
-    } else {
-      const index = removals.indexOf(toNumber(editingId));
-      indexes.push(index);
+    } else if (mode === "delete") {
+      for (const transform of deletions) {
+        if (selectedIds.has(transform.id as string)) {
+          indexes.push(toNumber(transform.id as string));
+        }
+      }
+    } else if (mode === "update") {
+      for (const transform of updates) {
+        if (selectedIds.has(transform.id as string)) {
+          indexes.push(toNumber(transform.id as string));
+        }
+      }
     }
 
     map3d.selectInstances(indexes);
-  }, [editing, editingId, cache, removals, transforms, map3d, mode]);
+  }, [editing, cache, deletions, additions, map3d, mode, updates]);
 }
 
 export function useMap3DEvents(map3d: Map3D | null) {
   const dispatch = useAppDispatch();
-  const transforms = useAppSelector(getNodesInstancedMeshTransforms);
+  const mode = useAppSelector(ProjectSelectors.getMode);
+  const district = useAppSelector(DistrictSelectors.getDistrict);
+  const additions = useAppSelector(getAdditionsTransforms);
+  const updates = useAppSelector(getUpdates);
 
   React.useEffect(() => {
     if (!map3d) return;
@@ -179,13 +222,18 @@ export function useMap3DEvents(map3d: Map3D | null) {
         const index = event.detail.index;
 
         if (index != null) {
-          const id = transforms[index].id;
+          const id =
+            mode === "create"
+              ? additions[index].id
+              : mode === "update"
+                ? updates[index].id
+                : null;
 
-          if (id) {
+          if (id != null) {
             dispatch(NodesActions.setEditing(id));
           }
         } else {
-          dispatch(NodesActions.setEditing(undefined));
+          dispatch(NodesActions.setEditing(null));
         }
       }
     }) as EventListener;
@@ -202,20 +250,46 @@ export function useMap3DEvents(map3d: Map3D | null) {
           }),
         ).then((confirmed) => {
           if (confirmed) {
-            map3d.dontLookAt = true;
-            dispatch(NodesActions.excludeTransform(index));
+            invariant(district, "District is not defined");
+            const node = transformToNode(district.transforms[index], district, {
+              label: `Box #${index}`,
+              parent: district.name,
+              tag: "delete",
+              id: toString(index),
+            });
+            dispatch(NodesActions.addNode(node));
             dispatch(NodesActions.setEditing(toString(index)));
           }
         });
       }
     }) as EventListener;
+    const onUpdate = ((event: CustomEvent<{ index: number }>) => {
+      if (event.detail) {
+        const { index } = event.detail;
+
+        invariant(district, "District is not defined");
+        const id = toString(index);
+        if (!updates.some((nodes) => nodes.id === id)) {
+          const node = transformToNode(district.transforms[index], district, {
+            label: `Box #${index}`,
+            parent: district.name,
+            tag: "update",
+            id,
+          });
+          dispatch(NodesActions.addNode(node));
+        }
+        dispatch(NodesActions.setEditing(id));
+      }
+    }) as EventListener;
 
     window.addEventListener("select-node", onSelect);
     window.addEventListener("remove-node", onRemove);
+    window.addEventListener("update-node", onUpdate);
 
     return () => {
       window.removeEventListener("select-node", onSelect);
       window.removeEventListener("remove-node", onRemove);
+      window.removeEventListener("update-node", onUpdate);
     };
-  }, [map3d, dispatch, transforms]);
+  }, [map3d, dispatch, additions, updates, district, mode]);
 }

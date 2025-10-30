@@ -9,7 +9,9 @@ import Modal from "../components/common/Modal.tsx";
 import { useAppDispatch } from "../hooks.ts";
 import { DistrictActions } from "../store/district.ts";
 import { ModalsActions } from "../store/modals.ts";
-import { toNumber, toString } from "../utilities.ts";
+import type { DistrictData, InstancedMeshTransforms } from "../types/types.ts";
+import { getDistrictProperties } from "../utilities/district.ts";
+import { toNumber, toString } from "../utilities/utilities.ts";
 
 const mapSize = 16_000;
 const axii = [0, 1, 2] as const;
@@ -176,16 +178,24 @@ function CustomDistrictModal() {
   }, [data]);
 
   const createDistrict = () => {
+    const districtData: DistrictData = {
+      name,
+      isCustom: true,
+      position: data.pos.map(toNumber),
+      orientation: [0, 0, 0, 1],
+      transMin: [...data.min.map(toNumber), 0],
+      transMax: [...data.max.map(toNumber), 1],
+      cubeSize: toNumber(data.cubeSize),
+    };
+    const districtProperties = getDistrictProperties(districtData);
+    const transforms: InstancedMeshTransforms[] = [];
+
     dispatch(ModalsActions.closeModal());
     dispatch(
       DistrictActions.addDistrict({
-        name,
-        isCustom: true,
-        position: data.pos.map(toNumber),
-        orientation: [0, 0, 0, 1],
-        transMin: [...data.min.map(toNumber), 0],
-        transMax: [...data.max.map(toNumber), 1],
-        cubeSize: toNumber(data.cubeSize),
+        ...districtData,
+        ...districtProperties,
+        transforms,
       }),
     );
     dispatch(DistrictActions.selectDistrict(name));

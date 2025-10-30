@@ -1,13 +1,13 @@
 import * as React from "react";
 
 import mapData from "./mapData.min.json";
-import type { DistrictData, Districts } from "./types.ts";
+import type { DefaultDistricts, DistrictData } from "./types/types.ts";
 
-export const PROJECT_VERSION = 2 as const;
-
+export const PROJECT_VERSION = 3 as const;
+// TODO disable node creation at max depth
 export const MAX_DEPTH = 10 as const;
 
-export const DISTRICT_LABELS: Record<keyof Districts, string> = {
+export const DISTRICT_LABELS: Record<DefaultDistricts, string> = {
   watson_data: "Watson",
   westbrook_data: "Westbrook",
   city_center_data: "City Center",
@@ -19,11 +19,11 @@ export const DISTRICT_LABELS: Record<keyof Districts, string> = {
 };
 
 export const DISTRICTS: Array<{
-  key: keyof Districts;
+  key: DefaultDistricts;
   label: React.ReactNode;
 }> = Object.keys(mapData.soup).map((key) => ({
-  key: key as keyof Districts,
-  label: DISTRICT_LABELS[key as keyof Districts],
+  key: key as DefaultDistricts,
+  label: DISTRICT_LABELS[key as DefaultDistricts],
 }));
 
 export const DEFAULT_DISTRICT_DATA: DistrictData[] = Object.entries(

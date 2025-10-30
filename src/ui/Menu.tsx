@@ -7,7 +7,6 @@ import {
   Settings2,
   Undo,
 } from "lucide-react";
-import * as React from "react";
 
 import Button from "../components/common/Button.tsx";
 import DropdownItem from "../components/common/Dropdown.Item.tsx";
@@ -17,10 +16,11 @@ import { DISTRICTS } from "../constants.ts";
 import { useAppDispatch, useAppSelector } from "../hooks.ts";
 import {
   useExportDDS,
+  useExportNodes,
+  useImportNodes,
   // useImportDDS,
   useSaveProject,
 } from "../hooks/importExport.ts";
-import { useMap3D } from "../map3d/map3d.context.ts";
 import { DistrictSelectors } from "../store/district.ts";
 import { ModalsActions } from "../store/modals.ts";
 import { OptionsActions, OptionsSelectors } from "../store/options.ts";
@@ -34,21 +34,20 @@ function Menu() {
   const patternView = useAppSelector(OptionsSelectors.getPatternView);
   const districtView = useAppSelector(OptionsSelectors.getDistrictView);
   const visibleDistricts = useAppSelector(OptionsSelectors.getVisibleDistricts);
-  const map3D = useMap3D();
   const exportDDS = useExportDDS();
   // const importDDS = useImportDDS();
+  const importJSON = useImportNodes();
+  const exportJSON = useExportNodes();
   const saveProject = useSaveProject();
-
-  React.useEffect(() => {
-    map3D?.setPatternView(patternView);
-  }, [map3D, patternView]);
 
   return (
     <div className="flex flex-row justify-between px-2">
       <div className="flex flex-row items-center gap-2">
-        <div className="font-semibold cursor-default">
-          Project <span className="text-amber-200">{projectName}</span>
-        </div>
+        {!!projectName && (
+          <div className="font-semibold cursor-default max-w-64 truncate">
+            Project <span className="text-amber-200">{projectName}</span>
+          </div>
+        )}
         <div className="border-r border-slate-600 w-[1px]" />
         <Dropdown
           trigger={
@@ -74,11 +73,32 @@ function Menu() {
           >
             Load from file
           </DropdownItem>
-          <DropdownItem icon={<HardDriveDownload />} onClick={saveProject}>
+          <DropdownItem
+            icon={<HardDriveDownload />}
+            onClick={saveProject}
+            disabled={!projectName || !district}
+          >
             Save to file
           </DropdownItem>
           <DropdownSeparator />
-          <DropdownItem icon={<ImageDown />} onClick={exportDDS}>
+          <DropdownItem
+            onClick={importJSON}
+            disabled={!projectName || !district}
+          >
+            Import nodes from JSON
+          </DropdownItem>
+          <DropdownItem
+            onClick={exportJSON}
+            disabled={!projectName || !district}
+          >
+            Export nodes to JSON
+          </DropdownItem>
+          <DropdownSeparator />
+          <DropdownItem
+            icon={<ImageDown />}
+            onClick={exportDDS}
+            disabled={!projectName || !district}
+          >
             Export to DDS
           </DropdownItem>
           <DropdownSeparator />
@@ -116,7 +136,7 @@ function Menu() {
           <Dropdown
             trigger={
               <DropdownItem
-                className="group-hover/level-1:bg-slate-600"
+                className="not-disabled:group-hover/level-1:bg-slate-600"
                 isExpandable
               >
                 Show districts
@@ -125,6 +145,7 @@ function Menu() {
             level={1}
             direction="right"
             align="top"
+            disabled={!projectName || !district}
           >
             <DropdownItem
               checked={districtView === "all"}
@@ -178,6 +199,7 @@ function Menu() {
             level={1}
             direction="right"
             align="top"
+            disabled={!projectName || !district}
           >
             <DropdownItem
               checked={patternView === "none"}

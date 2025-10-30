@@ -6,7 +6,7 @@ import type {
   DistrictData,
   Modal,
   ModalType,
-} from "../types.ts";
+} from "../types/types.ts";
 
 interface ModalsState {
   modal: Modal | undefined;
@@ -40,6 +40,7 @@ function openModal(
   type: "confirm",
   data: string,
 ): AppThunkAction<Promise<boolean>>;
+function openModal(type: "loading"): AppThunkAction<Promise<void>>;
 function openModal(type: "project", data?: Tabs): AppThunkAction<Promise<void>>;
 function openModal(
   type: "custom-district",

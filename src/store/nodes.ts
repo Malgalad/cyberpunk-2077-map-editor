@@ -3,30 +3,23 @@ import {
   createSlice,
   type PayloadAction,
 } from "@reduxjs/toolkit";
-import type { WritableDraft } from "immer";
+import { produce, type WritableDraft } from "immer";
 import { nanoid } from "nanoid";
 
 import { MAX_DEPTH } from "../constants.ts";
-import type { GroupNodeCache, MapNode, PersistentAppState } from "../types.ts";
-import { cloneNode } from "../utilities.ts";
+import type { NodesState } from "../types/schemas.ts";
+import type {
+  AppThunkAction,
+  GroupNodeCache,
+  MapNode,
+  RevivedAppState,
+} from "../types/types.ts";
+import { cloneNode } from "../utilities/nodes.ts";
 import { hydrateState } from "./@actions.ts";
-
-interface NodesState {
-  nodes: MapNode[];
-  removals: number[];
-  editingId: MapNode["id"] | undefined;
-}
-
-type AddNodeParams = {
-  type: MapNode["type"];
-  parent: string;
-  position: [string, string, string];
-};
 
 const initialState: NodesState = {
   nodes: [],
-  removals: [],
-  editingId: undefined,
+  editingId: null,
 };
 
 const nodesSlice = createSlice({
@@ -34,17 +27,31 @@ const nodesSlice = createSlice({
   initialState,
   reducers: (create) => ({
     addNode: create.preparedReducer(
-      ({ type, parent, position }: AddNodeParams) => {
-        const id = nanoid(8);
-        const scale = type === "instance" ? "100" : "1";
-        const node: MapNode = {
-          id,
-          label: `${type === "instance" ? "Box" : "Group"}`,
+      (
+        init: Partial<MapNode> &
+          Pick<MapNode, "type" | "tag" | "parent" | "position">,
+      ) => {
+        const {
+          id = nanoid(8),
+          label = init.type === "instance" ? "Box" : "Group",
           type,
+          tag,
           parent,
           position,
-          rotation: ["0", "0", "0"],
-          scale: [scale, scale, scale],
+          rotation = ["0", "0", "0"],
+          scale = Array.from({ length: 3 }, () =>
+            type === "instance" ? "100" : "1",
+          ) as [string, string, string],
+        } = init;
+        const node: MapNode = {
+          id,
+          label,
+          type,
+          tag,
+          parent,
+          position,
+          rotation,
+          scale,
         };
 
         return { payload: node };
@@ -53,8 +60,8 @@ const nodesSlice = createSlice({
         state.nodes.push(action.payload);
       },
     ),
-    insertNode: create.reducer((state, action: PayloadAction<MapNode>) => {
-      state.nodes.push(action.payload);
+    replaceNodes: create.reducer((state, action: PayloadAction<MapNode[]>) => {
+      state.nodes = action.payload;
     }),
     cloneNode: create.reducer((state, action: PayloadAction<MapNode["id"]>) => {
       const node = state.nodes.find((node) => node.id === action.payload);
@@ -63,51 +70,32 @@ const nodesSlice = createSlice({
       state.nodes.push(...clones);
       state.editingId = clones[0].id;
     }),
-    patchNode: create.reducer(
-      (
-        state,
-        action: PayloadAction<(draft: WritableDraft<MapNode>) => void>,
-      ) => {
-        const node = state.nodes.find((node) => node.id === state.editingId);
-        if (!node) return;
-        action.payload(node);
-      },
-    ),
+    editNode: create.reducer((state, action: PayloadAction<MapNode>) => {
+      const index = state.nodes.findIndex(
+        (node) => node.id === action.payload.id,
+      );
+      state.nodes.splice(index, 1, action.payload);
+    }),
     deleteNode: create.reducer(
       (state, action: PayloadAction<MapNode["id"]>) => {
         state.nodes = state.nodes.filter((node) => node.id !== action.payload);
       },
     ),
     setEditing: create.reducer(
-      (state, action: PayloadAction<MapNode["id"] | undefined>) => {
+      (state, action: PayloadAction<MapNode["id"] | null>) => {
         state.editingId = action.payload;
       },
     ),
-    setNodes: create.reducer((state, action: PayloadAction<MapNode[]>) => {
-      state.nodes = action.payload;
-    }),
-    excludeTransform: create.reducer((state, action: PayloadAction<number>) => {
-      state.removals.push(action.payload);
-    }),
-    includeTransform: create.reducer((state, action: PayloadAction<number>) => {
-      state.removals = state.removals.filter((n) => n !== action.payload);
-    }),
-    setRemovals: create.reducer((state, action: PayloadAction<number[]>) => {
-      state.removals = action.payload;
-    }),
   }),
   extraReducers: (builder) =>
     builder.addCase(
-      hydrateState,
-      (_, action: PayloadAction<PersistentAppState>) => action.payload.nodes,
+      hydrateState.fulfilled,
+      (_, action: PayloadAction<RevivedAppState>) => action.payload.nodes,
     ),
   selectors: {
     getNodes: (state) => state.nodes,
     getEditingId: (state) => state.editingId,
-    getRemovals: createSelector(
-      [(sliceState: NodesState) => sliceState.removals],
-      (removals) => removals.toSorted(),
-    ),
+    // TODO recalculate only changed parts of cache
     getChildNodesCache: createSelector(
       [
         (sliceState: NodesState): MapNode[] =>
@@ -125,7 +113,6 @@ const nodesSlice = createSlice({
             let depth = 0;
             let current: MapNode | undefined = node;
             while (current) {
-              // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
               current = nodes.find((n) => n.id === current!.parent);
               depth += 1;
             }
@@ -151,7 +138,7 @@ const nodesSlice = createSlice({
     ),
     getEditing: createSelector(
       [
-        (sliceState: NodesState): string | undefined =>
+        (sliceState: NodesState): string | null =>
           nodesSlice.getSelectors().getEditingId(sliceState),
         (sliceState: NodesState): MapNode[] =>
           nodesSlice.getSelectors().getNodes(sliceState),
@@ -161,6 +148,24 @@ const nodesSlice = createSlice({
   },
 });
 
-export const NodesActions = nodesSlice.actions;
+const patchNode =
+  (callback: (draft: WritableDraft<MapNode>) => void): AppThunkAction =>
+  (dispatch, getState) => {
+    const state = getState();
+    const nodes = nodesSlice.selectors.getNodes(state);
+    const editingId = nodesSlice.selectors.getEditingId(state);
+    const node = nodes.find((node) => node.id === editingId);
+
+    if (!node) return;
+
+    const update = produce(node, callback);
+
+    dispatch(nodesSlice.actions.editNode(update));
+  };
+
+export const NodesActions = {
+  ...nodesSlice.actions,
+  patchNode,
+};
 export const NodesSelectors = nodesSlice.selectors;
 export default nodesSlice;

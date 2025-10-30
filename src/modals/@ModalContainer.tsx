@@ -8,12 +8,14 @@ import ConfirmModal from "./ConfirmModal.tsx";
 import CriticalErrorModal from "./CriticalErrorModal.tsx";
 import CustomDistrictModal from "./CustomDistrictModal.tsx";
 import DistrictInfoModal from "./DistrictInfoModal.tsx";
+import LoadingModal from "./LoadingModal.tsx";
 import ProjectModal from "./ProjectModal.tsx";
 
 const ComponentMap = {
   alert: AlertModal,
   critical: CriticalErrorModal,
   confirm: ConfirmModal,
+  loading: LoadingModal,
   project: ProjectModal,
   "custom-district": CustomDistrictModal,
   "district-info": DistrictInfoModal,

@@ -18,7 +18,11 @@ export const combinedReducer = combineSlices(
 const store = configureStore({
   reducer: combinedReducer,
   middleware: (getDefaultMiddleware) =>
-    getDefaultMiddleware().concat(persistMiddleware),
+    getDefaultMiddleware({
+      serializableCheck: {
+        ignoredActions: ["nodes/patchNode"],
+      },
+    }).concat(persistMiddleware),
 });
 
 export default store;

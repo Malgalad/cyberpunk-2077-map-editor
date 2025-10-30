@@ -1,13 +1,12 @@
 import type { ThunkAction, UnknownAction } from "@reduxjs/toolkit";
 import type * as THREE from "three";
 
-import mapData from "./mapData.min.json";
-import store from "./store/store.ts";
+import mapData from "../mapData.min.json";
+import store from "../store/store.ts";
 
 type NestedArray<T> = T | NestedArray<T>[];
 
-export type MapData = typeof mapData;
-export type Districts = MapData["soup"];
+export type DefaultDistricts = keyof (typeof mapData)["soup"];
 export type DistrictData = {
   name: string;
   position: number[];
@@ -24,16 +23,21 @@ export type DistrictData = {
       isCustom: true;
     }
 );
-export type DistrictCenter = {
-  center: THREE.Vector3;
-  minMax: THREE.Vector4;
-  origin: THREE.Vector3;
+export type DistrictProperties = {
+  center: THREE.Vector3Like;
+  minMax: THREE.Vector3Like;
+  origin: THREE.Vector3Like;
 };
+export type District = DistrictData &
+  DistrictProperties & {
+    transforms: InstancedMeshTransforms[];
+  };
 
 export type ModalType =
   | "alert"
   | "critical"
   | "confirm"
+  | "loading"
   | "project"
   | "custom-district"
   | "district-info"
@@ -66,6 +70,7 @@ type NodeProperties<T extends Transform | TransformParsed> = T & {
   id: string;
   label: string;
   type: "group" | "instance";
+  tag: "create" | "update" | "delete";
   parent: string;
   virtual?: boolean;
   pattern?: T & PatternProperties;
@@ -92,9 +97,8 @@ export type GroupNodeCache = Record<
 >;
 
 export type InstancedMeshTransforms = {
-  id?: string;
+  id: string;
   virtual?: boolean;
-  hidden?: boolean;
   position: { x: number; y: number; z: number; w: number };
   orientation: { x: number; y: number; z: number; w: number };
   scale: { x: number; y: number; z: number; w: number };
@@ -105,13 +109,12 @@ export type DistrictWithTransforms = {
   transforms: InstancedMeshTransforms[];
 };
 
-export type EditingMode = "add" | "remove";
+export type Modes = "create" | "update" | "delete";
 export type PatternView = "none" | "wireframe" | "solid";
 export type DistrictView = "all" | "current" | "custom";
 
 export type AppStore = typeof store;
 export type AppState = ReturnType<AppStore["getState"]>;
-export type PersistentAppState = Omit<AppState, "modals">;
 export type AppDispatch = AppStore["dispatch"];
 export type AppThunkAction<ReturnType = void> = ThunkAction<
   ReturnType,
@@ -119,3 +122,19 @@ export type AppThunkAction<ReturnType = void> = ThunkAction<
   unknown,
   UnknownAction
 >;
+
+export type PersistentAppState = {
+  district: {
+    districts: DistrictData[];
+    current: string | null;
+  };
+  nodes: AppState["nodes"];
+  options: AppState["options"];
+  project: AppState["project"];
+};
+export type RevivedAppState = {
+  district: AppState["district"];
+  nodes: AppState["nodes"];
+  options: AppState["options"];
+  project: AppState["project"];
+};

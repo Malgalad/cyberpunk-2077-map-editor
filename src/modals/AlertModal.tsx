@@ -1,6 +1,6 @@
 import Button from "../components/common/Button.tsx";
 import Modal from "../components/common/Modal.tsx";
-import type { ModalProps } from "../types.ts";
+import type { ModalProps } from "../types/types.ts";
 
 function AlertModal(props: ModalProps) {
   return (

@@ -5,32 +5,33 @@ import Button from "../components/common/Button.tsx";
 import Input from "../components/common/Input.tsx";
 import Modal from "../components/common/Modal.tsx";
 import { useAppSelector } from "../hooks.ts";
+import { getAdditionsTransforms, getDeletions } from "../store/@selectors.ts";
 import { DistrictSelectors } from "../store/district.ts";
-import { getNodesInstancedMeshTransforms } from "../store/nodes.selectors.ts";
-import { NodesSelectors } from "../store/nodes.ts";
-import { getDistrictInstancedMeshTransforms, invariant } from "../utilities.ts";
+import { invariant, toNumber } from "../utilities/utilities.ts";
 
 const axii = [0, 1, 2] as const;
 
 function DistrictInfoModal() {
   const district = useAppSelector(DistrictSelectors.getDistrict);
-  const removals = useAppSelector(NodesSelectors.getRemovals);
-  const nodesTransforms = useAppSelector(getNodesInstancedMeshTransforms);
+  const deletions = useAppSelector(getDeletions);
+  const nodesTransforms = useAppSelector(getAdditionsTransforms);
+  const removals = React.useMemo(
+    () => deletions.map((node) => toNumber(node.id)),
+    [deletions],
+  );
   const [height, setHeight] = React.useState<number>(0);
 
   React.useEffect(() => {
     if (!district) return;
 
-    getDistrictInstancedMeshTransforms(district).then((districtTransforms) => {
-      const height = Math.ceil(
-        Math.sqrt(
-          districtTransforms.filter((_, index) => !removals.includes(index))
-            .length + nodesTransforms.length,
-        ),
-      );
+    const height = Math.ceil(
+      Math.sqrt(
+        district.transforms.filter((_, index) => !removals.includes(index))
+          .length + nodesTransforms.length,
+      ),
+    );
 
-      setHeight(height);
-    });
+    setHeight(height);
   }, [district, removals, nodesTransforms]);
   const [copied, setCopied] = React.useState<boolean>(false);
 

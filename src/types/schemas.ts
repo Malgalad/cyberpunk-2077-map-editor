@@ -1,11 +1,17 @@
 import * as z from "zod";
 
-export const ProjectSchema = z.object({
+export const ProjectStateSchema = z.object({
   name: z.string(),
+  mode: z.union([
+    z.literal("create"),
+    z.literal("update"),
+    z.literal("delete"),
+  ]),
   version: z.number(),
 });
+export type ProjectState = z.infer<typeof ProjectStateSchema>;
 
-export const OptionsSchema = z.object({
+export const OptionsStateSchema = z.object({
   districtView: z.union([
     z.literal("all"),
     z.literal("current"),
@@ -18,8 +24,9 @@ export const OptionsSchema = z.object({
   ]),
   visibleDistricts: z.array(z.string()),
 });
+export type OptionsState = z.infer<typeof OptionsStateSchema>;
 
-export const DistrictDataSchema = z.intersection(
+const DistrictDataSchema = z.intersection(
   z.object({
     name: z.string(),
     position: z.array(z.number()),
@@ -39,10 +46,16 @@ export const DistrictDataSchema = z.intersection(
   ]),
 );
 
-export const NodeSchemaV1 = z.object({
+export const PersistentDistrictStateSchema = z.object({
+  districts: z.array(DistrictDataSchema),
+  current: z.union([z.string(), z.null()]),
+});
+
+export const NodeSchema = z.object({
   id: z.string(),
   label: z.string(),
   type: z.union([z.literal("group"), z.literal("instance")]),
+  tag: z.union([z.literal("create"), z.literal("update"), z.literal("delete")]),
   parent: z.string(),
   virtual: z.boolean().optional(),
   position: z.tuple([z.string(), z.string(), z.string()]),
@@ -58,26 +71,15 @@ export const NodeSchemaV1 = z.object({
     })
     .optional(),
 });
+export const NodesStateSchema = z.object({
+  nodes: z.array(NodeSchema),
+  editingId: z.union([z.string(), z.null()]),
+});
+export type NodesState = z.infer<typeof NodesStateSchema>;
 
-export const PersistentStateV1Schema = z.record(
-  z.string(),
-  z.object({
-    district: DistrictDataSchema,
-    nodes: z.array(NodeSchemaV1),
-    removals: z.array(z.number()),
-  }),
-);
-
-export const PersistentStateV2Schema = z.object({
-  project: ProjectSchema,
-  options: OptionsSchema,
-  district: z.object({
-    districts: z.array(DistrictDataSchema),
-    current: z.union([z.string(), z.undefined()]),
-  }),
-  nodes: z.object({
-    nodes: z.array(NodeSchemaV1),
-    removals: z.array(z.number()),
-    editingId: z.union([z.string(), z.undefined()]),
-  }),
+export const PersistentStateSchema = z.object({
+  project: ProjectStateSchema,
+  options: OptionsStateSchema,
+  district: PersistentDistrictStateSchema,
+  nodes: NodesStateSchema,
 });

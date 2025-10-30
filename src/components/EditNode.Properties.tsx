@@ -5,8 +5,9 @@ import * as THREE from "three";
 import { useAppDispatch, useAppSelector, usePreviousValue } from "../hooks.ts";
 import { DistrictSelectors } from "../store/district.ts";
 import { NodesActions, NodesSelectors } from "../store/nodes.ts";
-import type { MapNode } from "../types.ts";
-import { clsx, parseTransform } from "../utilities.ts";
+import type { MapNode } from "../types/types.ts";
+import { parseTransform } from "../utilities/transforms.ts";
+import { clsx } from "../utilities/utilities.ts";
 import Button from "./common/Button.tsx";
 import DraggableInput from "./common/DraggableInput.tsx";
 import Input from "./common/Input.tsx";
@@ -18,6 +19,7 @@ interface EditNodePropertiesProps {
 
 const axii = [0, 1, 2] as const;
 
+// TODO step depends on zoom level
 function EditNodeProperties({ node }: EditNodePropertiesProps) {
   const dispatch = useAppDispatch();
   const nodes = useAppSelector(NodesSelectors.getNodes);
@@ -36,7 +38,7 @@ function EditNodeProperties({ node }: EditNodePropertiesProps) {
         })),
     ].map((item) => ({
       ...item,
-      level: cache[item.value].l,
+      level: cache[item.value]?.l ?? 0,
       label: `${item.label}${node.parent === item.value ? " (current)" : node.id === item.value ? " (self)" : ""}`,
       disabled: node.parent === item.value || node.id === item.value,
     }));

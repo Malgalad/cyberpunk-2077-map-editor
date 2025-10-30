@@ -1,7 +1,7 @@
 import { CheckIcon, ChevronRight, Icon } from "lucide-react";
 import * as React from "react";
 
-import { clsx } from "../../utilities.ts";
+import { clsx } from "../../utilities/utilities.ts";
 
 interface DropdownItemProps {
   checked?: boolean;

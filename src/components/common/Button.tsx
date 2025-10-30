@@ -1,7 +1,7 @@
 import { LoaderCircle } from "lucide-react";
 import * as React from "react";
 
-import { clsx } from "../../utilities.ts";
+import { clsx } from "../../utilities/utilities.ts";
 
 type ButtonProps = React.ButtonHTMLAttributes<HTMLButtonElement> & {
   onClick?: (

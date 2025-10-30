@@ -1,6 +1,6 @@
 import { ModalsActions } from "./store/modals.ts";
 import store from "./store/store.ts";
-import { unzip, zip } from "./utilities.ts";
+import { unzip, zip } from "./utilities/compression.ts";
 
 let root: FileSystemDirectoryHandle;
 
@@ -71,7 +71,6 @@ export async function loadJSON(pathname: string) {
   if (parent.kind === "file")
     throw new DOMException("Not a directory", "TypeMismatchError");
 
-  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
   const handle = await parent.getFileHandle(path.at(-1)!, { create: false });
   const file = await handle.getFile();
 
@@ -87,7 +86,6 @@ export async function saveJSON(pathname: string, data: unknown) {
   if (parent.kind === "file")
     throw new DOMException("Not a directory", "TypeMismatchError");
 
-  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
   const handle = await parent.getFileHandle(path.at(-1)!, { create: true });
   const stream = await handle.createWritable();
   await zip(JSON.stringify(data)).pipeTo(stream);
@@ -102,10 +100,19 @@ export async function removeEntry(pathname: string) {
   if (parent.kind === "file")
     throw new DOMException("Not a directory", "TypeMismatchError");
 
-  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
   await parent.removeEntry(path.at(-1)!);
 }
 
-Object.defineProperty(window, "$removeEntry", {
-  value: removeEntry,
+Object.defineProperties(window, {
+  $opfs: {
+    enumerable: false,
+    configurable: false,
+    writable: false,
+    value: {
+      listFiles,
+      loadJSON,
+      saveJSON,
+      removeEntry,
+    },
+  },
 });

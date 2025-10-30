@@ -1,18 +1,22 @@
 import * as THREE from "three";
 
+import { OptionsSelectors } from "../store/options.ts";
+import { ProjectSelectors } from "../store/project.ts";
 import type {
+  AppStore,
   DistrictWithTransforms,
-  EditingMode,
   PatternView,
-} from "../types.ts";
-import { partition } from "../utilities.ts";
-import { createInstancedMeshForDistrict } from "./createInstancedMeshForDistrict.ts";
+} from "../types/types.ts";
+import { partition, toNumber } from "../utilities/utilities.ts";
+import { ADDITIONS, BUILDINGS, DELETIONS, UPDATES } from "./colors.ts";
+import { createDistrictMesh } from "./createDistrictMesh.ts";
 import { Map3DBase } from "./map3d.base.ts";
 import {
   additionsMaterial,
   buildingsMaterial,
   hiddenMaterial,
   patternMaterial,
+  staticMaterial,
   wireframeMaterial,
 } from "./materials.ts";
 import { setupTerrain } from "./setupTerrain.ts";
@@ -25,32 +29,35 @@ const virtualEditsMaterial: Record<PatternView, THREE.Material> = {
 
 export class Map3D extends Map3DBase {
   readonly #raycaster: THREE.Raycaster;
-  #currentDistrict: THREE.InstancedMesh | null = null;
-  #currentDistrictRemovals: THREE.InstancedMesh | null = null;
-  #currentDistrictBoundaries: THREE.BoxHelper | null = null;
+  readonly #store: AppStore;
+  readonly #unsubscribe: () => void;
   #visibleDistricts: THREE.Group = new THREE.Group();
+  #currentDistrict: THREE.InstancedMesh | null = null;
+  #currentDistrictBoundaries: THREE.BoxHelper | null = null;
   #additions: THREE.InstancedMesh | null = null;
+  #additionsVirtual: THREE.InstancedMesh | null = null;
+  #updates: THREE.InstancedMesh | null = null;
+  #deletions: THREE.InstancedMesh | null = null;
   #selectedIndexes: number[] = [];
-  #virtualGeometry: THREE.InstancedMesh | null = null;
   #canvasRect: DOMRect | null = null;
   #pointer: THREE.Vector2 = new THREE.Vector2(1, 1);
-  #startedPointingAt: number | null = null;
-  #pointingAt: number | null = null;
-  #editingMode: EditingMode = "add";
-  #patternView: PatternView = "wireframe";
-  dontLookAt = false;
+  #startedPointingAt: [number, THREE.Object3D] | null = null;
+  #pointingAt: [number, THREE.Object3D] | null = null;
 
-  constructor(canvas: HTMLCanvasElement) {
+  constructor(canvas: HTMLCanvasElement, store: AppStore) {
     super(canvas);
 
     this.#raycaster = new THREE.Raycaster();
+    this.#store = store;
     this.#canvasRect = this.canvas.getBoundingClientRect();
 
     setupTerrain(this.loadResource);
     this.scene.add(this.#visibleDistricts);
 
+    this.#unsubscribe = this.#store.subscribe(this.render);
     this.canvas.addEventListener("mousedown", this.#onMouseDown);
     this.canvas.addEventListener("mousemove", this.#onMouseMove);
+    this.canvas.addEventListener("mouseleave", this.#onMouseLeave);
     this.canvas.addEventListener("click", this.#onClick);
 
     this.render();
@@ -59,36 +66,48 @@ export class Map3D extends Map3DBase {
   dispose() {
     super.dispose();
 
+    this.#unsubscribe();
     this.canvas.removeEventListener("mousedown", this.#onMouseDown);
     this.canvas.removeEventListener("mousemove", this.#onMouseMove);
+    this.canvas.removeEventListener("mouseleave", this.#onMouseLeave);
     this.canvas.removeEventListener("click", this.#onClick);
 
+    this.#visibleDistricts.children.forEach((child) =>
+      (child as THREE.InstancedMesh).geometry.dispose(),
+    );
     this.#currentDistrict?.geometry.dispose();
+    this.#currentDistrict?.dispose();
     this.#currentDistrictBoundaries?.geometry.dispose();
+    this.#currentDistrictBoundaries?.dispose();
     this.#additions?.geometry.dispose();
-    this.#virtualGeometry?.geometry.dispose();
+    this.#additions?.dispose();
+    this.#additionsVirtual?.geometry.dispose();
+    this.#additionsVirtual?.dispose();
+    this.#updates?.geometry.dispose();
+    this.#updates?.dispose();
+    this.#deletions?.geometry.dispose();
+    this.#deletions?.dispose();
   }
 
-  /** Add mesh to scene */
+  get #mode() {
+    return ProjectSelectors.getMode(this.#store.getState());
+  }
+
+  get #patternView() {
+    return OptionsSelectors.getPatternView(this.#store.getState());
+  }
+
+  /** Add mesh to the scene */
   #add<T extends THREE.Object3D>(mesh: T): T {
     this.scene.add(mesh);
     return mesh;
   }
 
-  /** Remove mesh from scene and dispose of geometry */
+  /** Remove mesh from the scene and dispose of geometry */
   #remove(mesh?: THREE.Mesh | THREE.Line | null) {
     if (!mesh) return;
     this.scene.remove(mesh);
     mesh.geometry.dispose();
-  }
-
-  /** Apply selected material to virtual geometry */
-  #setVirtualGeometryMaterial() {
-    if (!this.#virtualGeometry) return;
-
-    this.#virtualGeometry.material = virtualEditsMaterial[this.#patternView];
-
-    requestAnimationFrame(this.render);
   }
 
   #onMouseDown = (event: MouseEvent) => {
@@ -98,25 +117,31 @@ export class Map3D extends Map3DBase {
 
   #onMouseMove = (event: MouseEvent) => {
     const { left, top, width, height } = this.#canvasRect!;
-    const mode = this.#editingMode;
+    const mode = this.#mode;
 
     this.#pointer.x = ((event.clientX - left) / width) * 2 - 1;
     this.#pointer.y = -((event.clientY - top) / height) * 2 + 1;
 
-    if (mode === "add" && !this.#additions) return;
-    if (mode === "remove" && !this.#currentDistrict) return;
+    if (mode === "create" && !this.#additions) return;
+    if (mode === "update" && !this.#currentDistrict) return;
+    if (mode === "delete" && !this.#currentDistrict) return;
 
-    const mesh = mode === "add" ? this.#additions! : this.#currentDistrict!;
+    const meshes =
+      mode === "create"
+        ? [this.#additions!]
+        : mode === "update"
+          ? [this.#updates!, this.#currentDistrict!]
+          : [this.#currentDistrict!];
 
     this.#raycaster.setFromCamera(this.#pointer, this.camera);
-    const intersection = this.#raycaster.intersectObject(mesh);
+    const intersection = this.#raycaster.intersectObjects(meshes);
     const previousPointingAt = this.#pointingAt;
 
     if (intersection.length > 0) {
       const instanceId = intersection[0].instanceId;
 
       if (instanceId !== undefined) {
-        this.#pointingAt = instanceId;
+        this.#pointingAt = [instanceId, intersection[0].object];
       }
     } else {
       this.#pointingAt = null;
@@ -126,8 +151,15 @@ export class Map3D extends Map3DBase {
       requestAnimationFrame(this.render);
   };
 
+  #onMouseLeave = () => {
+    this.#pointingAt = null;
+    requestAnimationFrame(this.render);
+  };
+
   #onClick = (event: MouseEvent) => {
-    if (this.#startedPointingAt !== this.#pointingAt) return;
+    const mode = this.#mode;
+
+    if (this.#startedPointingAt?.[0] !== this.#pointingAt?.[0]) return;
 
     if (this.#pointingAt == null) {
       window.dispatchEvent(
@@ -136,13 +168,13 @@ export class Map3D extends Map3DBase {
       return;
     }
 
-    const index = this.#pointingAt;
+    const index = this.#pointingAt[0];
 
-    if (this.#editingMode === "add") {
+    if (mode === "create") {
       window.dispatchEvent(
         new CustomEvent("select-node", { detail: { index } }),
       );
-    } else if (this.#editingMode === "remove") {
+    } else if (mode === "delete") {
       window.dispatchEvent(
         new CustomEvent("remove-node", {
           detail: {
@@ -151,26 +183,34 @@ export class Map3D extends Map3DBase {
           },
         }),
       );
+    } else if (mode === "update") {
+      if (this.#pointingAt[1] === this.#updates) {
+        window.dispatchEvent(
+          new CustomEvent("select-node", { detail: { index } }),
+        );
+      } else {
+        window.dispatchEvent(
+          new CustomEvent("update-node", { detail: { index } }),
+        );
+      }
     }
   };
 
   // TODO optimize via previousPointerAt
-  refreshInstancesColors() {
-    const current = new THREE.Color(0xffffff);
+  #refreshInstancesColors() {
+    const current = new THREE.Color();
+    const mode = this.#mode;
 
     if (this.#additions) {
-      const unselected = new THREE.Color(0xffff00);
-      const pointingAt = new THREE.Color(0x88ff88);
-      const selected = new THREE.Color(0x00ff00);
       let needsUpdate = false;
 
       for (let i = 0; i < this.#additions.count; i++) {
         const color =
-          this.#editingMode === "add" && i === this.#pointingAt
-            ? pointingAt
-            : this.#editingMode === "add" && this.#selectedIndexes.includes(i)
-              ? selected
-              : unselected;
+          mode === "create" && this.#selectedIndexes.includes(i)
+            ? ADDITIONS.selected
+            : mode === "create" && i === this.#pointingAt?.[0]
+              ? ADDITIONS.pointingAt
+              : ADDITIONS.default;
 
         this.#additions.getColorAt(i, current);
         if (!current.equals(color)) {
@@ -179,34 +219,69 @@ export class Map3D extends Map3DBase {
         }
       }
 
-      if (needsUpdate) this.#additions.instanceColor!.needsUpdate = true;
+      if (needsUpdate && this.#additions.instanceColor)
+        this.#additions.instanceColor.needsUpdate = true;
     }
 
-    if (this.#virtualGeometry) {
-      const color = new THREE.Color(0xffff00);
+    if (this.#updates) {
+      const indexes: Array<string | undefined> = this.#updates.userData.indexes;
       let needsUpdate = false;
 
-      for (let i = 0; i < this.#virtualGeometry.count; i++) {
-        this.#virtualGeometry.getColorAt(i, current);
+      for (let i = 0; i < this.#updates.count; i++) {
+        const index = indexes[i] ? toNumber(indexes[i] as string) : -1;
+        const color =
+          mode === "update" && this.#selectedIndexes.includes(index)
+            ? UPDATES.selected
+            : mode === "update" &&
+                i === this.#pointingAt?.[0] &&
+                this.#updates === this.#pointingAt?.[1]
+              ? UPDATES.pointingAt
+              : UPDATES.default;
+
+        this.#updates.getColorAt(i, current);
         if (!current.equals(color)) {
-          this.#virtualGeometry.setColorAt(i, color);
+          this.#updates.setColorAt(i, color);
           needsUpdate = true;
         }
       }
 
-      if (needsUpdate) this.#virtualGeometry.instanceColor!.needsUpdate = true;
+      if (needsUpdate && this.#updates.instanceColor)
+        this.#updates.instanceColor.needsUpdate = true;
+    }
+
+    if (this.#deletions) {
+      const indexes: Array<string | undefined> =
+        this.#deletions.userData.indexes;
+      let needsUpdate = false;
+
+      for (let i = 0; i < this.#deletions.count; i++) {
+        const index = indexes[i] ? toNumber(indexes[i] as string) : -1;
+        const color =
+          mode && this.#selectedIndexes.includes(index)
+            ? DELETIONS.selected
+            : DELETIONS.default;
+
+        this.#deletions.getColorAt(i, current);
+        if (!current.equals(color)) {
+          this.#deletions.setColorAt(i, color);
+          needsUpdate = true;
+        }
+      }
+
+      if (needsUpdate && this.#deletions.instanceColor)
+        this.#deletions.instanceColor.needsUpdate = true;
     }
 
     if (this.#currentDistrict) {
-      const unselected = new THREE.Color(0xffffff);
-      const pointingAt = new THREE.Color(0x888888);
       let needsUpdate = false;
 
       for (let i = 0; i < this.#currentDistrict.count; i++) {
         const color =
-          this.#editingMode === "remove" && this.#pointingAt === i
-            ? pointingAt
-            : unselected;
+          mode === "delete" && this.#pointingAt?.[0] === i
+            ? BUILDINGS.pointingAtDeletion
+            : mode === "update" && this.#pointingAt?.[0] === i
+              ? BUILDINGS.pointingAtUpdate
+              : BUILDINGS.default;
 
         this.#currentDistrict.getColorAt(i, current);
         if (!current.equals(color)) {
@@ -215,30 +290,28 @@ export class Map3D extends Map3DBase {
         }
       }
 
-      if (needsUpdate) this.#currentDistrict.instanceColor!.needsUpdate = true;
+      if (needsUpdate && this.#currentDistrict.instanceColor)
+        this.#currentDistrict.instanceColor.needsUpdate = true;
     }
+  }
 
-    if (this.#currentDistrictRemovals) {
-      const unselected = new THREE.Color(0xff00ff);
-      const selected = new THREE.Color(0xffffff);
-      let needsUpdate = false;
+  /** Apply selected material to virtual geometry */
+  #refreshMaterials() {
+    if (!this.#additionsVirtual) return;
 
-      for (let i = 0; i < this.#currentDistrictRemovals.count; i++) {
-        const color =
-          this.#editingMode === "remove" && this.#selectedIndexes.includes(i)
-            ? selected
-            : unselected;
-
-        this.#currentDistrictRemovals.getColorAt(i, current);
-        if (!current.equals(color)) {
-          this.#currentDistrictRemovals.setColorAt(i, color);
-          needsUpdate = true;
-        }
-      }
-
-      if (needsUpdate)
-        this.#currentDistrictRemovals.instanceColor!.needsUpdate = true;
+    const next = virtualEditsMaterial[this.#patternView];
+    if (this.#additionsVirtual.material !== next) {
+      this.#additionsVirtual.material = next;
     }
+  }
+
+  lookAtCurrentDistrict() {
+    if (!this.#currentDistrictBoundaries) return;
+
+    this.#currentDistrictBoundaries.geometry.computeBoundingBox();
+    this.lookAtBox(this.#currentDistrictBoundaries.geometry.boundingBox);
+
+    requestAnimationFrame(this.render);
   }
 
   selectInstances(indexes: number[]) {
@@ -247,21 +320,36 @@ export class Map3D extends Map3DBase {
     requestAnimationFrame(this.render);
   }
 
-  setAdditions(data: DistrictWithTransforms) {
+  setAdditions({ district, transforms }: DistrictWithTransforms) {
     this.#remove(this.#additions);
-    this.#remove(this.#virtualGeometry);
+    this.#remove(this.#additionsVirtual);
 
-    const { district, transforms } = data;
     const [real, virtual] = partition(transforms, (item) => !item.virtual);
 
     this.#additions = this.#add(
-      createInstancedMeshForDistrict(district, real, additionsMaterial),
+      createDistrictMesh(district, real, additionsMaterial, ADDITIONS.default),
     );
-    this.#virtualGeometry = this.#add(
-      createInstancedMeshForDistrict(
+    this.#additionsVirtual = this.#add(
+      createDistrictMesh(
         district,
         virtual,
         virtualEditsMaterial[this.#patternView],
+        ADDITIONS.default,
+      ),
+    );
+
+    requestAnimationFrame(this.render);
+  }
+
+  setDeletions({ district, transforms }: DistrictWithTransforms) {
+    this.#remove(this.#deletions);
+
+    this.#deletions = this.#add(
+      createDistrictMesh(
+        district,
+        transforms,
+        wireframeMaterial,
+        DELETIONS.default,
       ),
     );
 
@@ -270,19 +358,16 @@ export class Map3D extends Map3DBase {
 
   setCurrentDistrict(data: DistrictWithTransforms) {
     this.#remove(this.#currentDistrict);
-    this.#remove(this.#currentDistrictRemovals);
     this.#remove(this.#currentDistrictBoundaries);
 
     const { district, transforms } = data;
-    const hidden = transforms.filter((item) => item.hidden);
-    const visible = transforms.map((item) =>
-      item.hidden ? { ...item, scale: { x: 0, y: 0, z: 0, w: 1 } } : item,
-    );
     this.#currentDistrict = this.#add(
-      createInstancedMeshForDistrict(district, visible, buildingsMaterial),
-    );
-    this.#currentDistrictRemovals = this.#add(
-      createInstancedMeshForDistrict(district, hidden, wireframeMaterial),
+      createDistrictMesh(
+        district,
+        transforms,
+        buildingsMaterial,
+        BUILDINGS.default,
+      ),
     );
 
     const minMaxBox = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1));
@@ -300,22 +385,22 @@ export class Map3D extends Map3DBase {
       new THREE.BoxHelper(minMaxBox, 0xff8800),
     );
 
-    this.#currentDistrictBoundaries.geometry.computeBoundingBox();
-    if (!this.dontLookAt) {
-      this.lookAtBox(this.#currentDistrictBoundaries.geometry.boundingBox);
-    }
-    this.dontLookAt = false;
-
     requestAnimationFrame(this.render);
   }
 
-  setEditingMode(mode: EditingMode) {
-    this.#editingMode = mode;
-  }
+  setUpdates({ district, transforms }: DistrictWithTransforms) {
+    this.#remove(this.#updates);
 
-  setPatternView(view: PatternView) {
-    this.#patternView = view;
-    this.#setVirtualGeometryMaterial();
+    this.#updates = this.#add(
+      createDistrictMesh(
+        district,
+        transforms,
+        additionsMaterial,
+        UPDATES.default,
+      ),
+    );
+
+    requestAnimationFrame(this.render);
   }
 
   setVisibleDistricts(districts: DistrictWithTransforms[]) {
@@ -342,11 +427,7 @@ export class Map3D extends Map3DBase {
       const { district, transforms } = item;
 
       if (!currentNames.includes(district.name)) {
-        const mesh = createInstancedMeshForDistrict(
-          district,
-          transforms,
-          buildingsMaterial,
-        );
+        const mesh = createDistrictMesh(district, transforms, staticMaterial);
         mesh.userData = { name: district.name };
         objectsToAdd.push(mesh);
       }
@@ -357,7 +438,8 @@ export class Map3D extends Map3DBase {
   }
 
   render = () => {
-    this.refreshInstancesColors();
+    this.#refreshInstancesColors();
+    this.#refreshMaterials();
     super.render();
     this.#canvasRect = this.canvas.getBoundingClientRect();
   };

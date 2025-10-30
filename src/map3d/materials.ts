@@ -1,11 +1,15 @@
 import * as THREE from "three";
 
 export const buildingsMaterial = new THREE.MeshLambertMaterial({
+  color: 0xffffff,
+});
+
+export const staticMaterial = new THREE.MeshLambertMaterial({
   color: 0xba1c1f,
 });
 
 // Adjust shader program to add gradient based on vPos.y
-buildingsMaterial.onBeforeCompile = (shader) => {
+staticMaterial.onBeforeCompile = (shader) => {
   shader.uniforms.vColorBase = { value: new THREE.Color("#5a262e") };
   shader.uniforms.vColorUp = { value: new THREE.Color("#ff375a") };
   shader.uniforms.vMaxHeight = { value: 400.0 };
@@ -44,7 +48,7 @@ buildingsMaterial.onBeforeCompile = (shader) => {
   buildingsMaterial.userData.shader = shader;
 };
 
-export const additionsMaterial = new THREE.MeshLambertMaterial({
+export const additionsMaterial = new THREE.MeshToonMaterial({
   color: 0xffffff,
 });
 

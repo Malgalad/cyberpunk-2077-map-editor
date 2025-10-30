@@ -1,6 +1,6 @@
 import Button from "../components/common/Button.tsx";
 import Modal from "../components/common/Modal.tsx";
-import type { ModalProps } from "../types.ts";
+import type { ModalProps } from "../types/types.ts";
 
 function ConfirmExclusionModal(props: ModalProps) {
   const { index, position } = props.data as {
@@ -11,7 +11,7 @@ function ConfirmExclusionModal(props: ModalProps) {
   return (
     <Modal
       backdrop={false}
-      className={`absolute w-64 -translate-y-1/2`}
+      className={`fixed! w-64 -translate-y-1/2`}
       style={{ left: position[0] + 15, top: position[1] }}
       title={`Hide instance #${index}?`}
     >

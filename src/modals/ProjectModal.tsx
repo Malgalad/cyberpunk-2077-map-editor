@@ -11,8 +11,9 @@ import { useLoadProject } from "../hooks/importExport.ts";
 import { loadJSON, saveJSON } from "../opfs.ts";
 import { hydrateState } from "../store/@actions.ts";
 import { getInitialState } from "../store/@selectors.ts";
-import type { ModalProps, PersistentAppState } from "../types.ts";
-import { clsx } from "../utilities.ts";
+import { PersistentStateSchema } from "../types/schemas.ts";
+import type { ModalProps, PersistentAppState } from "../types/types.ts";
+import { clsx } from "../utilities/utilities.ts";
 
 export type Tabs = "open" | "new" | "load";
 const tabs: { key: Tabs; label: string }[] = [
@@ -72,8 +73,8 @@ function ProjectModal(props: ModalProps) {
     let state: PersistentAppState | undefined = undefined;
 
     if (tab === "open") {
-      // TODO use import/export schema to validate just in case
-      state = await loadJSON(`projects/${selectedProject}`);
+      const maybeProject = await loadJSON(`projects/${selectedProject}`);
+      state = PersistentStateSchema.parse(maybeProject);
 
       if (rememberProjectName) persistent.project = selectedProject;
     } else if (tab === "new") {

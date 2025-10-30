@@ -1,6 +1,6 @@
 import * as React from "react";
 
-import { clsx } from "../../utilities.ts";
+import { clsx } from "../../utilities/utilities.ts";
 
 function Input(props: React.InputHTMLAttributes<HTMLInputElement>) {
   const [value, setValue] = React.useState(props.value);

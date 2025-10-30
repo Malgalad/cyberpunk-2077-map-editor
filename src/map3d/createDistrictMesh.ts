@@ -1,11 +1,12 @@
 import * as THREE from "three";
 
-import type { DistrictData, InstancedMeshTransforms } from "../types.ts";
+import type { DistrictData, InstancedMeshTransforms } from "../types/types.ts";
 
-export function createInstancedMeshForDistrict(
+export function createDistrictMesh(
   district: DistrictData,
   instances: InstancedMeshTransforms[],
   material: THREE.Material,
+  color?: THREE.Color,
 ): THREE.InstancedMesh {
   const position = new THREE.Vector3().fromArray(district.position);
   const transformMin = new THREE.Vector4().fromArray(district.transMin);
@@ -17,6 +18,7 @@ export function createInstancedMeshForDistrict(
   const mesh = new THREE.InstancedMesh(geometry, material, instances.length);
   const positionRange = transformMax.sub(transformMin);
 
+  mesh.userData.indexes = instances.map((item) => item.id);
   mesh.userData.count = instances.length;
   mesh.position.set(
     position.x + transformMin.x,
@@ -44,9 +46,10 @@ export function createInstancedMeshForDistrict(
 
     matrix.compose(position, rotation, scale);
     mesh.setMatrixAt(index, matrix);
+    if (color) mesh.setColorAt(index, color);
   }
 
-  mesh.setColorAt(0, new THREE.Color(0xffffff));
+  if (!color) mesh.setColorAt(0, new THREE.Color(0xffffff));
 
   return mesh;
 }

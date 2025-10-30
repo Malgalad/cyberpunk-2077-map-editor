@@ -1,6 +1,6 @@
 import * as React from "react";
 
-import { clsx } from "../../utilities.ts";
+import { clsx } from "../../utilities/utilities.ts";
 
 type DropdownProps = {
   align?: "left" | "right" | "top" | "bottom";
@@ -8,8 +8,9 @@ type DropdownProps = {
   className?: string;
   containerClassName?: string;
   direction?: "bottom" | "top" | "left" | "right";
+  disabled?: boolean;
   level?: number;
-  trigger: React.ReactElement<{ className?: string }>;
+  trigger: React.ReactElement<HTMLButtonElement>;
 };
 
 function Dropdown({
@@ -18,6 +19,7 @@ function Dropdown({
   className,
   containerClassName,
   direction = "bottom",
+  disabled = false,
   level = 0,
   trigger,
 }: DropdownProps) {
@@ -39,8 +41,8 @@ function Dropdown({
       onMouseEnter={() => setIsOpen(true)}
       onMouseLeave={() => setIsOpen(false)}
     >
-      {trigger}
-      {isOpen && (
+      {React.cloneElement(trigger, { disabled })}
+      {isOpen && !disabled && (
         <div
           className={clsx(
             "absolute z-10 w-max min-w-60 p-1.5 rounded-md",

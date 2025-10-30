@@ -1,6 +1,6 @@
 import { useAppDispatch } from "../hooks.ts";
 import { NodesActions } from "../store/nodes.ts";
-import type { MapNode } from "../types.ts";
+import type { MapNode } from "../types/types.ts";
 import Button from "./common/Button.tsx";
 import DraggableInput from "./common/DraggableInput.tsx";
 

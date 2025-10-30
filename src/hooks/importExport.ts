@@ -1,24 +1,16 @@
-import { produce } from "immer";
 import * as React from "react";
 
-import { DEFAULT_DISTRICT_DATA } from "../constants.ts";
 import { loadFile, saveBlobToFile } from "../helpers.ts";
-import { useAppSelector } from "../hooks.ts";
+import { useAppDispatch, useAppSelector } from "../hooks.ts";
 import { encodeImageData } from "../map3d/processDDS.ts";
-import { getInitialState, getPersistentState } from "../store/@selectors.ts";
+import { getPersistentState } from "../store/@selectors.ts";
 import { DistrictSelectors } from "../store/district.ts";
-import { getNodesInstancedMeshTransforms } from "../store/nodes.selectors.ts";
-import { NodesSelectors } from "../store/nodes.ts";
-import type { PersistentAppState } from "../types.ts";
-import {
-  getDistrictInstancedMeshTransforms,
-  unzip,
-  zip,
-} from "../utilities.ts";
-import {
-  PersistentStateV1Schema,
-  PersistentStateV2Schema,
-} from "./importExport.schemas.ts";
+import { NodesActions, NodesSelectors } from "../store/nodes.ts";
+import { ProjectSelectors } from "../store/project.ts";
+import { NodeSchema, PersistentStateSchema } from "../types/schemas.ts";
+import type { MapNode, PersistentAppState } from "../types/types.ts";
+import { unzip, zip } from "../utilities/compression.ts";
+import { getFinalDistrictTransformsFromNodes } from "../utilities/district.ts";
 
 export function useSaveProject() {
   const persistentState = useAppSelector(getPersistentState);
@@ -26,7 +18,7 @@ export function useSaveProject() {
   return React.useCallback(async () => {
     if (!persistentState.project.name) return;
 
-    const data = PersistentStateV2Schema.encode(persistentState);
+    const data = PersistentStateSchema.encode(persistentState);
     const stream = zip(JSON.stringify(data));
     const blob = await new Response(stream).blob();
 
@@ -44,63 +36,64 @@ export function useLoadProject() {
     const file = await loadFile(".ncmapedits");
     const content = await unzip(file.stream());
     const data = JSON.parse(content);
+    const state = PersistentStateSchema.parse(data);
 
-    if (!data.project?.version) {
-      // assume v1
-      const stateV1 = PersistentStateV1Schema.decode(data);
-
-      return [
-        file.name,
-        produce(getInitialState(undefined), (draft) => {
-          for (const [name, value] of Object.entries(stateV1)) {
-            const { district, nodes, removals } = value;
-
-            draft.nodes.nodes.push(...nodes);
-            draft.nodes.removals.push(...removals);
-            draft.district.districts.push(...DEFAULT_DISTRICT_DATA);
-
-            const index = draft.district.districts.findIndex(
-              (district) => district.name === name,
-            );
-
-            if (index === -1) {
-              draft.district.districts.push(district);
-            } else {
-              draft.district.districts.splice(index, 1, district);
-            }
-          }
-        }),
-      ];
-    } else if (data.project?.version === 2) {
-      return [file.name, PersistentStateV2Schema.decode(data)];
-    }
+    return [file.name, state];
   }, []);
+}
+
+export function useImportNodes() {
+  const dispatch = useAppDispatch();
+  const nodes = useAppSelector(NodesSelectors.getNodes);
+
+  return React.useCallback(async () => {
+    const file = await loadFile(".json");
+    const content = await file.text();
+    const data = JSON.parse(content);
+    const parsed: MapNode[] = [];
+
+    for (const maybeNode of data) {
+      maybeNode.tag ||= "create";
+      parsed.push(NodeSchema.parse(maybeNode));
+    }
+
+    const merged = new Map(nodes.map((node) => [node.id, node]));
+
+    for (const node of parsed) {
+      merged.set(node.id, node);
+    }
+
+    dispatch(NodesActions.replaceNodes([...merged.values()]));
+  }, [nodes, dispatch]);
+}
+
+export function useExportNodes() {
+  const nodes = useAppSelector(NodesSelectors.getNodes);
+  const project = useAppSelector(ProjectSelectors.getProjectName);
+
+  return React.useCallback(async () => {
+    const json = JSON.stringify(nodes, null, 2);
+    const blob = new Blob([json], { type: "application/json" });
+
+    saveBlobToFile(blob, `${project}_nodes.json`);
+  }, [nodes, project]);
 }
 
 // TODO export _m base color texture (?) or use Pacifica
 export function useExportDDS() {
   const district = useAppSelector(DistrictSelectors.getDistrict);
-  const removals = useAppSelector(NodesSelectors.getRemovals);
-  const nodesInstancedMeshTransforms = useAppSelector(
-    getNodesInstancedMeshTransforms,
-  );
+  const nodes = useAppSelector(NodesSelectors.getNodes);
+  const cache = useAppSelector(NodesSelectors.getChildNodesCache);
 
-  return React.useCallback(async () => {
+  return React.useCallback(() => {
     if (!district) return;
 
-    const districtInstancedMeshTransforms =
-      await getDistrictInstancedMeshTransforms(district);
-    const data = [
-      ...districtInstancedMeshTransforms.filter(
-        (_, index) => !removals.includes(index),
-      ),
-      ...nodesInstancedMeshTransforms,
-    ];
+    const data = getFinalDistrictTransformsFromNodes(nodes, cache, district);
     const imageData = encodeImageData(data);
     const blob = new Blob([imageData.buffer], { type: "image/dds" });
 
     saveBlobToFile(blob, `${district.name}.dds`);
-  }, [district, removals, nodesInstancedMeshTransforms]);
+  }, [district, nodes, cache]);
 }
 
 /*

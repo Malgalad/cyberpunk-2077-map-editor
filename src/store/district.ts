@@ -1,42 +1,33 @@
-import {
-  createSelector,
-  createSlice,
-  type PayloadAction,
-} from "@reduxjs/toolkit";
-import * as THREE from "three";
+import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 
-import type {
-  DistrictCenter,
-  DistrictData,
-  PersistentAppState,
-} from "../types.ts";
+import type { District, RevivedAppState } from "../types/types.ts";
 import { hydrateState } from "./@actions.ts";
 
 interface DistrictState {
-  districts: DistrictData[];
-  current: string | undefined;
+  districts: District[];
+  current: string | null;
 }
 
 const initialState: DistrictState = {
   districts: [],
-  current: undefined,
+  current: null,
 };
 
 const districtSlice = createSlice({
   name: "district",
   initialState,
   reducers: {
-    addDistrict(state, action: PayloadAction<DistrictData>) {
+    addDistrict(state, action: PayloadAction<District>) {
       state.districts.push(action.payload);
     },
-    selectDistrict(state, action: PayloadAction<string | undefined>) {
+    selectDistrict(state, action: PayloadAction<string | null>) {
       state.current = action.payload;
     },
   },
   extraReducers: (builder) =>
     builder.addCase(
-      hydrateState,
-      (_, action: PayloadAction<PersistentAppState>) => action.payload.district,
+      hydrateState.fulfilled,
+      (_, action: PayloadAction<RevivedAppState>) => action.payload.district,
     ),
   selectors: {
     getDistrict: (state) =>
@@ -44,29 +35,6 @@ const districtSlice = createSlice({
         ? state.districts.find((district) => district.name === state.current)
         : undefined,
     getAllDistricts: (state) => state.districts,
-    getDistrictCenter: createSelector(
-      [
-        (sliceState: DistrictState): DistrictData | undefined =>
-          districtSlice.getSelectors().getDistrict(sliceState),
-      ],
-      (districtData): DistrictCenter | undefined => {
-        if (!districtData) return undefined;
-
-        const minMax = new THREE.Vector4()
-          .fromArray(districtData.transMax)
-          .sub(new THREE.Vector4().fromArray(districtData.transMin));
-        const origin = new THREE.Vector3()
-          .fromArray(districtData.position)
-          .add(new THREE.Vector4().fromArray(districtData.transMin));
-        const center = origin.clone().add(minMax.clone().multiplyScalar(0.5));
-
-        return {
-          center,
-          minMax,
-          origin,
-        };
-      },
-    ),
   },
 });
 

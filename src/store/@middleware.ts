@@ -1,7 +1,7 @@
 import type { Middleware, MiddlewareAPI } from "redux";
 
 import { saveJSON } from "../opfs.ts";
-import type { AppDispatch, AppState } from "../types.ts";
+import type { AppDispatch, AppState } from "../types/types.ts";
 import { getPersistentState } from "./@selectors.ts";
 
 export const persistMiddleware: Middleware =
