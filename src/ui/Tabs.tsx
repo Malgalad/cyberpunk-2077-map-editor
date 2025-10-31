@@ -1,5 +1,11 @@
+import * as React from "react";
+
 import Button from "../components/common/Button.tsx";
-import { useAppDispatch, useAppSelector } from "../hooks.ts";
+import {
+  useAppDispatch,
+  useAppSelector,
+  useGlobalShortcuts,
+} from "../hooks.ts";
 import { DistrictSelectors } from "../store/district.ts";
 import { NodesActions } from "../store/nodes.ts";
 import { ProjectActions, ProjectSelectors } from "../store/project.ts";
@@ -10,15 +16,44 @@ import RemoveNodes from "./RemoveNodes.tsx";
 import UpdateNodes from "./UpdateNodes.tsx";
 
 const tabs = [
-  { key: "create", label: "Create nodes" },
-  { key: "update", label: "Update nodes" },
-  { key: "delete", label: "Delete nodes" },
-] as { key: Modes; label: string }[];
+  {
+    key: "create",
+    label: (
+      <span>
+        Cre<span className="underline">a</span>te nodes
+      </span>
+    ),
+    shortcut: "a",
+  },
+  {
+    key: "update",
+    label: (
+      <span>
+        Updat<span className="underline">e</span> nodes
+      </span>
+    ),
+    shortcut: "e",
+  },
+  {
+    key: "delete",
+    label: (
+      <span>
+        <span className="underline">D</span>elete nodes
+      </span>
+    ),
+    shortcut: "d",
+  },
+] as { key: Modes; label: React.ReactNode; shortcut?: string }[];
 
 function Tabs() {
   const mode = useAppSelector(ProjectSelectors.getMode);
   const district = useAppSelector(DistrictSelectors.getDistrict);
   const dispatch = useAppDispatch();
+
+  useGlobalShortcuts(
+    "Escape",
+    () => void dispatch(NodesActions.setEditing(null)),
+  );
 
   return (
     <div className="w-[420px] h-full flex flex-col py-2 pr-2">
@@ -38,6 +73,7 @@ function Tabs() {
             disabled={
               !district || (button.key !== "create" && district.isCustom)
             }
+            shortcut={button.shortcut}
           >
             {button.label}
           </Button>

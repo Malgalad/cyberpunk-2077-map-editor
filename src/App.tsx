@@ -12,13 +12,18 @@ import {
   useMap3DEvents,
 } from "./App.hooks.ts";
 import Button from "./components/common/Button.tsx";
+import { useAppSelector } from "./hooks.ts";
 import { Map3DContext } from "./map3d/map3d.context.ts";
+import { ProjectSelectors } from "./store/project.ts";
 import Menu from "./ui/Menu.tsx";
 import Tabs from "./ui/Tabs.tsx";
+import ToolSelection from "./ui/ToolSelection.tsx";
+import { clsx } from "./utilities/utilities.ts";
 
 function App() {
   const canvasRef = React.useRef<HTMLCanvasElement>(null);
   const map3d = useInitMap3D(canvasRef);
+  const tool = useAppSelector(ProjectSelectors.getTool);
 
   useDrawAllDistricts(map3d);
   useDrawCurrentDistrict(map3d);
@@ -34,7 +39,9 @@ function App() {
         <div className="grow flex flex-col">
           <Menu />
 
-          <div className="grow relative">
+          <div
+            className={clsx("grow relative", tool === "move" && "cursor-move")}
+          >
             <canvas className="w-full h-full block" ref={canvasRef} />
             <Button
               className="absolute! bg-slate-800 left-4 top-4 tooltip"
@@ -46,6 +53,7 @@ function App() {
             >
               <BoxIcon />
             </Button>
+            <ToolSelection />
           </div>
         </div>
 

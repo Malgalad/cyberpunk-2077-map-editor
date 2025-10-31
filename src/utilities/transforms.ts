@@ -36,7 +36,7 @@ export function applyParentTransform<Node extends TransformParsed>(
 
   const object = new THREE.Object3D();
 
-  object.position.fromArray(node.position);
+  object.position.fromArray(hadamardProduct(node.position, parent.scale));
   object.position.add(parentPosition);
   object.rotation.fromArray(node.rotation);
   object.scale.fromArray(node.scale);
@@ -46,7 +46,6 @@ export function applyParentTransform<Node extends TransformParsed>(
   object.position.applyQuaternion(parentRotation);
   object.position.add(parentPosition);
 
-  // TODO scale distance as well
   const scale = hadamardProduct(node.scale, parent.scale);
 
   return {
@@ -55,6 +54,32 @@ export function applyParentTransform<Node extends TransformParsed>(
     rotation: object.rotation.toArray(),
     scale,
   };
+}
+
+export function projectNodeToDistrict(
+  node: MapNode,
+  nodes: MapNode[],
+  shiftZOrigin: boolean = false,
+) {
+  const parsedNodes = nodes.map(parseNode);
+  let current = parseNode(node);
+  let parentId = current.parent;
+
+  while (true) {
+    const maybeParent = parsedNodes.find((parent) => parent.id === parentId);
+    if (!maybeParent) break;
+    const parent = maybeParent;
+
+    current = applyParentTransform(current, parent);
+    parentId = parent.parent;
+  }
+
+  if (shiftZOrigin) {
+    // set node Z transform origin to bottom instead of center
+    current.position[2] += current.scale[2] / 2;
+  }
+
+  return current;
 }
 
 export function projectNodesToDistrict(

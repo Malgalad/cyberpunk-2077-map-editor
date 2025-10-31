@@ -1,6 +1,7 @@
 import { LoaderCircle } from "lucide-react";
 import * as React from "react";
 
+import { useGlobalShortcuts } from "../../hooks.ts";
 import { clsx } from "../../utilities/utilities.ts";
 
 type ButtonProps = React.ButtonHTMLAttributes<HTMLButtonElement> & {
@@ -8,9 +9,16 @@ type ButtonProps = React.ButtonHTMLAttributes<HTMLButtonElement> & {
     event: React.MouseEvent<HTMLButtonElement, MouseEvent>,
   ) => void | Promise<void>;
   rounded?: boolean;
+  shortcut?: string | ((event: KeyboardEvent) => boolean);
 };
 
-function Button({ rounded = false, onClick, children, ...props }: ButtonProps) {
+function Button({
+  rounded = false,
+  onClick,
+  children,
+  shortcut,
+  ...props
+}: ButtonProps) {
   const [isLoading, setIsLoading] = React.useState(false);
   const onClickAsync = React.useCallback(
     (event: React.MouseEvent<HTMLButtonElement, MouseEvent>) => {
@@ -28,6 +36,8 @@ function Button({ rounded = false, onClick, children, ...props }: ButtonProps) {
     [onClick],
   );
 
+  useGlobalShortcuts(shortcut, onClick);
+
   return (
     <button
       type="button"
@@ -38,7 +48,9 @@ function Button({ rounded = false, onClick, children, ...props }: ButtonProps) {
         "cursor-pointer p-1.5",
         "hover:not-disabled:border-slate-400 hover:not-disabled:bg-slate-600",
         "active:not-disabled:ring-2 active:not-disabled:ring-slate-500",
+        "aria-selected:not-disabled:ring-2 aria-selected:not-disabled:ring-slate-500",
         "active:not-disabled:bg-slate-500 active:not-disabled:text-slate-900",
+        "aria-selected:not-disabled:bg-slate-500 aria-selected:not-disabled:text-slate-900",
         "disabled:cursor-not-allowed disabled:text-gray-500",
         rounded && "rounded-md",
         props.className,

@@ -1,13 +1,20 @@
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 
 import { PROJECT_VERSION } from "../constants.ts";
-import type { ProjectState } from "../types/schemas.ts";
-import type { Modes, RevivedAppState } from "../types/types.ts";
+import type { Modes, RevivedAppState, Tool } from "../types/types.ts";
 import { hydrateState } from "./@actions.ts";
+
+interface ProjectState {
+  name: string;
+  mode: Modes;
+  tool: Tool;
+  version: number;
+}
 
 const initialState: ProjectState = {
   name: "",
   mode: "create",
+  tool: "move",
   version: PROJECT_VERSION,
 };
 
@@ -17,6 +24,9 @@ const projectSlice = createSlice({
   reducers: {
     setMode(state, action: PayloadAction<Modes>) {
       state.mode = action.payload;
+    },
+    setTool(state, action: PayloadAction<Tool>) {
+      state.tool = action.payload;
     },
     setProjectName(state, action: PayloadAction<string>) {
       state.name = action.payload;
@@ -29,6 +39,7 @@ const projectSlice = createSlice({
     ),
   selectors: {
     getMode: (state) => state.mode,
+    getTool: (state) => state.tool,
     getProjectName: (state) => state.name,
   },
 });

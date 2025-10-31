@@ -76,6 +76,7 @@ export class Map3DBase {
 
   dispose() {
     window.removeEventListener("resize", this.#onWindowResize);
+    this.#controls.dispose();
     this.#renderer.dispose();
   }
 
@@ -167,5 +168,9 @@ export class Map3DBase {
 
   resetCamera() {
     this.lookAt(this.#cameraLookAt, this.#cameraZoom);
+  }
+
+  toggleControls(enabled: boolean) {
+    this.#controls.enabled = enabled;
   }
 }

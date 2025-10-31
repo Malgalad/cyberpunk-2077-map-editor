@@ -71,7 +71,7 @@ function UpdateNodes() {
             <Button
               className="border-none tooltip"
               onClick={onDelete}
-              data-tooltip="Remove node updates"
+              data-tooltip="Discard node updates"
               data-flow="left"
             >
               <Trash2 />

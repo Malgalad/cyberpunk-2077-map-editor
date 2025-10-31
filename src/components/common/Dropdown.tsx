@@ -1,5 +1,6 @@
 import * as React from "react";
 
+import { useGlobalShortcuts } from "../../hooks.ts";
 import { clsx } from "../../utilities/utilities.ts";
 
 type DropdownProps = {
@@ -11,6 +12,7 @@ type DropdownProps = {
   disabled?: boolean;
   level?: number;
   trigger: React.ReactElement<HTMLButtonElement>;
+  shortcut?: string | ((event: KeyboardEvent) => boolean);
 };
 
 function Dropdown({
@@ -22,6 +24,7 @@ function Dropdown({
   disabled = false,
   level = 0,
   trigger,
+  shortcut,
 }: DropdownProps) {
   const [isOpen, setIsOpen] = React.useState(false);
   const positionClass = {
@@ -34,6 +37,8 @@ function Dropdown({
     "right top": "top-0 left-full",
     "right bottom": "bottom-0 left-full",
   }[direction + " " + align];
+
+  useGlobalShortcuts(shortcut, () => setIsOpen(!isOpen));
 
   return (
     <div

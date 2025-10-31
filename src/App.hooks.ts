@@ -14,10 +14,12 @@ import { ModalsActions } from "./store/modals.ts";
 import { NodesActions, NodesSelectors } from "./store/nodes.ts";
 import { OptionsSelectors } from "./store/options.ts";
 import { ProjectSelectors } from "./store/project.ts";
-import type { OptionsState } from "./types/schemas.ts";
 import type { District, DistrictWithTransforms } from "./types/types.ts";
-import { getFinalDistrictTransformsFromNodes } from "./utilities/district.ts";
-import { transformToNode } from "./utilities/transforms.ts";
+// import { getFinalDistrictTransformsFromNodes } from "./utilities/district.ts";
+import {
+  projectNodeToDistrict,
+  transformToNode,
+} from "./utilities/transforms.ts";
 import { invariant, toNumber, toString } from "./utilities/utilities.ts";
 
 export function useInitMap3D(ref: React.RefObject<HTMLCanvasElement | null>) {
@@ -46,37 +48,34 @@ export function useDrawAllDistricts(map3d: Map3D | null) {
   const visibleDistrictNames = useAppSelector(
     OptionsSelectors.getVisibleDistricts,
   );
-  const nodes = useAppSelector(NodesSelectors.getNodes);
-  const cache = useAppSelector(NodesSelectors.getChildNodesCache);
-  const restDistrictTransforms = React.useMemo(() => {
-    if (!allDistricts.length) return new Map();
-
-    return new Map(
-      allDistricts.map((district) => [
-        district.name,
-        {
-          district,
-          transforms: getFinalDistrictTransformsFromNodes(
-            nodes,
-            cache,
-            district,
-          ),
-        },
-      ]),
-    );
-    // only recalculate applied district transforms when the current district
-    // changes because we can 100% guarantee there will be no node changes
-    // for districts other than current
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentDistrict]);
+  // const nodes = useAppSelector(NodesSelectors.getNodes);
+  // const cache = useAppSelector(NodesSelectors.getChildNodesCache);
+  // const restDistrictTransforms = React.useMemo(() => {
+  //   if (!allDistricts.length) return new Map();
+  //
+  //   return new Map(
+  //     allDistricts.map((district) => [
+  //       district.name,
+  //       {
+  //         district,
+  //         transforms: getFinalDistrictTransformsFromNodes(
+  //           nodes,
+  //           cache,
+  //           district,
+  //         ),
+  //       },
+  //     ]),
+  //   );
+  //   // TODO optimize
+  //   // only recalculate applied district transforms when the current district
+  //   // changes because we can 100% guarantee there will be no node changes
+  //   // for districts other than current
+  // }, [allDistricts, cache, nodes]);
 
   React.useEffect(() => {
     if (!allDistricts.length || !currentDistrict || !map3d) return;
 
-    const districtsVisibilityMap: Record<
-      OptionsState["districtView"],
-      District[]
-    > = {
+    const districtsVisibilityMap: Record<string, District[]> = {
       all: allDistricts,
       current: [currentDistrict],
       custom: allDistricts.filter((district) =>
@@ -86,12 +85,19 @@ export function useDrawAllDistricts(map3d: Map3D | null) {
     const visibleDistricts = districtsVisibilityMap[districtView];
     const districtsWithTransforms: DistrictWithTransforms[] = visibleDistricts
       .filter((district) => district.name !== currentDistrict.name)
-      .map((district) => restDistrictTransforms.get(district.name)!);
+      .map((district) => ({
+        district,
+        transforms: district.transforms,
+      }));
 
     map3d.setVisibleDistricts(districtsWithTransforms);
-    // only update visible districts when options or selection changes
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [visibleDistrictNames, districtView, currentDistrict]);
+  }, [
+    visibleDistrictNames,
+    districtView,
+    currentDistrict,
+    allDistricts,
+    map3d,
+  ]);
 }
 
 export function useDrawCurrentDistrict(map3d: Map3D | null) {
@@ -167,6 +173,7 @@ export function useDrawSelection(map3d: Map3D | null) {
   const deletions = useAppSelector(getDeletionsTransforms);
   const editing = useAppSelector(NodesSelectors.getEditing);
   const cache = useAppSelector(NodesSelectors.getChildNodesCache);
+  const nodes = useAppSelector(NodesSelectors.getNodes);
 
   React.useEffect(() => {
     if (!map3d) return;
@@ -205,6 +212,15 @@ export function useDrawSelection(map3d: Map3D | null) {
 
     map3d.selectInstances(indexes);
   }, [editing, cache, deletions, additions, map3d, mode, updates]);
+
+  React.useEffect(() => {
+    if (!map3d || mode === "delete") return;
+    if (!editing) {
+      map3d.setHelper(undefined);
+    } else {
+      map3d.setHelper(projectNodeToDistrict(editing, nodes, mode === "create"));
+    }
+  }, [map3d, mode, editing, nodes]);
 }
 
 export function useMap3DEvents(map3d: Map3D | null) {

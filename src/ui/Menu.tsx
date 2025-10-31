@@ -55,6 +55,7 @@ function Menu() {
               File
             </Button>
           }
+          shortcut={(event) => event.key === "f" && event.altKey}
         >
           <DropdownItem
             onClick={() => dispatch(ModalsActions.openModal("project", "new"))}
@@ -76,21 +77,15 @@ function Menu() {
           <DropdownItem
             icon={<HardDriveDownload />}
             onClick={saveProject}
-            disabled={!projectName || !district}
+            disabled={!projectName}
           >
             Save to file
           </DropdownItem>
           <DropdownSeparator />
-          <DropdownItem
-            onClick={importJSON}
-            disabled={!projectName || !district}
-          >
+          <DropdownItem onClick={importJSON} disabled={!projectName}>
             Import nodes from JSON
           </DropdownItem>
-          <DropdownItem
-            onClick={exportJSON}
-            disabled={!projectName || !district}
-          >
+          <DropdownItem onClick={exportJSON} disabled={!projectName}>
             Export nodes to JSON
           </DropdownItem>
           <DropdownSeparator />

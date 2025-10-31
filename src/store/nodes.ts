@@ -7,7 +7,6 @@ import { produce, type WritableDraft } from "immer";
 import { nanoid } from "nanoid";
 
 import { MAX_DEPTH } from "../constants.ts";
-import type { NodesState } from "../types/schemas.ts";
 import type {
   AppThunkAction,
   GroupNodeCache,
@@ -16,6 +15,11 @@ import type {
 } from "../types/types.ts";
 import { cloneNode } from "../utilities/nodes.ts";
 import { hydrateState } from "./@actions.ts";
+
+interface NodesState {
+  nodes: MapNode[];
+  editingId: string | null;
+}
 
 const initialState: NodesState = {
   nodes: [],

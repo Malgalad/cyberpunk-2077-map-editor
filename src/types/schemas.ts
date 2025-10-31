@@ -7,9 +7,13 @@ export const ProjectStateSchema = z.object({
     z.literal("update"),
     z.literal("delete"),
   ]),
+  tool: z.union([
+    z.literal("move"),
+    z.literal("select"),
+    z.literal("multiselect"),
+  ]),
   version: z.number(),
 });
-export type ProjectState = z.infer<typeof ProjectStateSchema>;
 
 export const OptionsStateSchema = z.object({
   districtView: z.union([
@@ -24,7 +28,6 @@ export const OptionsStateSchema = z.object({
   ]),
   visibleDistricts: z.array(z.string()),
 });
-export type OptionsState = z.infer<typeof OptionsStateSchema>;
 
 const DistrictDataSchema = z.intersection(
   z.object({
@@ -75,7 +78,6 @@ export const NodesStateSchema = z.object({
   nodes: z.array(NodeSchema),
   editingId: z.union([z.string(), z.null()]),
 });
-export type NodesState = z.infer<typeof NodesStateSchema>;
 
 export const PersistentStateSchema = z.object({
   project: ProjectStateSchema,

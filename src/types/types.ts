@@ -109,6 +109,7 @@ export type DistrictWithTransforms = {
   transforms: InstancedMeshTransforms[];
 };
 
+export type Tool = "move" | "select" | "multiselect";
 export type Modes = "create" | "update" | "delete";
 export type PatternView = "none" | "wireframe" | "solid";
 export type DistrictView = "all" | "current" | "custom";

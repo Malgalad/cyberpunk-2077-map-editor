@@ -1,12 +1,17 @@
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 
-import type { OptionsState } from "../types/schemas.ts";
 import type {
   DistrictView,
   PatternView,
   RevivedAppState,
 } from "../types/types.ts";
 import { hydrateState } from "./@actions.ts";
+
+interface OptionsState {
+  districtView: DistrictView;
+  patternView: PatternView;
+  visibleDistricts: string[];
+}
 
 const initialState: OptionsState = {
   districtView: "current",

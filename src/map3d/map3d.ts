@@ -5,9 +5,11 @@ import { ProjectSelectors } from "../store/project.ts";
 import type {
   AppStore,
   DistrictWithTransforms,
+  MapNodeParsed,
   PatternView,
 } from "../types/types.ts";
 import { partition, toNumber } from "../utilities/utilities.ts";
+import AxesHelper from "./axesHelper.ts";
 import { ADDITIONS, BUILDINGS, DELETIONS, UPDATES } from "./colors.ts";
 import { createDistrictMesh } from "./createDistrictMesh.ts";
 import { Map3DBase } from "./map3d.base.ts";
@@ -43,6 +45,7 @@ export class Map3D extends Map3DBase {
   #pointer: THREE.Vector2 = new THREE.Vector2(1, 1);
   #startedPointingAt: [number, THREE.Object3D] | null = null;
   #pointingAt: [number, THREE.Object3D] | null = null;
+  #helper = new AxesHelper(50);
 
   constructor(canvas: HTMLCanvasElement, store: AppStore) {
     super(canvas);
@@ -53,6 +56,7 @@ export class Map3D extends Map3DBase {
 
     setupTerrain(this.loadResource);
     this.scene.add(this.#visibleDistricts);
+    this.scene.add(this.#helper);
 
     this.#unsubscribe = this.#store.subscribe(this.render);
     this.canvas.addEventListener("mousedown", this.#onMouseDown);
@@ -72,6 +76,7 @@ export class Map3D extends Map3DBase {
     this.canvas.removeEventListener("mouseleave", this.#onMouseLeave);
     this.canvas.removeEventListener("click", this.#onClick);
 
+    this.#helper.dispose();
     this.#visibleDistricts.children.forEach((child) =>
       (child as THREE.InstancedMesh).geometry.dispose(),
     );
@@ -97,6 +102,10 @@ export class Map3D extends Map3DBase {
     return OptionsSelectors.getPatternView(this.#store.getState());
   }
 
+  get #tool() {
+    return ProjectSelectors.getTool(this.#store.getState());
+  }
+
   /** Add mesh to the scene */
   #add<T extends THREE.Object3D>(mesh: T): T {
     this.scene.add(mesh);
@@ -111,13 +120,16 @@ export class Map3D extends Map3DBase {
   }
 
   #onMouseDown = (event: MouseEvent) => {
-    if (event.button !== 0) return;
+    if (event.button !== 0 || this.#tool !== "select") return;
     this.#startedPointingAt = this.#pointingAt;
   };
 
   #onMouseMove = (event: MouseEvent) => {
     const { left, top, width, height } = this.#canvasRect!;
     const mode = this.#mode;
+    const tool = this.#tool;
+
+    if (tool !== "select") return;
 
     this.#pointer.x = ((event.clientX - left) / width) * 2 - 1;
     this.#pointer.y = -((event.clientY - top) / height) * 2 + 1;
@@ -159,7 +171,11 @@ export class Map3D extends Map3DBase {
   #onClick = (event: MouseEvent) => {
     const mode = this.#mode;
 
-    if (this.#startedPointingAt?.[0] !== this.#pointingAt?.[0]) return;
+    if (
+      this.#startedPointingAt?.[0] !== this.#pointingAt?.[0] ||
+      this.#tool !== "select"
+    )
+      return;
 
     if (this.#pointingAt == null) {
       window.dispatchEvent(
@@ -320,6 +336,25 @@ export class Map3D extends Map3DBase {
     requestAnimationFrame(this.render);
   }
 
+  setHelper(node?: MapNodeParsed) {
+    if (!node) {
+      this.#helper.visible = false;
+      return;
+    }
+
+    this.#helper.position.set(
+      node.position[0],
+      node.position[2],
+      -node.position[1],
+    );
+    this.#helper.rotation.fromArray([
+      node.rotation[0],
+      node.rotation[2],
+      -node.rotation[1],
+    ]);
+    this.#helper.visible = true;
+  }
+
   setAdditions({ district, transforms }: DistrictWithTransforms) {
     this.#remove(this.#additions);
     this.#remove(this.#additionsVirtual);
@@ -438,6 +473,7 @@ export class Map3D extends Map3DBase {
   }
 
   render = () => {
+    this.toggleControls(this.#tool === "move");
     this.#refreshInstancesColors();
     this.#refreshMaterials();
     super.render();

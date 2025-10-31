@@ -29,3 +29,36 @@ export function useFilesList(directory?: string) {
 
   return files;
 }
+
+export function useGlobalShortcuts(
+  shortcut?: string | ((event: KeyboardEvent) => boolean),
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  callback?: React.EventHandler<any>,
+) {
+  React.useEffect(() => {
+    if (!shortcut) return;
+
+    const listener = (event: KeyboardEvent) => {
+      if (event.target instanceof HTMLInputElement) return;
+
+      event.preventDefault();
+      event.stopPropagation();
+
+      if (typeof shortcut === "string") {
+        if (event.key !== shortcut) return;
+      }
+
+      if (typeof shortcut === "function") {
+        if (!shortcut(event)) return;
+      }
+
+      callback?.(event);
+    };
+
+    document.addEventListener("keyup", listener);
+
+    return () => {
+      document.removeEventListener("keyup", listener);
+    };
+  }, [shortcut, callback]);
+}
