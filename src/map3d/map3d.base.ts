@@ -14,6 +14,8 @@ export class Map3DBase {
   #cameraPosition: THREE.Vector3 = new THREE.Vector3(0, 3000, 0);
   #cameraLookAt: THREE.Vector3 = new THREE.Vector3(0, 0, 0);
   #cameraZoom: number = 1;
+  #previousCameraZoom: number = this.#cameraZoom;
+  #zoomListeners: (() => void)[] = [];
 
   constructor(canvas: HTMLCanvasElement) {
     this.#scene = new THREE.Scene();
@@ -39,6 +41,7 @@ export class Map3DBase {
 
     this.#controls = new MapControls(this.#camera, canvas);
     this.#controls.addEventListener("change", this.#render); // call this only in static scenes (i.e., if there is no animation loop)
+    this.#controls.addEventListener("change", this.#zoomChanged);
 
     this.#controls.zoomToCursor = true;
     this.#controls.minDistance = 1;
@@ -78,6 +81,23 @@ export class Map3DBase {
     window.removeEventListener("resize", this.#onWindowResize);
     this.#controls.dispose();
     this.#renderer.dispose();
+  }
+
+  #zoomChanged = () => {
+    if (this.#previousCameraZoom === this.#cameraZoom) return;
+    this.#previousCameraZoom = this.#cameraZoom;
+    this.#zoomListeners.forEach((callback) => callback());
+  };
+
+  onZoomChange(callback: () => void) {
+    this.#zoomListeners.push(callback);
+
+    return () => {
+      const index = this.#zoomListeners.indexOf(callback);
+      if (index !== -1) {
+        this.#zoomListeners.splice(index, 1);
+      }
+    };
   }
 
   screenshot() {

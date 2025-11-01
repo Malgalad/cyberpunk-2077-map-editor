@@ -14,6 +14,7 @@ import type {
   RevivedAppState,
 } from "../types/types.ts";
 import { cloneNode } from "../utilities/nodes.ts";
+import { structuralSharing } from "../utilities/structuralSharing.ts";
 import { hydrateState } from "./@actions.ts";
 
 interface NodesState {
@@ -99,20 +100,22 @@ const nodesSlice = createSlice({
   selectors: {
     getNodes: (state) => state.nodes,
     getEditingId: (state) => state.editingId,
-    // TODO recalculate only changed parts of cache
     getChildNodesCache: createSelector(
       [
         (sliceState: NodesState): MapNode[] =>
           nodesSlice.getSelectors().getNodes(sliceState),
       ],
-      (nodes) => {
+      structuralSharing((nodes: MapNode[]) => {
         const cache: GroupNodeCache = {};
 
         for (const node of nodes) {
-          const parent = cache[node.parent] ?? { i: [], g: [], l: 0 };
+          const parent = cache[node.parent] ?? createCacheEntry();
 
           if (node.type === "instance") {
             parent.i.push(node.id);
+            if (node.tag === "create") parent.c.push(node.id);
+            if (node.tag === "update") parent.u.push(node.id);
+            if (node.tag === "delete") parent.d.push(node.id);
           } else {
             let depth = 0;
             let current: MapNode | undefined = node;
@@ -121,11 +124,16 @@ const nodesSlice = createSlice({
               depth += 1;
             }
 
-            const self = cache[node.id] ?? { i: [], g: [], l: 0 };
+            const self = cache[node.id] ?? createCacheEntry();
             self.l = depth;
             // push reference to the array of own children ids
             parent.g.push(node.id, self.g);
             parent.i.push(self.i);
+
+            if (node.tag === "create") parent.c.push(self.c);
+            if (node.tag === "update") parent.u.push(self.u);
+            if (node.tag === "delete") parent.d.push(self.d);
+
             cache[node.id] = self;
           }
 
@@ -135,10 +143,13 @@ const nodesSlice = createSlice({
         for (const entry of Object.values(cache)) {
           entry.g = entry.g.flat(MAX_DEPTH);
           entry.i = entry.i.flat(MAX_DEPTH);
+          entry.c = entry.c.flat(MAX_DEPTH);
+          entry.u = entry.u.flat(MAX_DEPTH);
+          entry.d = entry.d.flat(MAX_DEPTH);
         }
 
         return cache;
-      },
+      }),
     ),
     getEditing: createSelector(
       [
@@ -173,3 +184,14 @@ export const NodesActions = {
 };
 export const NodesSelectors = nodesSlice.selectors;
 export default nodesSlice;
+
+const createCacheEntry = () =>
+  ({
+    i: [],
+    g: [],
+    c: [],
+    u: [],
+    d: [],
+    e: [],
+    l: 0,
+  }) satisfies GroupNodeCache[string] as GroupNodeCache[string];

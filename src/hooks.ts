@@ -18,6 +18,11 @@ export function usePreviousValue<T>(value: T): T | null {
   return ref.current;
 }
 
+export function useForceUpdate() {
+  const [, setTick] = React.useState(0);
+  return () => setTick((tick) => tick + 1);
+}
+
 export function useFilesList(directory?: string) {
   const [files, setFiles] = React.useState<string[]>([]);
 

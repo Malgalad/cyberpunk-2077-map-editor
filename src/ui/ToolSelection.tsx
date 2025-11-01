@@ -26,7 +26,7 @@ function ToolSelection() {
         className={clsx("tooltip")}
         onClick={() => void dispatch(ProjectActions.setTool("move"))}
         shortcut="w"
-        data-tooltip="Move"
+        data-tooltip="Move [W]"
         data-flow="top"
       >
         <Rotate3d />
@@ -36,7 +36,7 @@ function ToolSelection() {
         className="tooltip"
         onClick={() => void dispatch(ProjectActions.setTool("select"))}
         shortcut="s"
-        data-tooltip="Select"
+        data-tooltip="Select [S]"
         data-flow="top"
       >
         <MousePointer2 />
@@ -46,7 +46,7 @@ function ToolSelection() {
         className="tooltip"
         onClick={() => void dispatch(ProjectActions.setTool("multiselect"))}
         shortcut="m"
-        data-tooltip="Select area"
+        data-tooltip="Select area [M]"
         data-flow="top"
         disabled
       >

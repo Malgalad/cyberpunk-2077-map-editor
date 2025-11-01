@@ -336,7 +336,7 @@ export class Map3D extends Map3DBase {
     requestAnimationFrame(this.render);
   }
 
-  setHelper(node?: MapNodeParsed) {
+  setHelper(node?: MapNodeParsed, relative?: boolean) {
     if (!node) {
       this.#helper.visible = false;
       return;
@@ -347,11 +347,15 @@ export class Map3D extends Map3DBase {
       node.position[2],
       -node.position[1],
     );
-    this.#helper.rotation.fromArray([
-      node.rotation[0],
-      node.rotation[2],
-      -node.rotation[1],
-    ]);
+    if (relative) {
+      this.#helper.rotation.fromArray([
+        node.rotation[0],
+        node.rotation[2],
+        -node.rotation[1],
+      ]);
+    } else {
+      this.#helper.rotation.set(0, 0, 0);
+    }
     this.#helper.visible = true;
   }
 

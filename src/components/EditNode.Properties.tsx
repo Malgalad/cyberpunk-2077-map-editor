@@ -2,7 +2,14 @@ import { Move3D } from "lucide-react";
 import * as React from "react";
 import * as THREE from "three";
 
-import { useAppDispatch, useAppSelector, usePreviousValue } from "../hooks.ts";
+import {
+  useAppDispatch,
+  useAppSelector,
+  useForceUpdate,
+  usePreviousValue,
+} from "../hooks.ts";
+import { useMap3D } from "../map3d/map3d.context.ts";
+import { getDistrictNodes } from "../store/@selectors.ts";
 import { DistrictSelectors } from "../store/district.ts";
 import { NodesActions, NodesSelectors } from "../store/nodes.ts";
 import type { MapNode } from "../types/types.ts";
@@ -18,11 +25,17 @@ interface EditNodePropertiesProps {
 }
 
 const axii = [0, 1, 2] as const;
+const axiiColors = [
+  "border-red-500!",
+  "border-green-500!",
+  "border-blue-500!",
+] as const;
 
-// TODO step depends on zoom level
 function EditNodeProperties({ node }: EditNodePropertiesProps) {
   const dispatch = useAppDispatch();
-  const nodes = useAppSelector(NodesSelectors.getNodes);
+  const forceUpdate = useForceUpdate();
+  const map3d = useMap3D();
+  const nodes = useAppSelector(getDistrictNodes);
   const district = useAppSelector(DistrictSelectors.getDistrict);
   const cache = useAppSelector(NodesSelectors.getChildNodesCache);
   const parents = React.useMemo(() => {
@@ -54,6 +67,12 @@ function EditNodeProperties({ node }: EditNodePropertiesProps) {
       setLocal(["0", "0", "0"]);
     }
   }, [useLocal, wasLocal, node]);
+
+  React.useEffect(() => {
+    if (!map3d) return;
+
+    return map3d.onZoomChange(forceUpdate);
+  }, [map3d, forceUpdate]);
 
   return (
     <div className="grow bg-slate-800">
@@ -109,8 +128,8 @@ function EditNodeProperties({ node }: EditNodePropertiesProps) {
           {axii.map((i) => (
             <DraggableInput
               key={i}
-              className="w-20"
-              step={0.25}
+              className={clsx("w-20", axiiColors[i])}
+              step={3 / (map3d?.camera.zoom ?? 1)}
               value={useLocal ? local[i] : node.position[i]}
               onChange={(value) => {
                 if (useLocal) {
@@ -164,8 +183,8 @@ function EditNodeProperties({ node }: EditNodePropertiesProps) {
           {axii.map((i) => (
             <DraggableInput
               key={i}
-              className="w-20"
-              step={0.5}
+              className={clsx("w-20", axiiColors[i])}
+              step={1.5 / (map3d?.camera.zoom ?? 1)}
               value={node.rotation[i]}
               onChange={(value) => {
                 dispatch(
@@ -182,8 +201,10 @@ function EditNodeProperties({ node }: EditNodePropertiesProps) {
           {axii.map((i) => (
             <DraggableInput
               key={i}
-              className="w-20"
-              step={node.type === "instance" ? 2 : 0.1}
+              className={clsx("w-20", axiiColors[i])}
+              step={
+                node.type === "instance" ? 50 / (map3d?.camera.zoom ?? 1) : 0.1
+              }
               value={node.scale[i]}
               onChange={(value) => {
                 dispatch(

@@ -8,21 +8,44 @@ import { DISTRICT_LABELS } from "../constants.ts";
 import { useAppDispatch, useAppSelector } from "../hooks.ts";
 import { DistrictActions, DistrictSelectors } from "../store/district.ts";
 import { ModalsActions } from "../store/modals.ts";
-import { NodesActions } from "../store/nodes.ts";
+import { NodesActions, NodesSelectors } from "../store/nodes.ts";
 import { ProjectActions, ProjectSelectors } from "../store/project.ts";
-import type { DefaultDistricts, DistrictData } from "../types/types.ts";
+import type {
+  DefaultDistricts,
+  DistrictData,
+  GroupNodeCache,
+} from "../types/types.ts";
 
 const getLabel = (district: DistrictData) =>
   district.isCustom
     ? district.name
     : DISTRICT_LABELS[district.name as DefaultDistricts];
+const getEdits = (cache: GroupNodeCache, district: DistrictData) => {
+  const cachedDistrict = cache[district.name];
 
-// TODO show number of edits in district (+5 ~3 -10)
+  if (!cachedDistrict) return null;
+
+  return (
+    <div className="flex flex-row gap-0.5 text-sm &:empty:hidden">
+      {cachedDistrict.c.length > 0 && (
+        <div className="text-green-400">+{cachedDistrict.c.length}</div>
+      )}
+      {cachedDistrict.u.length > 0 && (
+        <div className="text-yellow-400">~{cachedDistrict.u.length}</div>
+      )}
+      {cachedDistrict.d.length > 0 && (
+        <div className="text-red-400">-{cachedDistrict.d.length}</div>
+      )}
+    </div>
+  );
+};
+
 function SelectDistrict() {
   const dispatch = useAppDispatch();
   const project = useAppSelector(ProjectSelectors.getProjectName);
   const district = useAppSelector(DistrictSelectors.getDistrict);
   const districts = useAppSelector(DistrictSelectors.getAllDistricts);
+  const cache = useAppSelector(NodesSelectors.getChildNodesCache);
 
   return (
     <Dropdown
@@ -48,7 +71,10 @@ function SelectDistrict() {
             if (item.isCustom) dispatch(ProjectActions.setMode("create"));
           }}
         >
-          {getLabel(item)}
+          <div className="flex flex-row gap-4 items-baseline justify-between">
+            {getLabel(item)}
+            {getEdits(cache, item)}
+          </div>
         </DropdownItem>
       ))}
       <DropdownSeparator />

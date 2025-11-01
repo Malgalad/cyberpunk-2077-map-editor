@@ -2,10 +2,13 @@ import { createSelector } from "@reduxjs/toolkit";
 
 import type {
   AppState,
+  District,
   DistrictData,
+  GroupNodeCache,
   MapNode,
   PersistentAppState,
 } from "../types/types.ts";
+import { structuralSharing } from "../utilities/structuralSharing.ts";
 import { projectNodesToDistrict } from "../utilities/transforms.ts";
 import districtSlice from "./district.ts";
 import nodesSlice from "./nodes.ts";
@@ -59,15 +62,24 @@ export const getDistrictNodes = createSelector(
     nodesSlice.selectors.getNodes,
     nodesSlice.selectors.getChildNodesCache,
   ],
-  (district, nodes, cache) => {
-    const cachedDistrict = cache[district?.name ?? "__NOT_SELECTED__"];
+  structuralSharing(
+    (
+      district: District | undefined,
+      nodes: MapNode[],
+      cache: GroupNodeCache,
+    ) => {
+      const cachedDistrict = cache[district?.name ?? "__NOT_SELECTED__"];
 
-    if (!district || !cachedDistrict) return emptyArray;
+      if (!district || !cachedDistrict) return emptyArray;
 
-    const districtNodeIds = new Set([...cachedDistrict.i, ...cachedDistrict.g]);
+      const districtNodeIds = new Set([
+        ...cachedDistrict.i,
+        ...cachedDistrict.g,
+      ]);
 
-    return nodes.filter((node) => districtNodeIds.has(node.id));
-  },
+      return nodes.filter((node) => districtNodeIds.has(node.id));
+    },
+  ),
 );
 
 export const getAdditions = createSelector([getDistrictNodes], (nodes) =>

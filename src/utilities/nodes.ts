@@ -3,7 +3,6 @@ import * as THREE from "three";
 
 import type {
   District,
-  DistrictData,
   InstancedMeshTransforms,
   MapNode,
   MapNodeParsed,
@@ -78,18 +77,17 @@ export const cloneNode = <T extends MapNode | MapNodeParsed>(
   return [clone, ...childClones];
 };
 
-export function normalizeDistrictNodes(
-  nodes: MapNode[],
-  district: DistrictData,
-): MapNode[] {
-  const result: MapNode[] = [];
+export function normalizeNodes<T extends MapNode | MapNodeParsed>(
+  nodes: T[],
+  nodesMap: Map<string, T>,
+): T[] {
+  const result: T[] = [];
   const processed = new Set<string>();
-  const nodesMap = new Map(nodes.map((node) => [node.id, node]));
 
-  const processNode = (node: MapNode) => {
+  const processNode = (node: T) => {
     if (processed.has(node.id)) return;
 
-    if (node.parent !== district.name) {
+    if (nodesMap.has(node.parent)) {
       const parent = nodesMap.get(node.parent);
       if (parent && !processed.has(parent.id)) {
         processNode(parent);

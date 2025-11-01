@@ -15,10 +15,10 @@ import type {
 import {
   cloneNode,
   nodeToTransform,
-  normalizeDistrictNodes,
+  normalizeNodes,
   parseNode,
 } from "./nodes.ts";
-import { invariant, toNumber, toString, unwrapDraft } from "./utilities.ts";
+import { toNumber, toString } from "./utilities.ts";
 
 const hadamardProduct = (a: number[], b: number[]) => a.map((x, i) => x * b[i]);
 const addTuples = (a: number[], b: number[]) => a.map((x, i) => x + b[i]);
@@ -56,27 +56,18 @@ export function applyParentTransform<Node extends TransformParsed>(
   };
 }
 
-export function projectNodeToDistrict(
-  node: MapNode,
-  nodes: MapNode[],
-  shiftZOrigin: boolean = false,
+export function applyTransforms(
+  node: MapNodeParsed,
+  nodes: Map<string, MapNodeParsed>,
 ) {
-  const parsedNodes = nodes.map(parseNode);
-  let current = parseNode(node);
+  let current = node;
   let parentId = current.parent;
 
-  while (true) {
-    const maybeParent = parsedNodes.find((parent) => parent.id === parentId);
-    if (!maybeParent) break;
-    const parent = maybeParent;
+  while (nodes.has(parentId)) {
+    const parent = nodes.get(parentId)!;
 
     current = applyParentTransform(current, parent);
     parentId = parent.parent;
-  }
-
-  if (shiftZOrigin) {
-    // set node Z transform origin to bottom instead of center
-    current.position[2] += current.scale[2] / 2;
   }
 
   return current;
@@ -90,84 +81,48 @@ export function projectNodesToDistrict(
   if (!district) return noTransforms;
 
   const transforms: InstancedMeshTransforms[] = [];
+  const nodesParsed = nodes.map(parseNode);
+  const nodesMap = new Map(nodesParsed.map((node) => [node.id, node]));
   // normalize then reverse the node array to ensure child patterns are resolved before parent patterns
-  const reversedNodes = normalizeDistrictNodes(nodes, district)
-    .map(unwrapDraft)
-    .map(parseNode)
-    .toReversed();
+  const nodesReversed = normalizeNodes(nodesParsed, nodesMap).toReversed();
 
-  for (const node of reversedNodes) {
+  for (const node of nodesReversed) {
     if (!node.pattern?.enabled || node.virtual) continue;
 
     for (let i = 0; i < node.pattern.count; i++) {
-      const virtualNodes = cloneNode(reversedNodes, node, node.parent);
+      const clones = cloneNode(nodesReversed, node, node.parent);
 
-      for (const clone of virtualNodes) {
+      for (const clone of clones) {
         clone.virtual = true;
+        nodesMap.set(clone.id, clone);
       }
 
-      const position = addTuples(
-        virtualNodes[0].position,
+      clones[0].position = addTuples(
+        clones[0].position,
         node.pattern.position.map(scalePattern(i)),
       ) as THREE.Vector3Tuple;
 
-      const rotation = addTuples(
-        virtualNodes[0].rotation,
+      clones[0].rotation = addTuples(
+        clones[0].rotation,
         node.pattern.rotation.map(scalePattern(i)),
       ) as THREE.Vector3Tuple;
 
-      const scale = addTuples(
-        virtualNodes[0].scale,
+      clones[0].scale = addTuples(
+        clones[0].scale,
         node.pattern.scale.map(scalePattern(i)),
       ) as THREE.Vector3Tuple;
 
-      virtualNodes.splice(0, 1, {
-        ...virtualNodes[0],
-        position,
-        rotation,
-        scale,
-      });
-
-      reversedNodes.push(...virtualNodes);
+      nodesReversed.push(...clones);
     }
   }
 
-  const parents = new Map<string, MapNodeParsed>();
-  for (const node of reversedNodes) {
+  for (const node of nodesReversed) {
     if (node.type === "group") continue;
 
-    let current = node;
-    let parentId = current.parent;
-
-    while (parentId !== district.name) {
-      let parent: MapNodeParsed;
-
-      if (parents.has(parentId)) {
-        parent = parents.get(parentId)!;
-      } else {
-        const maybeParent = reversedNodes.find(
-          (parent) => parent.id === parentId,
-        );
-        invariant(
-          maybeParent,
-          `Cannot find parent ${parentId} for node ${node.id}`,
-        );
-        parent = maybeParent;
-        parents.set(parentId, parent);
-      }
-
-      current = applyParentTransform(current, parent);
-      parentId = parent.parent;
-    }
-
-    if (shiftZOrigin) {
-      // set node Z transform origin to bottom instead of center
-      current.position[2] += current.scale[2] / 2;
-    }
-
-    const transform = nodeToTransform(current, district);
-
-    transforms.push(transform);
+    const resolved = applyTransforms(node, nodesMap);
+    // set node Z transform origin to bottom instead of center
+    if (shiftZOrigin) resolved.position[2] += resolved.scale[2] / 2;
+    transforms.push(nodeToTransform(resolved, district));
   }
 
   return transforms;

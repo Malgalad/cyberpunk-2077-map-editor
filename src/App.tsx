@@ -48,7 +48,8 @@ function App() {
               onClick={() => {
                 map3d?.resetCamera();
               }}
-              data-tooltip="Reset camera"
+              shortcut="r"
+              data-tooltip="Reset camera [R]"
               data-flow="right"
             >
               <BoxIcon />

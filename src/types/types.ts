@@ -85,6 +85,10 @@ export type MapNodeParsed = NodeProperties<TransformParsed>;
  * The `GroupNodeCache` type is defined as a record where keys are string identifiers, and values hold details about the group node:
  * - `i`: An array of child instance IDs.
  * - `g`: An array of child group IDs.
+ * - `c`: IDs of creation instance nodes.
+ * - `u`: IDs of update instance nodes.
+ * - `d`: IDs of delete instance nodes.
+ * - `e`: IDs of instance nodes with error.
  * - `l`: The depth level of the group node.
  */
 export type GroupNodeCache = Record<
@@ -92,6 +96,10 @@ export type GroupNodeCache = Record<
   {
     i: NestedArray<string>[];
     g: NestedArray<string>[];
+    c: NestedArray<string>[];
+    u: NestedArray<string>[];
+    d: NestedArray<string>[];
+    e: NestedArray<string>[];
     l: number;
   }
 >;

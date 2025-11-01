@@ -6,6 +6,7 @@ import {
   getAdditionsTransforms,
   getDeletions,
   getDeletionsTransforms,
+  getDistrictNodes,
   getUpdates,
   getUpdatesTransforms,
 } from "./store/@selectors.ts";
@@ -15,11 +16,9 @@ import { NodesActions, NodesSelectors } from "./store/nodes.ts";
 import { OptionsSelectors } from "./store/options.ts";
 import { ProjectSelectors } from "./store/project.ts";
 import type { District, DistrictWithTransforms } from "./types/types.ts";
+import { parseNode } from "./utilities/nodes.ts";
 // import { getFinalDistrictTransformsFromNodes } from "./utilities/district.ts";
-import {
-  projectNodeToDistrict,
-  transformToNode,
-} from "./utilities/transforms.ts";
+import { applyTransforms, transformToNode } from "./utilities/transforms.ts";
 import { invariant, toNumber, toString } from "./utilities/utilities.ts";
 
 export function useInitMap3D(ref: React.RefObject<HTMLCanvasElement | null>) {
@@ -173,7 +172,11 @@ export function useDrawSelection(map3d: Map3D | null) {
   const deletions = useAppSelector(getDeletionsTransforms);
   const editing = useAppSelector(NodesSelectors.getEditing);
   const cache = useAppSelector(NodesSelectors.getChildNodesCache);
-  const nodes = useAppSelector(NodesSelectors.getNodes);
+  const nodes = useAppSelector(getDistrictNodes);
+  const nodesMap = React.useMemo(
+    () => new Map(nodes.map((node) => [node.id, parseNode(node)])),
+    [nodes],
+  );
 
   React.useEffect(() => {
     if (!map3d) return;
@@ -218,9 +221,9 @@ export function useDrawSelection(map3d: Map3D | null) {
     if (!editing) {
       map3d.setHelper(undefined);
     } else {
-      map3d.setHelper(projectNodeToDistrict(editing, nodes, mode === "create"));
+      map3d.setHelper(applyTransforms(parseNode(editing), nodesMap), true);
     }
-  }, [map3d, mode, editing, nodes]);
+  }, [map3d, mode, editing, nodesMap]);
 }
 
 export function useMap3DEvents(map3d: Map3D | null) {
