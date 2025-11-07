@@ -56,26 +56,22 @@ export const getPersistentState = createSelector(
     }) satisfies PersistentAppState as PersistentAppState,
 );
 
-export const getDistrictNodes = createSelector(
+export const getDistrictCache = createSelector(
   [
     districtSlice.selectors.getDistrict,
-    nodesSlice.selectors.getNodes,
     nodesSlice.selectors.getChildNodesCache,
   ],
+  (district: District | undefined, cache: GroupNodeCache) =>
+    district && cache[district.name],
+);
+
+export const getDistrictNodes = createSelector(
+  [nodesSlice.selectors.getNodes, getDistrictCache],
   structuralSharing(
-    (
-      district: District | undefined,
-      nodes: MapNode[],
-      cache: GroupNodeCache,
-    ) => {
-      const cachedDistrict = cache[district?.name ?? "__NOT_SELECTED__"];
+    (nodes: MapNode[], cache: GroupNodeCache[string] | undefined) => {
+      if (!cache) return emptyArray;
 
-      if (!district || !cachedDistrict) return emptyArray;
-
-      const districtNodeIds = new Set([
-        ...cachedDistrict.i,
-        ...cachedDistrict.g,
-      ]);
+      const districtNodeIds = new Set([...cache.i, ...cache.g]);
 
       return nodes.filter((node) => districtNodeIds.has(node.id));
     },

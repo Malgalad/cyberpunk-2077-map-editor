@@ -3,7 +3,7 @@ import * as React from "react";
 import { loadFile, saveBlobToFile } from "../helpers.ts";
 import { useAppDispatch, useAppSelector } from "../hooks.ts";
 import { encodeImageData } from "../map3d/processDDS.ts";
-import { getPersistentState } from "../store/@selectors.ts";
+import { getDistrictCache, getPersistentState } from "../store/@selectors.ts";
 import { DistrictSelectors } from "../store/district.ts";
 import { NodesActions, NodesSelectors } from "../store/nodes.ts";
 import { ProjectSelectors } from "../store/project.ts";
@@ -83,36 +83,15 @@ export function useExportNodes() {
 export function useExportDDS() {
   const district = useAppSelector(DistrictSelectors.getDistrict);
   const nodes = useAppSelector(NodesSelectors.getNodes);
-  const cache = useAppSelector(NodesSelectors.getChildNodesCache);
+  const cache = useAppSelector(getDistrictCache);
 
   return React.useCallback(() => {
     if (!district) return;
 
-    const data = getFinalDistrictTransformsFromNodes(nodes, cache, district);
+    const data = getFinalDistrictTransformsFromNodes(nodes, district, cache);
     const imageData = encodeImageData(data);
     const blob = new Blob([imageData.buffer], { type: "image/dds" });
 
     saveBlobToFile(blob, `${district.name}.dds`);
   }, [district, nodes, cache]);
 }
-
-/*
-export function useImportDDS() {
-  const dispatch = useAppDispatch();
-  const district = useAppSelector(DistrictSelectors.getDistrict);
-
-  return React.useCallback(async () => {
-    if (!district) return;
-
-    const file = await loadFile(".dds");
-    const imageData = await file.arrayBuffer();
-    const data = {
-      ...district,
-      isCustom: false,
-      texture: file.name,
-      imageData,
-    } satisfies DistrictData as DistrictData;
-    dispatch(DistrictActions.setDistrict(data));
-  }, [dispatch, district]);
-}
-*/

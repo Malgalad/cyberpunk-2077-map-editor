@@ -11,6 +11,7 @@ import type {
   AppThunkAction,
   GroupNodeCache,
   MapNode,
+  MapNodeUri,
   RevivedAppState,
 } from "../types/types.ts";
 import { cloneNode } from "../utilities/nodes.ts";
@@ -100,13 +101,28 @@ const nodesSlice = createSlice({
   selectors: {
     getNodes: (state) => state.nodes,
     getEditingId: (state) => state.editingId,
-    getChildNodesCache: createSelector(
+    getNodeUris: createSelector(
       [
         (sliceState: NodesState): MapNode[] =>
           nodesSlice.getSelectors().getNodes(sliceState),
       ],
-      structuralSharing((nodes: MapNode[]) => {
+      structuralSharing((nodes: MapNode[]): MapNodeUri[] =>
+        nodes.map(({ id, type, tag, parent }) => ({
+          id,
+          type,
+          tag,
+          parent,
+        })),
+      ),
+    ),
+    getChildNodesCache: createSelector(
+      [
+        (sliceState: NodesState): MapNodeUri[] =>
+          nodesSlice.getSelectors().getNodeUris(sliceState),
+      ],
+      structuralSharing((nodes: MapNodeUri[]) => {
         const cache: GroupNodeCache = {};
+        const nodesMap = new Map(nodes.map((node) => [node.id, node]));
 
         for (const node of nodes) {
           const parent = cache[node.parent] ?? createCacheEntry();
@@ -118,9 +134,9 @@ const nodesSlice = createSlice({
             if (node.tag === "delete") parent.d.push(node.id);
           } else {
             let depth = 0;
-            let current: MapNode | undefined = node;
+            let current: MapNodeUri | undefined = node;
             while (current) {
-              current = nodes.find((n) => n.id === current!.parent);
+              current = nodesMap.get(current!.parent);
               depth += 1;
             }
 

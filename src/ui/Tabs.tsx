@@ -4,8 +4,9 @@ import {
   useAppSelector,
   useGlobalShortcuts,
 } from "../hooks.ts";
+import { getDistrictCache } from "../store/@selectors.ts";
 import { DistrictSelectors } from "../store/district.ts";
-import { NodesActions, NodesSelectors } from "../store/nodes.ts";
+import { NodesActions } from "../store/nodes.ts";
 import { ProjectActions, ProjectSelectors } from "../store/project.ts";
 import { clsx } from "../utilities/utilities.ts";
 import AddNodes from "./AddNodes.tsx";
@@ -15,8 +16,7 @@ import UpdateNodes from "./UpdateNodes.tsx";
 function Tabs() {
   const mode = useAppSelector(ProjectSelectors.getMode);
   const district = useAppSelector(DistrictSelectors.getDistrict);
-  const cache = useAppSelector(NodesSelectors.getChildNodesCache);
-  const districtCache = cache[district?.name ?? "__NOT_SELECTED__"];
+  const cache = useAppSelector(getDistrictCache);
   const dispatch = useAppDispatch();
 
   useGlobalShortcuts(
@@ -44,10 +44,8 @@ function Tabs() {
             <span>
               Cre<span className="underline">a</span>te nodes
             </span>
-            {districtCache?.c.length > 0 && (
-              <span className="text-green-400 text-sm">
-                +{districtCache?.c.length}
-              </span>
+            {(cache?.c.length ?? 0) > 0 && (
+              <span className="text-green-400 text-sm">+{cache?.c.length}</span>
             )}
           </div>
         </Button>
@@ -69,9 +67,9 @@ function Tabs() {
             <span>
               Updat<span className="underline">e</span> nodes
             </span>
-            {districtCache?.u.length > 0 && (
+            {(cache?.u.length ?? 0) > 0 && (
               <span className="text-yellow-400 text-sm">
-                ~{districtCache?.u.length}
+                ~{cache?.u.length}
               </span>
             )}
           </div>
@@ -94,10 +92,8 @@ function Tabs() {
             <span>
               <span className="underline">D</span>elete nodes
             </span>
-            {districtCache?.d.length > 0 && (
-              <span className="text-red-400 text-sm">
-                -{districtCache?.d.length}
-              </span>
+            {(cache?.d.length ?? 0) > 0 && (
+              <span className="text-red-400 text-sm">-{cache?.d.length}</span>
             )}
           </div>
         </Button>

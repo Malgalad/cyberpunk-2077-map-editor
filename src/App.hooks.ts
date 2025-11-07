@@ -16,10 +16,12 @@ import { NodesActions, NodesSelectors } from "./store/nodes.ts";
 import { OptionsSelectors } from "./store/options.ts";
 import { ProjectSelectors } from "./store/project.ts";
 import type { District, DistrictWithTransforms } from "./types/types.ts";
+import { getFinalDistrictTransformsFromNodes } from "./utilities/district.ts";
 import { parseNode } from "./utilities/nodes.ts";
-// import { getFinalDistrictTransformsFromNodes } from "./utilities/district.ts";
 import { applyTransforms, transformToNode } from "./utilities/transforms.ts";
 import { invariant, toNumber, toString } from "./utilities/utilities.ts";
+
+const emptyArray: unknown[] = [];
 
 export function useInitMap3D(ref: React.RefObject<HTMLCanvasElement | null>) {
   const [map3d, setMap3D] = React.useState<Map3D | null>(null);
@@ -41,38 +43,15 @@ export function useInitMap3D(ref: React.RefObject<HTMLCanvasElement | null>) {
 }
 
 export function useDrawAllDistricts(map3d: Map3D | null) {
+  const store = useAppStore();
   const currentDistrict = useAppSelector(DistrictSelectors.getDistrict);
   const allDistricts = useAppSelector(DistrictSelectors.getAllDistricts);
   const districtView = useAppSelector(OptionsSelectors.getDistrictView);
   const visibleDistrictNames = useAppSelector(
     OptionsSelectors.getVisibleDistricts,
   );
-  // const nodes = useAppSelector(NodesSelectors.getNodes);
-  // const cache = useAppSelector(NodesSelectors.getChildNodesCache);
-  // const restDistrictTransforms = React.useMemo(() => {
-  //   if (!allDistricts.length) return new Map();
-  //
-  //   return new Map(
-  //     allDistricts.map((district) => [
-  //       district.name,
-  //       {
-  //         district,
-  //         transforms: getFinalDistrictTransformsFromNodes(
-  //           nodes,
-  //           cache,
-  //           district,
-  //         ),
-  //       },
-  //     ]),
-  //   );
-  //   // TODO optimize
-  //   // only recalculate applied district transforms when the current district
-  //   // changes because we can 100% guarantee there will be no node changes
-  //   // for districts other than current
-  // }, [allDistricts, cache, nodes]);
-
-  React.useEffect(() => {
-    if (!allDistricts.length || !currentDistrict || !map3d) return;
+  const nonCurrentDistricts = React.useMemo(() => {
+    if (!currentDistrict) return emptyArray as District[];
 
     const districtsVisibilityMap: Record<string, District[]> = {
       all: allDistricts,
@@ -82,21 +61,36 @@ export function useDrawAllDistricts(map3d: Map3D | null) {
       ),
     };
     const visibleDistricts = districtsVisibilityMap[districtView];
-    const districtsWithTransforms: DistrictWithTransforms[] = visibleDistricts
-      .filter((district) => district.name !== currentDistrict.name)
-      .map((district) => ({
+
+    return visibleDistricts.filter(
+      (district) => district.name !== currentDistrict.name,
+    );
+  }, [currentDistrict, allDistricts, visibleDistrictNames, districtView]);
+
+  React.useEffect(() => {
+    if (!map3d) return;
+
+    const districtsWithTransforms: DistrictWithTransforms[] = [];
+    const state = store.getState();
+    const nodes = NodesSelectors.getNodes(state);
+    const cache = NodesSelectors.getChildNodesCache(state);
+
+    for (const district of nonCurrentDistricts) {
+      const districtCache = cache[district.name];
+      const transforms = getFinalDistrictTransformsFromNodes(
+        nodes,
         district,
-        transforms: district.transforms,
-      }));
+        districtCache,
+      );
+
+      districtsWithTransforms.push({
+        district,
+        transforms,
+      });
+    }
 
     map3d.setVisibleDistricts(districtsWithTransforms);
-  }, [
-    visibleDistrictNames,
-    districtView,
-    currentDistrict,
-    allDistricts,
-    map3d,
-  ]);
+  }, [map3d, nonCurrentDistricts, store]);
 }
 
 export function useDrawCurrentDistrict(map3d: Map3D | null) {

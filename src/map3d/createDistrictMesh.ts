@@ -2,6 +2,7 @@ import * as THREE from "three";
 
 import type { DistrictData, InstancedMeshTransforms } from "../types/types.ts";
 
+// TODO optimize - no need to recreate whole instanced mesh when editing single instance
 export function createDistrictMesh(
   district: DistrictData,
   instances: InstancedMeshTransforms[],

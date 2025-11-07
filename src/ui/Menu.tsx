@@ -1,9 +1,11 @@
 import {
+  FilePlus2,
+  FolderOpen,
   HardDriveDownload,
   HardDriveUpload,
   ImageDown,
+  PencilLine,
   Redo,
-  Settings,
   Settings2,
   Undo,
 } from "lucide-react";
@@ -18,9 +20,9 @@ import {
   useExportDDS,
   useExportNodes,
   useImportNodes,
-  // useImportDDS,
   useSaveProject,
 } from "../hooks/importExport.ts";
+import { getDistrictCache } from "../store/@selectors.ts";
 import { DistrictSelectors } from "../store/district.ts";
 import { ModalsActions } from "../store/modals.ts";
 import { OptionsActions, OptionsSelectors } from "../store/options.ts";
@@ -34,8 +36,8 @@ function Menu() {
   const patternView = useAppSelector(OptionsSelectors.getPatternView);
   const districtView = useAppSelector(OptionsSelectors.getDistrictView);
   const visibleDistricts = useAppSelector(OptionsSelectors.getVisibleDistricts);
+  const cache = useAppSelector(getDistrictCache);
   const exportDDS = useExportDDS();
-  // const importDDS = useImportDDS();
   const importJSON = useImportNodes();
   const exportJSON = useExportNodes();
   const saveProject = useSaveProject();
@@ -44,9 +46,15 @@ function Menu() {
     <div className="flex flex-row justify-between px-2">
       <div className="flex flex-row items-center gap-2">
         {!!projectName && (
-          <div className="font-semibold cursor-default max-w-64 truncate">
-            Project <span className="text-amber-200">{projectName}</span>
-          </div>
+          <>
+            <div className="font-semibold cursor-default max-w-64 truncate">
+              Project <span className="text-amber-200">{projectName}</span>
+            </div>
+            <Button className="border-none">
+              <PencilLine size={16} />
+            </Button>
+            <div className="border-r border-slate-500 h-full" />
+          </>
         )}
         <div className="border-r border-slate-600 w-[1px]" />
         <Dropdown
@@ -58,11 +66,13 @@ function Menu() {
           shortcut={(event) => event.key === "f" && event.altKey}
         >
           <DropdownItem
+            icon={<FilePlus2 />}
             onClick={() => dispatch(ModalsActions.openModal("project", "new"))}
           >
             New project
           </DropdownItem>
           <DropdownItem
+            icon={<FolderOpen />}
             onClick={() => dispatch(ModalsActions.openModal("project", "open"))}
           >
             Open project
@@ -72,34 +82,35 @@ function Menu() {
             icon={<HardDriveUpload />}
             onClick={() => dispatch(ModalsActions.openModal("project", "load"))}
           >
-            Load from file
+            Load from disk
           </DropdownItem>
           <DropdownItem
             icon={<HardDriveDownload />}
             onClick={saveProject}
             disabled={!projectName}
           >
-            Save to file
+            Save to disk
           </DropdownItem>
           <DropdownSeparator />
-          <DropdownItem onClick={importJSON} disabled={!projectName}>
-            Import nodes from JSON
-          </DropdownItem>
-          <DropdownItem onClick={exportJSON} disabled={!projectName}>
-            Export nodes to JSON
-          </DropdownItem>
-          <DropdownSeparator />
-          <DropdownItem
-            icon={<ImageDown />}
-            onClick={exportDDS}
-            disabled={!projectName || !district}
+          <Dropdown
+            direction="right"
+            align="top"
+            trigger={
+              <DropdownItem
+                className="not-disabled:group-hover/level-1:bg-slate-600"
+                isExpandable
+              >
+                Import/Export
+              </DropdownItem>
+            }
           >
-            Export to DDS
-          </DropdownItem>
-          <DropdownSeparator />
-          <DropdownItem icon={<Settings />} disabled>
-            Project settings
-          </DropdownItem>
+            <DropdownItem onClick={importJSON} disabled={!projectName}>
+              Import nodes from JSON
+            </DropdownItem>
+            <DropdownItem onClick={exportJSON} disabled={!projectName}>
+              Export nodes to JSON
+            </DropdownItem>
+          </Dropdown>
         </Dropdown>
 
         <Dropdown
@@ -227,16 +238,20 @@ function Menu() {
           </DropdownItem>
         </Dropdown>
 
-        {/*
+        <div className="border-r border-slate-500 h-full" />
+
         <Button
           className="border-none tooltip"
-          onClick={() => importDDS()}
-          data-tooltip="Import DDS texture to this district"
+          onClick={exportDDS}
+          disabled={!projectName || !district || !cache?.i.length}
+          data-tooltip="Compile district changes and export to DDS texture"
           data-flow="bottom"
         >
-          Import
+          <div className="flex flex-row gap-2 items-center">
+            <ImageDown />
+            <span>Compile</span>
+          </div>
         </Button>
-        */}
       </div>
 
       <SelectDistrict />

@@ -36,14 +36,12 @@ export const getDistrictProperties = (
 
 export function getFinalDistrictTransformsFromNodes(
   nodes: MapNode[],
-  cache: GroupNodeCache,
   district: District,
+  cache: GroupNodeCache[string] | undefined,
 ): InstancedMeshTransforms[] {
-  const cachedDistrict = cache[district.name];
+  if (!cache) return district.transforms;
 
-  if (!cachedDistrict) return district.transforms;
-
-  const districtNodeIds = new Set([...cachedDistrict.i, ...cachedDistrict.g]);
+  const districtNodeIds = new Set([...cache.i, ...cache.g]);
   const additions: MapNode[] = [];
   const updates: MapNode[] = [];
   const deletions = new Set<string>();

@@ -78,6 +78,7 @@ type NodeProperties<T extends Transform | TransformParsed> = T & {
 
 export type MapNode = NodeProperties<Transform>;
 export type MapNodeParsed = NodeProperties<TransformParsed>;
+export type MapNodeUri = Pick<MapNodeParsed, "id" | "parent" | "type" | "tag">;
 
 /**
  * Represents a cache structure for managing group nodes, storing information about child instances, child groups, and depth levels.
