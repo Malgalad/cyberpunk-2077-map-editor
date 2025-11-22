@@ -1,4 +1,4 @@
-import { CircleDotDashed } from "lucide-react";
+import { EyeOff, SquareStack } from "lucide-react";
 
 import { useAppDispatch, useAppSelector } from "../hooks.ts";
 import { NodesActions, NodesSelectors } from "../store/nodes.ts";
@@ -42,24 +42,27 @@ function Instance({ lookAtNode, node }: InstanceProps) {
     >
       <div className="grow flex flex-row justify-between items-center select-none">
         {node.label}
-        {node.pattern?.enabled && (
-          <Button
-            className="border-none p-0! tooltip"
-            data-tooltip="Has pattern"
-            data-flow="left"
-            onClick={() => {
-              setTimeout(() => {
-                window.dispatchEvent(
-                  new CustomEvent("set-editing-tab", {
-                    detail: { tab: "pattern" },
-                  }),
-                );
-              });
-            }}
-          >
-            <CircleDotDashed />
-          </Button>
-        )}
+        <div className="flex flex-row gap-1">
+          {node.hidden && <EyeOff />}
+          {node.pattern?.enabled && (
+            <Button
+              className="border-none p-0! tooltip"
+              data-tooltip="Has pattern"
+              data-flow="left"
+              onClick={() => {
+                setTimeout(() => {
+                  window.dispatchEvent(
+                    new CustomEvent("set-editing-tab", {
+                      detail: { tab: "pattern" },
+                    }),
+                  );
+                });
+              }}
+            >
+              <SquareStack />
+            </Button>
+          )}
+        </div>
       </div>
     </div>
   );

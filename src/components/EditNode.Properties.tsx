@@ -2,6 +2,7 @@ import { Move3D } from "lucide-react";
 import * as React from "react";
 import * as THREE from "three";
 
+import { DISTRICT_LABELS } from "../constants.ts";
 import {
   useAppDispatch,
   useAppSelector,
@@ -12,13 +13,20 @@ import { useMap3D } from "../map3d/map3d.context.ts";
 import { getDistrictNodes } from "../store/@selectors.ts";
 import { DistrictSelectors } from "../store/district.ts";
 import { NodesActions, NodesSelectors } from "../store/nodes.ts";
-import type { MapNode } from "../types/types.ts";
+import type {
+  DefaultDistrictNames,
+  DistrictProperties,
+  GroupNodeCache,
+  MapNode,
+} from "../types/types.ts";
+import type { SelectItem } from "../types/ui.types.ts";
 import { parseTransform } from "../utilities/transforms.ts";
 import { clsx } from "../utilities/utilities.ts";
 import Button from "./common/Button.tsx";
 import DraggableInput from "./common/DraggableInput.tsx";
 import Input from "./common/Input.tsx";
 import Select from "./common/Select.tsx";
+import Toggle from "./common/Toggle.tsx";
 
 interface EditNodePropertiesProps {
   node: MapNode;
@@ -37,25 +45,12 @@ function EditNodeProperties({ node }: EditNodePropertiesProps) {
   const map3d = useMap3D();
   const nodes = useAppSelector(getDistrictNodes);
   const district = useAppSelector(DistrictSelectors.getDistrict);
+  const districts = useAppSelector(DistrictSelectors.getAllDistricts);
   const cache = useAppSelector(NodesSelectors.getChildNodesCache);
-  const parents = React.useMemo(() => {
-    if (!district) return [];
-
-    return [
-      { label: "<Root>", value: district.name },
-      ...nodes
-        .filter((node) => node.type === "group")
-        .map((group) => ({
-          label: group.label,
-          value: group.id,
-        })),
-    ].map((item) => ({
-      ...item,
-      level: cache[item.value]?.l ?? 0,
-      label: `${item.label}${node.parent === item.value ? " (current)" : node.id === item.value ? " (self)" : ""}`,
-      disabled: node.parent === item.value || node.id === item.value,
-    }));
-  }, [district, nodes, node, cache]);
+  const parents = React.useMemo(
+    () => getParentsList(node, nodes, district, districts, cache),
+    [district, districts, nodes, node, cache],
+  );
   const [useLocal, setUseLocal] = React.useState(false);
   const wasLocal = usePreviousValue(useLocal);
   const [local, setLocal] = React.useState(["0", "0", "0"]);
@@ -94,6 +89,7 @@ function EditNodeProperties({ node }: EditNodePropertiesProps) {
         </div>
         <div>Parent:</div>
         <div>
+          {/* TODO split parent nodes and district select */}
           <Select
             className="w-[248px]"
             items={parents}
@@ -196,7 +192,7 @@ function EditNodeProperties({ node }: EditNodePropertiesProps) {
             />
           ))}
         </div>
-        <div>Scale:</div>
+        <div>{node.type === "group" ? "Scale:" : "Size:"}</div>
         <div className="flex flex-row gap-1 items-center">
           {axii.map((i) => (
             <DraggableInput
@@ -216,9 +212,60 @@ function EditNodeProperties({ node }: EditNodePropertiesProps) {
             />
           ))}
         </div>
+        <div
+          className="tooltip"
+          data-tooltip="Visually hide this node"
+          data-flow="top"
+        >
+          Hidden:
+        </div>
+        <div>
+          <Toggle
+            enabled={!!node.hidden}
+            onChange={(enabled) => {
+              dispatch(
+                NodesActions.patchNode((draft) => {
+                  draft.hidden = enabled;
+                }),
+              );
+            }}
+          />
+        </div>
       </div>
     </div>
   );
+}
+
+const emptyArr: unknown[] = [];
+
+function getParentsList(
+  node: MapNode,
+  nodes: MapNode[],
+  district: DistrictProperties | undefined,
+  districts: DistrictProperties[],
+  cache: GroupNodeCache,
+): SelectItem[] {
+  if (!district) return emptyArr as SelectItem[];
+
+  return [
+    ...districts.map((district) => ({
+      label: district.isCustom
+        ? district.name
+        : DISTRICT_LABELS[district.name as DefaultDistrictNames],
+      value: district.name,
+    })),
+    ...nodes
+      .filter((node) => node.type === "group")
+      .map((group) => ({
+        label: group.label,
+        value: group.id,
+      })),
+  ].map((item) => ({
+    disabled: node.parent === item.value || node.id === item.value,
+    label: `${item.label}${node.parent === item.value ? " (current)" : node.id === item.value ? " (self)" : ""}`,
+    level: cache[item.value]?.l ?? 0,
+    value: item.value,
+  }));
 }
 
 export default EditNodeProperties;

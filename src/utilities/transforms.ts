@@ -5,7 +5,7 @@ import { STATIC_ASSETS } from "../map3d/constants.ts";
 import { decodeImageData } from "../map3d/processDDS.ts";
 import type {
   District,
-  DistrictData,
+  DistrictProperties,
   InstancedMeshTransforms,
   MapNode,
   MapNodeParsed,
@@ -81,7 +81,7 @@ export function projectNodesToDistrict(
   if (!district) return noTransforms;
 
   const transforms: InstancedMeshTransforms[] = [];
-  const nodesParsed = nodes.map(parseNode);
+  const nodesParsed = nodes.filter((node) => !node.hidden).map(parseNode);
   const nodesMap = new Map(nodesParsed.map((node) => [node.id, node]));
   // normalize then reverse the node array to ensure child patterns are resolved before parent patterns
   const nodesReversed = normalizeNodes(nodesParsed, nodesMap).toReversed();
@@ -128,7 +128,7 @@ export function projectNodesToDistrict(
   return transforms;
 }
 
-export async function getDistrictTransforms(district: DistrictData) {
+export async function getDistrictTransforms(district: DistrictProperties) {
   if (district.isCustom) return [];
 
   const arrayBuffer = await loadURLAsArrayBuffer(

@@ -35,7 +35,7 @@ function App() {
 
   return (
     <Map3DContext value={map3d}>
-      <div className="flex flex-row gap-2 w-screen h-screen bg-slate-900 text-white">
+      <div className="flex flex-row w-screen h-screen bg-slate-900 text-white">
         <div className="grow flex flex-col">
           <Menu />
 

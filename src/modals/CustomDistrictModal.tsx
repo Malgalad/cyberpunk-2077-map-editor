@@ -9,8 +9,11 @@ import Modal from "../components/common/Modal.tsx";
 import { useAppDispatch } from "../hooks.ts";
 import { DistrictActions } from "../store/district.ts";
 import { ModalsActions } from "../store/modals.ts";
-import type { DistrictData, InstancedMeshTransforms } from "../types/types.ts";
-import { getDistrictProperties } from "../utilities/district.ts";
+import type {
+  DistrictProperties,
+  InstancedMeshTransforms,
+} from "../types/types.ts";
+import { computeDistrictProperties } from "../utilities/district.ts";
 import { toNumber, toString } from "../utilities/utilities.ts";
 
 const mapSize = 16_000;
@@ -178,7 +181,7 @@ function CustomDistrictModal() {
   }, [data]);
 
   const createDistrict = () => {
-    const districtData: DistrictData = {
+    const districtData: DistrictProperties = {
       name,
       isCustom: true,
       position: data.pos.map(toNumber),
@@ -187,7 +190,7 @@ function CustomDistrictModal() {
       transMax: [...data.max.map(toNumber), 1],
       cubeSize: toNumber(data.cubeSize),
     };
-    const districtProperties = getDistrictProperties(districtData);
+    const districtProperties = computeDistrictProperties(districtData);
     const transforms: InstancedMeshTransforms[] = [];
 
     dispatch(ModalsActions.closeModal());

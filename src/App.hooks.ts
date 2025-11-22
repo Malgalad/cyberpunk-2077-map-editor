@@ -106,6 +106,7 @@ export function useDrawCurrentDistrict(map3d: Map3D | null) {
     [deletions],
   );
 
+  // TODO optimize - don't recalc updates/deletions if additions change
   React.useEffect(() => {
     if (!map3d || !district) return;
 

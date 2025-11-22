@@ -1,14 +1,10 @@
 import * as React from "react";
 
+import type { SelectItem } from "../../types/ui.types.ts";
 import { clsx } from "../../utilities/utilities.ts";
 
 type SelectProps = React.SelectHTMLAttributes<HTMLSelectElement> & {
-  items: Array<{
-    label: string;
-    value: string;
-    disabled?: boolean;
-    level?: number;
-  }>;
+  items: Array<SelectItem>;
 };
 const nbsp = "\u00A0";
 

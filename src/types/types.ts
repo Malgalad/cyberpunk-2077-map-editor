@@ -6,8 +6,8 @@ import store from "../store/store.ts";
 
 type NestedArray<T> = T | NestedArray<T>[];
 
-export type DefaultDistricts = keyof (typeof mapData)["soup"];
-export type DistrictData = {
+export type DefaultDistrictNames = keyof (typeof mapData)["soup"];
+export type DistrictProperties = {
   name: string;
   position: number[];
   orientation: number[];
@@ -23,33 +23,15 @@ export type DistrictData = {
       isCustom: true;
     }
 );
-export type DistrictProperties = {
+export type ComputedDistrictProperties = {
   center: THREE.Vector3Like;
   minMax: THREE.Vector3Like;
   origin: THREE.Vector3Like;
 };
-export type District = DistrictData &
-  DistrictProperties & {
+export type District = DistrictProperties &
+  ComputedDistrictProperties & {
     transforms: InstancedMeshTransforms[];
   };
-
-export type ModalType =
-  | "alert"
-  | "critical"
-  | "confirm"
-  | "loading"
-  | "project"
-  | "custom-district"
-  | "district-info"
-  | "confirm-instance-exclusion";
-export type Modal = {
-  type: ModalType;
-  data: unknown;
-};
-export type ModalProps = {
-  data: unknown;
-  onClose: (reason?: unknown) => void;
-};
 
 export type Transform = {
   position: [string, string, string];
@@ -73,6 +55,7 @@ type NodeProperties<T extends Transform | TransformParsed> = T & {
   tag: "create" | "update" | "delete";
   parent: string;
   virtual?: boolean;
+  hidden?: boolean;
   pattern?: T & PatternProperties;
 };
 
@@ -114,7 +97,7 @@ export type InstancedMeshTransforms = {
 };
 
 export type DistrictWithTransforms = {
-  district: DistrictData;
+  district: DistrictProperties;
   transforms: InstancedMeshTransforms[];
 };
 
@@ -135,7 +118,7 @@ export type AppThunkAction<ReturnType = void> = ThunkAction<
 
 export type PersistentAppState = {
   district: {
-    districts: DistrictData[];
+    districts: DistrictProperties[];
     current: string | null;
   };
   nodes: AppState["nodes"];

@@ -4,7 +4,6 @@ import {
   HardDriveDownload,
   HardDriveUpload,
   ImageDown,
-  PencilLine,
   Redo,
   Settings2,
   Undo,
@@ -50,9 +49,6 @@ function Menu() {
             <div className="font-semibold cursor-default max-w-64 truncate">
               Project <span className="text-amber-200">{projectName}</span>
             </div>
-            <Button className="border-none">
-              <PencilLine size={16} />
-            </Button>
             <div className="border-r border-slate-500 h-full" />
           </>
         )}

@@ -1,6 +1,6 @@
 import Button from "../components/common/Button.tsx";
 import Modal from "../components/common/Modal.tsx";
-import type { ModalProps } from "../types/types.ts";
+import type { ModalProps } from "../types/modals.ts";
 
 function ConfirmExclusionModal(props: ModalProps) {
   const { index, position } = props.data as {

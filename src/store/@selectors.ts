@@ -3,7 +3,7 @@ import { createSelector } from "@reduxjs/toolkit";
 import type {
   AppState,
   District,
-  DistrictData,
+  DistrictProperties,
   GroupNodeCache,
   MapNode,
   PersistentAppState,
@@ -47,7 +47,7 @@ export const getPersistentState = createSelector(
         districts: district.districts.map((district) => {
           const { transforms, minMax, origin, center, ...rest } = district;
 
-          return rest satisfies DistrictData;
+          return rest satisfies DistrictProperties;
         }),
       },
       nodes,

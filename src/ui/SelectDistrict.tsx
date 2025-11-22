@@ -11,16 +11,16 @@ import { ModalsActions } from "../store/modals.ts";
 import { NodesActions, NodesSelectors } from "../store/nodes.ts";
 import { ProjectActions, ProjectSelectors } from "../store/project.ts";
 import type {
-  DefaultDistricts,
-  DistrictData,
+  DefaultDistrictNames,
+  DistrictProperties,
   GroupNodeCache,
 } from "../types/types.ts";
 
-const getLabel = (district: DistrictData) =>
+const getLabel = (district: DistrictProperties) =>
   district.isCustom
     ? district.name
-    : DISTRICT_LABELS[district.name as DefaultDistricts];
-const getEdits = (cache: GroupNodeCache, district: DistrictData) => {
+    : DISTRICT_LABELS[district.name as DefaultDistrictNames];
+const getEdits = (cache: GroupNodeCache, district: DistrictProperties) => {
   const cachedDistrict = cache[district.name];
 
   if (!cachedDistrict) return null;
@@ -50,7 +50,7 @@ function SelectDistrict() {
   return (
     <Dropdown
       trigger={
-        <Button className="w-72 justify-between! border-none">
+        <Button className="w-64 justify-between! border-none">
           <div className="w-full truncate text-left">
             {district ? `Selected: ${getLabel(district)}` : "Select district"}
           </div>

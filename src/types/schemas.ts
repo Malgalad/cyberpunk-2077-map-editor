@@ -29,7 +29,7 @@ export const OptionsStateSchema = z.object({
   visibleDistricts: z.array(z.string()),
 });
 
-const DistrictDataSchema = z.intersection(
+const DistrictPropertiesSchema = z.intersection(
   z.object({
     name: z.string(),
     position: z.array(z.number()),
@@ -50,7 +50,7 @@ const DistrictDataSchema = z.intersection(
 );
 
 export const PersistentDistrictStateSchema = z.object({
-  districts: z.array(DistrictDataSchema),
+  districts: z.array(DistrictPropertiesSchema),
   current: z.union([z.string(), z.null()]),
 });
 

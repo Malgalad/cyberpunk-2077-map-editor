@@ -2,6 +2,7 @@ import * as React from "react";
 
 import { useAppDispatch, useAppSelector } from "../hooks.ts";
 import { ModalsActions, ModalsSelectors } from "../store/modals.ts";
+import type { ModalProps, ModalType } from "../types/modals.ts";
 import AlertModal from "./AlertModal.tsx";
 import ConfirmExclusionModal from "./ConfirmExclusionModal.tsx";
 import ConfirmModal from "./ConfirmModal.tsx";
@@ -11,7 +12,7 @@ import DistrictInfoModal from "./DistrictInfoModal.tsx";
 import LoadingModal from "./LoadingModal.tsx";
 import ProjectModal from "./ProjectModal.tsx";
 
-const ComponentMap = {
+const ComponentMap: Record<ModalType, React.FC<ModalProps>> = {
   alert: AlertModal,
   critical: CriticalErrorModal,
   confirm: ConfirmModal,

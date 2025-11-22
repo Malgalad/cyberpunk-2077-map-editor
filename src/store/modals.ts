@@ -1,12 +1,8 @@
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 
 import type { Tabs } from "../modals/ProjectModal.tsx";
-import type {
-  AppThunkAction,
-  DistrictData,
-  Modal,
-  ModalType,
-} from "../types/types.ts";
+import type { Modal, ModalType } from "../types/modals.ts";
+import type { AppThunkAction, DistrictProperties } from "../types/types.ts";
 
 interface ModalsState {
   modal: Modal | undefined;
@@ -44,7 +40,7 @@ function openModal(type: "loading"): AppThunkAction<Promise<void>>;
 function openModal(type: "project", data?: Tabs): AppThunkAction<Promise<void>>;
 function openModal(
   type: "custom-district",
-): AppThunkAction<Promise<DistrictData>>;
+): AppThunkAction<Promise<DistrictProperties>>;
 function openModal(type: "district-info"): AppThunkAction<Promise<void>>;
 function openModal(
   type: "confirm-instance-exclusion",

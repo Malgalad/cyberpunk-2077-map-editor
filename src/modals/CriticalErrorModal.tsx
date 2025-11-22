@@ -1,5 +1,5 @@
 import Modal from "../components/common/Modal.tsx";
-import type { ModalProps } from "../types/types.ts";
+import type { ModalProps } from "../types/modals.ts";
 
 function CriticalErrorModal(props: ModalProps) {
   return (

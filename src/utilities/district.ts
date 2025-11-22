@@ -1,6 +1,6 @@
 import type {
+  ComputedDistrictProperties,
   District,
-  DistrictData,
   DistrictProperties,
   GroupNodeCache,
   InstancedMeshTransforms,
@@ -8,9 +8,9 @@ import type {
 } from "../types/types.ts";
 import { projectNodesToDistrict } from "./transforms.ts";
 
-export const getDistrictProperties = (
-  district: DistrictData,
-): DistrictProperties => {
+export const computeDistrictProperties = (
+  district: DistrictProperties,
+): ComputedDistrictProperties => {
   const minMax = {
     x: district.transMax[0] - district.transMin[0],
     y: district.transMax[1] - district.transMin[1],

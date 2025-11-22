@@ -5,7 +5,7 @@ import type {
   PersistentAppState,
   RevivedAppState,
 } from "../types/types.ts";
-import { getDistrictProperties } from "../utilities/district.ts";
+import { computeDistrictProperties } from "../utilities/district.ts";
 import { getDistrictTransforms } from "../utilities/transforms.ts";
 
 export const hydrateState = createAsyncThunk(
@@ -16,7 +16,7 @@ export const hydrateState = createAsyncThunk(
       districts.map((district) =>
         getDistrictTransforms(district).then((transforms) => ({
           ...district,
-          ...getDistrictProperties(district),
+          ...computeDistrictProperties(district),
           transforms,
         })),
       ),

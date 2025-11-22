@@ -11,8 +11,9 @@ import { useLoadProject } from "../hooks/importExport.ts";
 import { loadJSON, saveJSON } from "../opfs.ts";
 import { hydrateState } from "../store/@actions.ts";
 import { getInitialState } from "../store/@selectors.ts";
+import type { ModalProps } from "../types/modals.ts";
 import { PersistentStateSchema } from "../types/schemas.ts";
-import type { ModalProps, PersistentAppState } from "../types/types.ts";
+import type { PersistentAppState } from "../types/types.ts";
 import { clsx } from "../utilities/utilities.ts";
 
 export type Tabs = "open" | "new" | "load";

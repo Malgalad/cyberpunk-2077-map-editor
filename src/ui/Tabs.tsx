@@ -25,7 +25,7 @@ function Tabs() {
   );
 
   return (
-    <div className="w-[450px] h-full flex flex-col py-2 pr-2">
+    <div className="w-[450px] h-full flex flex-col p-2 shrink-0">
       <div className="flex flex-row gap-0.5 -mb-[1px]">
         <Button
           className={clsx(

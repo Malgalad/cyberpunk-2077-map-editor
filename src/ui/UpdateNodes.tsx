@@ -80,7 +80,7 @@ function UpdateNodes() {
         </div>
       </div>
 
-      <div className="flex flex-col basis-[300px] shrink-0">
+      <div className="flex flex-col basis-[320px] shrink-0">
         {!editing && (
           <div className="grow flex items-center justify-center italic bg-slate-800">
             Select node

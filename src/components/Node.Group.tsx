@@ -1,4 +1,4 @@
-import { CircleDotDashed, SquareMinus, SquarePlus } from "lucide-react";
+import { EyeOff, SquareMinus, SquarePlus, SquareStack } from "lucide-react";
 import * as React from "react";
 
 import { useAppDispatch, useAppSelector } from "../hooks.ts";
@@ -76,24 +76,27 @@ function Group({ lookAtNode, node }: GroupProps) {
             {node.label}{" "}
             <span className="text-gray-400">({nodeChildren.i.length})</span>
           </span>
-          {node.pattern?.enabled && (
-            <Button
-              className="border-none p-0! tooltip"
-              data-tooltip="Has pattern"
-              data-flow="left"
-              onClick={() => {
-                setTimeout(() => {
-                  window.dispatchEvent(
-                    new CustomEvent("set-editing-tab", {
-                      detail: { tab: "pattern" },
-                    }),
-                  );
-                });
-              }}
-            >
-              <CircleDotDashed />
-            </Button>
-          )}
+          <div className="flex flex-row gap-1">
+            {node.hidden && <EyeOff />}
+            {node.pattern?.enabled && (
+              <Button
+                className="border-none p-0! tooltip"
+                data-tooltip="Has pattern"
+                data-flow="left"
+                onClick={() => {
+                  setTimeout(() => {
+                    window.dispatchEvent(
+                      new CustomEvent("set-editing-tab", {
+                        detail: { tab: "pattern" },
+                      }),
+                    );
+                  });
+                }}
+              >
+                <SquareStack />
+              </Button>
+            )}
+          </div>
         </div>
       </div>
       {expanded && children.length > 0 && (
