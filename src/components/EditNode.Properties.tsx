@@ -214,7 +214,7 @@ function EditNodeProperties({ node }: EditNodePropertiesProps) {
         </div>
         <div
           className="tooltip"
-          data-tooltip="Visually hide this node"
+          data-tooltip="Visually hide this node and children"
           data-flow="top"
         >
           Hidden:

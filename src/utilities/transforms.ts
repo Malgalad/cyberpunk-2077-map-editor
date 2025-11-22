@@ -81,12 +81,13 @@ export function projectNodesToDistrict(
   if (!district) return noTransforms;
 
   const transforms: InstancedMeshTransforms[] = [];
-  const nodesParsed = nodes.filter((node) => !node.hidden).map(parseNode);
+  const nodesParsed = nodes.map(parseNode);
   const nodesMap = new Map(nodesParsed.map((node) => [node.id, node]));
   // normalize then reverse the node array to ensure child patterns are resolved before parent patterns
   const nodesReversed = normalizeNodes(nodesParsed, nodesMap).toReversed();
 
   for (const node of nodesReversed) {
+    if (node.hidden) node.scale = [0, 0, 0];
     if (!node.pattern?.enabled || node.virtual) continue;
 
     for (let i = 0; i < node.pattern.count; i++) {
