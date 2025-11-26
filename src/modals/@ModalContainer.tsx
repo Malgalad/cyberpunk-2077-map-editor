@@ -4,11 +4,11 @@ import { useAppDispatch, useAppSelector } from "../hooks.ts";
 import { ModalsActions, ModalsSelectors } from "../store/modals.ts";
 import type { ModalProps, ModalType } from "../types/modals.ts";
 import AlertModal from "./AlertModal.tsx";
+import ConfirmByTypingModal from "./ConfirmByTypingModal.tsx";
 import ConfirmExclusionModal from "./ConfirmExclusionModal.tsx";
 import ConfirmModal from "./ConfirmModal.tsx";
 import CriticalErrorModal from "./CriticalErrorModal.tsx";
-import CustomDistrictModal from "./CustomDistrictModal.tsx";
-import DistrictInfoModal from "./DistrictInfoModal.tsx";
+import EditDistrictModal from "./EditDistrictModal/EditDistrictModal.tsx";
 import LoadingModal from "./LoadingModal.tsx";
 import ProjectModal from "./ProjectModal.tsx";
 
@@ -16,10 +16,10 @@ const ComponentMap: Record<ModalType, React.FC<ModalProps>> = {
   alert: AlertModal,
   critical: CriticalErrorModal,
   confirm: ConfirmModal,
+  "confirm-by-typing": ConfirmByTypingModal,
   loading: LoadingModal,
   project: ProjectModal,
-  "custom-district": CustomDistrictModal,
-  "district-info": DistrictInfoModal,
+  "edit-district": EditDistrictModal,
   "confirm-instance-exclusion": ConfirmExclusionModal,
 };
 

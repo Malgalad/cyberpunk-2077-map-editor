@@ -1,5 +1,7 @@
+import { DISTRICT_LABELS } from "../constants.ts";
 import type {
   ComputedDistrictProperties,
+  DefaultDistrictNames,
   District,
   DistrictProperties,
   GroupNodeCache,
@@ -7,6 +9,11 @@ import type {
   MapNode,
 } from "../types/types.ts";
 import { projectNodesToDistrict } from "./transforms.ts";
+
+export const getDistrictName = (district: DistrictProperties) =>
+  district.isCustom
+    ? district.name
+    : DISTRICT_LABELS[district.name as DefaultDistrictNames];
 
 export const computeDistrictProperties = (
   district: DistrictProperties,

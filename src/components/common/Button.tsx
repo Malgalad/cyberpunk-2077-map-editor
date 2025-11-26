@@ -36,7 +36,7 @@ function Button({
     [onClick],
   );
 
-  useGlobalShortcuts(shortcut, onClick);
+  useGlobalShortcuts(shortcut, onClick, props.disabled);
 
   return (
     <button

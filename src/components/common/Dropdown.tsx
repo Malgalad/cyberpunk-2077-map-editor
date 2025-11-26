@@ -38,7 +38,7 @@ function Dropdown({
     "right bottom": "bottom-0 left-full",
   }[direction + " " + align];
 
-  useGlobalShortcuts(shortcut, () => setIsOpen(!isOpen));
+  useGlobalShortcuts(shortcut, () => setIsOpen(!isOpen), disabled);
 
   return (
     <div

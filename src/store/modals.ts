@@ -1,4 +1,5 @@
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
+import type * as React from "react";
 
 import type { Tabs } from "../modals/ProjectModal.tsx";
 import type { Modal, ModalType } from "../types/modals.ts";
@@ -36,12 +37,16 @@ function openModal(
   type: "confirm",
   data: string,
 ): AppThunkAction<Promise<boolean>>;
+function openModal(
+  type: "confirm-by-typing",
+  data: { children: React.ReactNode; password: string },
+): AppThunkAction<Promise<boolean>>;
 function openModal(type: "loading"): AppThunkAction<Promise<void>>;
 function openModal(type: "project", data?: Tabs): AppThunkAction<Promise<void>>;
 function openModal(
-  type: "custom-district",
+  type: "edit-district",
+  data: boolean,
 ): AppThunkAction<Promise<DistrictProperties>>;
-function openModal(type: "district-info"): AppThunkAction<Promise<void>>;
 function openModal(
   type: "confirm-instance-exclusion",
   data: {

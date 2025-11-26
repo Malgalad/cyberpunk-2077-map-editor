@@ -1,5 +1,5 @@
 import { produce } from "immer";
-import { TriangleAlert } from "lucide-react";
+import { Trash2, TriangleAlert } from "lucide-react";
 import * as React from "react";
 
 import Button from "../components/common/Button.tsx";
@@ -8,9 +8,11 @@ import Modal from "../components/common/Modal.tsx";
 import { DEFAULT_DISTRICT_DATA } from "../constants.ts";
 import { useAppDispatch, useFilesList } from "../hooks.ts";
 import { useLoadProject } from "../hooks/importExport.ts";
-import { loadJSON, saveJSON } from "../opfs.ts";
+import { useMap3D } from "../map3d/map3d.context.ts";
+import { loadJSON, removeEntry, saveJSON } from "../opfs.ts";
 import { hydrateState } from "../store/@actions.ts";
 import { getInitialState } from "../store/@selectors.ts";
+import { ModalsActions } from "../store/modals.ts";
 import type { ModalProps } from "../types/modals.ts";
 import { PersistentStateSchema } from "../types/schemas.ts";
 import type { PersistentAppState } from "../types/types.ts";
@@ -26,6 +28,7 @@ const tabs: { key: Tabs; label: string }[] = [
 function ProjectModal(props: ModalProps) {
   const { data: defaultTab = "open" } = props as { data?: Tabs };
   const dispatch = useAppDispatch();
+  const map3d = useMap3D();
   const [tab, setTab] = React.useState<Tabs>(defaultTab);
   const [rememberProjectName, setRememberProjectName] =
     React.useState<boolean>(true);
@@ -94,10 +97,27 @@ function ProjectModal(props: ModalProps) {
     }
 
     if (state) {
-      void saveJSON("persistentData", persistent);
-      dispatch(hydrateState(state));
+      dispatch(ModalsActions.openModal("loading"));
+      await saveJSON("persistentData", persistent);
+      await dispatch(hydrateState(state)).unwrap();
       props.onClose();
     }
+  };
+  const deleteProject = async () => {
+    const confirmed = await dispatch(
+      ModalsActions.openModal("confirm-by-typing", {
+        children: `You are about to delete project "${selectedProject}". This action cannot be undone, and we recommend creating a backup by saving to disk first. Type "DELETE" to confirm deletion.`,
+        password: "DELETE",
+      }),
+    );
+    if (confirmed) {
+      dispatch(ModalsActions.openModal("loading"));
+      dispatch(hydrateState(getInitialState(undefined)));
+      map3d?.render();
+      await saveJSON("persistentData", { project: undefined });
+      await removeEntry(`projects/${selectedProject}`);
+    }
+    dispatch(ModalsActions.openModal("project", "open"));
   };
 
   React.useEffect(() => {
@@ -113,6 +133,16 @@ function ProjectModal(props: ModalProps) {
   }[tab];
   const footer = (
     <>
+      {tab === "open" && selectedProject && (
+        <Button
+          className="w-12 tooltip mr-[85px]"
+          data-tooltip="Delete project"
+          data-flow="top"
+          onClick={deleteProject}
+        >
+          <Trash2 />
+        </Button>
+      )}
       <label className="flex flex-row gap-2 items-center mr-4">
         <Input
           type="checkbox"
@@ -243,7 +273,7 @@ function ProjectModal(props: ModalProps) {
             </Button>
           ))}
         </div>
-        <div className="border border-slate-500 w-[450px] h-72 p-4">
+        <div className="border border-slate-500 w-[475px] h-72 p-4">
           {tab === "open" && renderOpenProject()}
           {tab === "new" && renderNewProject()}
           {tab === "load" && renderLoadProject()}

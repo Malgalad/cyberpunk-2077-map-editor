@@ -481,6 +481,20 @@ export class Map3D extends Map3DBase {
     requestAnimationFrame(this.render);
   }
 
+  reset = () => {
+    this.#remove(this.#additions);
+    this.#remove(this.#additionsVirtual);
+    this.#remove(this.#currentDistrict);
+    this.#remove(this.#currentDistrictBoundaries);
+    this.#remove(this.#deletions);
+    this.#remove(this.#updates);
+
+    for (const object3d of this.#visibleDistricts.children) {
+      (object3d as THREE.InstancedMesh).geometry.dispose();
+    }
+    this.#visibleDistricts.remove(...this.#visibleDistricts.children);
+  };
+
   render = () => {
     this.toggleControls(this.#tool === "move");
     this.#refreshInstancesColors();

@@ -23,6 +23,30 @@ const districtSlice = createSlice({
     selectDistrict(state, action: PayloadAction<string | null>) {
       state.current = action.payload;
     },
+    updateDistrict(
+      state,
+      action: PayloadAction<{ name: string; district: District }>,
+    ) {
+      const { name, district } = action.payload;
+
+      state.districts.splice(
+        state.districts.findIndex((district) => district.name === name),
+        1,
+        district,
+      );
+
+      if (state.current === name && name !== district.name) {
+        state.current = district.name;
+      }
+    },
+    deleteDistrict(state, action: PayloadAction<string>) {
+      state.districts.splice(
+        state.districts.findIndex(
+          (district) => district.name === action.payload,
+        ),
+        1,
+      );
+    },
   },
   extraReducers: (builder) =>
     builder.addCase(

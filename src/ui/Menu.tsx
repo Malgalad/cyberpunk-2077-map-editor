@@ -52,14 +52,15 @@ function Menu() {
             <div className="border-r border-slate-500 h-full" />
           </>
         )}
+
         <div className="border-r border-slate-600 w-[1px]" />
+
         <Dropdown
           trigger={
             <Button className="border-none cursor-default! group-hover/level-0:bg-slate-600">
               File
             </Button>
           }
-          shortcut={(event) => event.key === "f" && event.altKey}
         >
           <DropdownItem
             icon={<FilePlus2 />}
@@ -123,7 +124,13 @@ function Menu() {
             Redo
           </DropdownItem>
           <DropdownSeparator />
-          <DropdownItem disabled icon={<Settings2 />}>
+          <DropdownItem
+            icon={<Settings2 />}
+            disabled={!district}
+            onClick={() =>
+              void dispatch(ModalsActions.openModal("edit-district", true))
+            }
+          >
             District properties
           </DropdownItem>
         </Dropdown>
@@ -224,14 +231,6 @@ function Menu() {
               Solid
             </DropdownItem>
           </Dropdown>
-
-          <DropdownSeparator />
-          <DropdownItem
-            onClick={() => dispatch(ModalsActions.openModal("district-info"))}
-            disabled={!district}
-          >
-            Selected district properties
-          </DropdownItem>
         </Dropdown>
 
         <div className="border-r border-slate-500 h-full" />

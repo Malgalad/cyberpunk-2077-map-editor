@@ -39,11 +39,13 @@ export function useGlobalShortcuts(
   shortcut?: string | ((event: KeyboardEvent) => boolean),
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   callback?: React.EventHandler<any>,
+  disabled?: boolean,
 ) {
   React.useEffect(() => {
     if (!shortcut) return;
 
     const listener = (event: KeyboardEvent) => {
+      if (disabled) return;
       if (event.target instanceof HTMLInputElement) return;
 
       event.preventDefault();
@@ -65,5 +67,5 @@ export function useGlobalShortcuts(
     return () => {
       document.removeEventListener("keyup", listener);
     };
-  }, [shortcut, callback]);
+  }, [shortcut, callback, disabled]);
 }

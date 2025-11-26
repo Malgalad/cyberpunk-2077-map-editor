@@ -9,6 +9,7 @@ import { nanoid } from "nanoid";
 import { MAX_DEPTH } from "../constants.ts";
 import type {
   AppThunkAction,
+  District,
   GroupNodeCache,
   MapNode,
   MapNodeUri,
@@ -17,6 +18,7 @@ import type {
 import { cloneNode } from "../utilities/nodes.ts";
 import { structuralSharing } from "../utilities/structuralSharing.ts";
 import { hydrateState } from "./@actions.ts";
+import { DistrictActions } from "./district.ts";
 
 interface NodesState {
   nodes: MapNode[];
@@ -94,10 +96,27 @@ const nodesSlice = createSlice({
     ),
   }),
   extraReducers: (builder) =>
-    builder.addCase(
-      hydrateState.fulfilled,
-      (_, action: PayloadAction<RevivedAppState>) => action.payload.nodes,
-    ),
+    builder
+      .addCase(
+        hydrateState.fulfilled,
+        (_, action: PayloadAction<RevivedAppState>) => action.payload.nodes,
+      )
+      .addCase(
+        DistrictActions.updateDistrict,
+        (
+          state,
+          action: PayloadAction<{ name: string; district: District }>,
+        ) => {
+          const { name, district } = action.payload;
+          if (name === district.name) return;
+
+          for (const node of state.nodes) {
+            if (node.parent === name) {
+              node.parent = district.name;
+            }
+          }
+        },
+      ),
   selectors: {
     getNodes: (state) => state.nodes,
     getEditingId: (state) => state.editingId,

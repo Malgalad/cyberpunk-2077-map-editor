@@ -94,6 +94,7 @@ export function useDrawAllDistricts(map3d: Map3D | null) {
 }
 
 export function useDrawCurrentDistrict(map3d: Map3D | null) {
+  const project = useAppSelector(ProjectSelectors.getProjectName);
   const district = useAppSelector(DistrictSelectors.getDistrict);
   const updates = useAppSelector(getUpdates);
   const deletions = useAppSelector(getDeletions);
@@ -126,6 +127,12 @@ export function useDrawCurrentDistrict(map3d: Map3D | null) {
 
     map3d.lookAtCurrentDistrict();
   }, [map3d, district]);
+
+  React.useEffect(() => {
+    if (!map3d || project) return;
+
+    map3d.reset();
+  }, [map3d, project]);
 }
 
 export function useDrawAdditions(map3d: Map3D | null) {

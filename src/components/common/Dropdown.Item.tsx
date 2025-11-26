@@ -22,19 +22,24 @@ function DropdownItem(props: DropdownItemProps) {
     icon,
     isExpandable,
     onClick,
+    ...rest
   } = props;
-  const iconProps = { size: 20, className: "text-slate-300 shrink-0" };
+  const iconProps = {
+    size: 20,
+    className: clsx(disabled ? "text-gray-400" : "text-slate-300", "shrink-0"),
+  };
 
   return (
     <div
       className={clsx(
         "flex flex-row items-center gap-2 cursor-default select-none",
         "px-2 py-1.5",
-        disabled && "opacity-50",
+        disabled && "text-gray-400",
         !disabled && "hover:bg-slate-600",
         className,
       )}
       onClick={() => !disabled && onClick?.()}
+      {...rest}
     >
       {checked && !icon && <CheckIcon {...iconProps} />}
       {icon ? React.cloneElement(icon, iconProps) : null}

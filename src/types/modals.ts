@@ -2,10 +2,10 @@ export type ModalType =
   | "alert"
   | "critical"
   | "confirm"
+  | "confirm-by-typing"
   | "loading"
   | "project"
-  | "custom-district"
-  | "district-info"
+  | "edit-district"
   | "confirm-instance-exclusion";
 export type Modal = {
   type: ModalType;

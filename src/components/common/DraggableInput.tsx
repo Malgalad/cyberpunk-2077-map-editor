@@ -9,6 +9,8 @@ interface DraggableInputProps {
   min?: number;
   max?: number;
   className?: string;
+  disabled?: boolean;
+  readOnly?: boolean;
 }
 
 export default function DraggableInput({
@@ -18,6 +20,8 @@ export default function DraggableInput({
   min = -Infinity,
   max = Infinity,
   className = "",
+  disabled = false,
+  readOnly = false,
 }: DraggableInputProps) {
   const [isDragging, setIsDragging] = React.useState(false);
   const [startY, setStartY] = React.useState(0);
@@ -26,12 +30,13 @@ export default function DraggableInput({
 
   const handleMouseDown = React.useCallback(
     (e: React.MouseEvent) => {
+      if (disabled || readOnly) return;
       setIsDragging(true);
       setStartY(e.clientY);
       setStartValue(value);
       document.body.style.cursor = "ns-resize";
     },
-    [value],
+    [value, disabled, readOnly],
   );
 
   const handleMouseMove = React.useCallback(
@@ -74,9 +79,12 @@ export default function DraggableInput({
       className={clsx(
         "cursor-ns-resize border border-slate-600 p-1.5",
         "disabled:cursor-not-allowed disabled:opacity-50",
+        "read-only:cursor-default read-only:opacity-85",
         "[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none",
         className,
       )}
+      disabled={disabled}
+      readOnly={readOnly}
     />
   );
 }

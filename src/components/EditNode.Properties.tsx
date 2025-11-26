@@ -2,7 +2,6 @@ import { Move3D } from "lucide-react";
 import * as React from "react";
 import * as THREE from "three";
 
-import { DISTRICT_LABELS } from "../constants.ts";
 import {
   useAppDispatch,
   useAppSelector,
@@ -14,12 +13,12 @@ import { getDistrictNodes } from "../store/@selectors.ts";
 import { DistrictSelectors } from "../store/district.ts";
 import { NodesActions, NodesSelectors } from "../store/nodes.ts";
 import type {
-  DefaultDistrictNames,
   DistrictProperties,
   GroupNodeCache,
   MapNode,
 } from "../types/types.ts";
 import type { SelectItem } from "../types/ui.types.ts";
+import { getDistrictName } from "../utilities/district.ts";
 import { parseTransform } from "../utilities/transforms.ts";
 import { clsx } from "../utilities/utilities.ts";
 import Button from "./common/Button.tsx";
@@ -249,9 +248,7 @@ function getParentsList(
 
   return [
     ...districts.map((district) => ({
-      label: district.isCustom
-        ? district.name
-        : DISTRICT_LABELS[district.name as DefaultDistrictNames],
+      label: getDistrictName(district),
       value: district.name,
     })),
     ...nodes
