@@ -2,55 +2,54 @@ import * as React from "react";
 
 import { clsx } from "../../utilities/utilities.ts";
 
-interface DraggableInputProps {
-  value: string;
-  onChange: (value: string) => void;
-  step?: number;
-  min?: number;
-  max?: number;
-  className?: string;
-  disabled?: boolean;
-  readOnly?: boolean;
-}
-
-export default function DraggableInput({
-  value,
-  onChange,
-  step = 1,
-  min = -Infinity,
-  max = Infinity,
-  className = "",
-  disabled = false,
-  readOnly = false,
-}: DraggableInputProps) {
+export default function DraggableInput(
+  props: React.InputHTMLAttributes<HTMLInputElement>,
+) {
+  const { onChange, onMouseDown } = props;
   const [isDragging, setIsDragging] = React.useState(false);
   const [startY, setStartY] = React.useState(0);
   const [startValue, setStartValue] = React.useState("0");
   const inputRef = React.useRef<HTMLInputElement>(null);
 
   const handleMouseDown = React.useCallback(
-    (e: React.MouseEvent) => {
-      if (disabled || readOnly) return;
+    (e: React.MouseEvent<HTMLInputElement, MouseEvent>) => {
+      onMouseDown?.(e);
+      if (props.disabled || props.readOnly) return;
       setIsDragging(true);
       setStartY(e.clientY);
-      setStartValue(value);
+      setStartValue(`${props.value}`);
       document.body.style.cursor = "ns-resize";
     },
-    [value, disabled, readOnly],
+    [props.value, props.disabled, props.readOnly, onMouseDown],
   );
 
   const handleMouseMove = React.useCallback(
     (e: MouseEvent) => {
       if (!isDragging) return;
 
+      const { max = Infinity, min = -Infinity, step = 1 } = props;
       const deltaY = startY - e.clientY;
       const newValue = Math.min(
-        max,
-        Math.max(min, parseFloat(startValue) + deltaY * step),
+        parseFloat(`${max}`),
+        Math.max(
+          parseFloat(`${min}`),
+          parseFloat(startValue) + deltaY * parseFloat(`${step}`),
+        ),
       );
-      onChange(newValue.toString());
+      onChange?.({
+        target: { value: `${newValue}` },
+      } as React.ChangeEvent<HTMLInputElement>);
     },
-    [isDragging, max, min, onChange, startValue, startY, step],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [
+      isDragging,
+      props.max,
+      props.min,
+      onChange,
+      startValue,
+      startY,
+      props.step,
+    ],
   );
 
   const handleMouseUp = React.useCallback(() => {
@@ -70,21 +69,26 @@ export default function DraggableInput({
   }, [isDragging, handleMouseMove, handleMouseUp]);
 
   return (
-    <input
-      ref={inputRef}
-      type="number"
-      value={value}
-      onChange={(e) => onChange(e.target.value)}
-      onMouseDown={handleMouseDown}
-      className={clsx(
-        "cursor-ns-resize border border-slate-600 p-1.5",
-        "disabled:cursor-not-allowed disabled:opacity-50",
-        "read-only:cursor-default read-only:opacity-85",
-        "[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none",
-        className,
-      )}
-      disabled={disabled}
-      readOnly={readOnly}
-    />
+    <div
+      className={clsx("w-min", props["aria-invalid"] && "tooltip")}
+      data-tooltip={props["aria-errormessage"] ?? ""}
+      data-flow="top"
+    >
+      <input
+        {...props}
+        ref={inputRef}
+        type="number"
+        onMouseDown={handleMouseDown}
+        className={clsx(
+          "cursor-ns-resize border p-1.5",
+          "disabled:cursor-not-allowed disabled:opacity-50",
+          "read-only:cursor-default read-only:opacity-85",
+          "[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none",
+          !props["aria-invalid"] && "border-slate-600",
+          props["aria-invalid"] && "border-red-500",
+          props.className,
+        )}
+      />
+    </div>
   );
 }

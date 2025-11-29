@@ -63,10 +63,10 @@ function EditNodePattern({ node }: EditNodePatternProps) {
                 min={1}
                 step={1}
                 value={node.pattern.count.toString()}
-                onChange={(value) => {
+                onChange={(event) => {
                   dispatch(
                     NodesActions.patchNode((draft) => {
-                      draft.pattern!.count = parseInt(value, 10);
+                      draft.pattern!.count = parseInt(event.target.value, 10);
                     }),
                   );
                 }}
@@ -81,10 +81,10 @@ function EditNodePattern({ node }: EditNodePatternProps) {
                     className="w-20"
                     step={0.25}
                     value={node.pattern!.position[i]}
-                    onChange={(value) => {
+                    onChange={(event) => {
                       dispatch(
                         NodesActions.patchNode((draft) => {
-                          draft.pattern!.position[i] = value;
+                          draft.pattern!.position[i] = event.target.value;
                         }),
                       );
                     }}
@@ -101,10 +101,10 @@ function EditNodePattern({ node }: EditNodePatternProps) {
                     className="w-20"
                     step={0.5}
                     value={node.pattern!.rotation[i]}
-                    onChange={(value) => {
+                    onChange={(event) => {
                       dispatch(
                         NodesActions.patchNode((draft) => {
-                          draft.pattern!.rotation[i] = value;
+                          draft.pattern!.rotation[i] = event.target.value;
                         }),
                       );
                     }}
@@ -121,10 +121,10 @@ function EditNodePattern({ node }: EditNodePatternProps) {
                     className="w-20"
                     step={0.1}
                     value={node.pattern!.scale[i]}
-                    onChange={(value) => {
+                    onChange={(event) => {
                       dispatch(
                         NodesActions.patchNode((draft) => {
-                          draft.pattern!.scale[i] = value;
+                          draft.pattern!.scale[i] = event.target.value;
                         }),
                       );
                     }}

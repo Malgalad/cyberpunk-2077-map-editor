@@ -11,7 +11,6 @@ import { DistrictActions, DistrictSelectors } from "../../store/district.ts";
 import { ModalsActions } from "../../store/modals.ts";
 import type { ModalProps } from "../../types/modals.ts";
 import type {
-  District,
   DistrictProperties,
   InstancedMeshTransforms,
 } from "../../types/types.ts";
@@ -19,7 +18,7 @@ import {
   computeDistrictProperties,
   getDistrictName,
 } from "../../utilities/district.ts";
-import { invariant, toNumber, toString } from "../../utilities/utilities.ts";
+import { invariant, toNumber } from "../../utilities/utilities.ts";
 import EditDistrictModalClipboard from "./editDistrictModal.clipboard.tsx";
 import { defaultValues } from "./editDistrictModal.constants.ts";
 import {
@@ -27,17 +26,14 @@ import {
   useDrawOnCanvas,
 } from "./editDistrictModal.hooks.ts";
 import type { EditDistrictData } from "./editDistrictModal.types.ts";
+import { toData } from "./editDistrictModal.utils.ts";
+import { useGetErrors } from "./editDistrictModal.validation.ts";
 
 const axii = [0, 1, 2] as const;
-const getValues = (district: District) => ({
-  pos: district.position.map((n) => toString(n)),
-  min: district.transMin.map((n) => toString(n)),
-  max: district.transMax.map((n) => toString(n)),
-  cubeSize: toString(district.cubeSize),
-});
+const axiiNames = ["X", "Y", "Z"] as const;
 
 function EditDistrictModal(props: ModalProps) {
-  const edit = props.data as boolean;
+  const isEdit = props.data as boolean;
   const dispatch = useAppDispatch();
   const district = useAppSelector(DistrictSelectors.getDistrict);
 
@@ -46,27 +42,25 @@ function EditDistrictModal(props: ModalProps) {
   const height = useDistrictTextureHeight(district);
   const ref = React.useRef<HTMLCanvasElement>(null);
   const [data, setData] = React.useState<EditDistrictData>(
-    edit ? getValues(district) : defaultValues,
+    isEdit ? toData(district) : defaultValues,
   );
   const [name, setName] = React.useState<string>(
-    edit ? getDistrictName(district) : "my_district",
+    isEdit ? getDistrictName(district) : "my_district",
   );
 
-  const redrawCanvasRefFn =
-    React.useRef<(current: EditDistrictData) => void>(null);
-  // TODO validation of values
-  const validationErrors = (() => {
-    if (name.length === 0) return "Name cannot be empty";
-    if (name.length > 40) return "Name cannot be longer than 40 characters";
-    return "";
-  })();
+  const validationErrors = useGetErrors(
+    name.trim(),
+    data,
+    isEdit ? district : undefined,
+  );
   const isCustomDistrict = district.isCustom;
-  const isValid = !validationErrors;
+  const isValid = !validationErrors.size;
 
-  useDrawOnCanvas(ref, redrawCanvasRefFn, [data, setData]);
+  const redrawCanvasRefFn = useDrawOnCanvas(ref, [data, setData]);
 
   React.useEffect(() => {
     redrawCanvasRefFn.current?.(data);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [data]);
 
   const createDistrict = () => {
@@ -80,12 +74,12 @@ function EditDistrictModal(props: ModalProps) {
       cubeSize: toNumber(data.cubeSize),
     };
     const computedProperties = computeDistrictProperties(districtProperties);
-    const transforms: InstancedMeshTransforms[] = edit
+    const transforms: InstancedMeshTransforms[] = isEdit
       ? district.transforms
       : [];
 
     dispatch(ModalsActions.closeModal());
-    if (edit) {
+    if (isEdit) {
       dispatch(
         DistrictActions.updateDistrict({
           name: district.name,
@@ -112,7 +106,7 @@ function EditDistrictModal(props: ModalProps) {
     <Modal
       className="w-[858px]"
       title={
-        edit ? `Edit district "${district.name}":` : `Create new district:`
+        isEdit ? `Edit district "${district.name}":` : `Create new district:`
       }
     >
       <div className="flex flex-row gap-4">
@@ -129,7 +123,7 @@ function EditDistrictModal(props: ModalProps) {
           <div className="flex flex-row justify-between items-center">
             <div className="text-lg font-bold flex flex-row gap-2 items-center">
               District properties
-              {!isCustomDistrict && (
+              {isEdit && !isCustomDistrict && (
                 <span
                   className="tooltip"
                   data-tooltip="Default district properties cannot be edited"
@@ -144,10 +138,12 @@ function EditDistrictModal(props: ModalProps) {
           <div>Name:</div>
           <div>
             <Input
+              aria-invalid={validationErrors.has("name")}
+              aria-errormessage={validationErrors.get("name")}
               value={name}
               maxLength={40}
               onChange={(event) => setName(event.target.value)}
-              readOnly={edit && !isCustomDistrict}
+              readOnly={isEdit && !isCustomDistrict}
             />
           </div>
 
@@ -156,16 +152,20 @@ function EditDistrictModal(props: ModalProps) {
             {axii.map((i) => (
               <DraggableInput
                 key={i}
+                aria-invalid={validationErrors.has(`pos${axiiNames[i]}`)}
+                aria-errormessage={validationErrors.get(`pos${axiiNames[i]}`)}
                 className="w-20"
                 value={data.pos[i]}
-                onChange={(value) => {
+                onChange={(event) => {
                   setData(
                     produce((draft) => {
-                      draft.pos[i] = value;
+                      draft.pos[i] = event.target.value;
                     }),
                   );
                 }}
-                readOnly={edit && !isCustomDistrict}
+                readOnly={isEdit && !isCustomDistrict}
+                max={8_000}
+                min={-8_000}
               />
             ))}
           </div>
@@ -175,16 +175,18 @@ function EditDistrictModal(props: ModalProps) {
             {axii.map((i) => (
               <DraggableInput
                 key={i}
+                aria-invalid={validationErrors.has(`min${axiiNames[i]}`)}
+                aria-errormessage={validationErrors.get(`min${axiiNames[i]}`)}
                 className="w-20"
                 value={data.min[i]}
-                onChange={(value) => {
+                onChange={(event) => {
                   setData(
                     produce((draft) => {
-                      draft.min[i] = value;
+                      draft.min[i] = event.target.value;
                     }),
                   );
                 }}
-                readOnly={edit && !isCustomDistrict}
+                readOnly={isEdit && !isCustomDistrict}
               />
             ))}
           </div>
@@ -194,16 +196,18 @@ function EditDistrictModal(props: ModalProps) {
             {axii.map((i) => (
               <DraggableInput
                 key={i}
+                aria-invalid={validationErrors.has(`max${axiiNames[i]}`)}
+                aria-errormessage={validationErrors.get(`max${axiiNames[i]}`)}
                 className="w-20"
                 value={data.max[i]}
-                onChange={(value) => {
+                onChange={(event) => {
                   setData(
                     produce((draft) => {
-                      draft.max[i] = value;
+                      draft.max[i] = event.target.value;
                     }),
                   );
                 }}
-                readOnly={edit && !isCustomDistrict}
+                readOnly={isEdit && !isCustomDistrict}
               />
             ))}
           </div>
@@ -211,20 +215,24 @@ function EditDistrictModal(props: ModalProps) {
           <div>CubeSize:</div>
           <div>
             <DraggableInput
+              aria-invalid={validationErrors.has("cubeSize")}
+              aria-errormessage={validationErrors.get("cubeSize")}
               className="w-20"
               value={data.cubeSize}
-              onChange={(value) => {
+              onChange={(event) => {
                 setData(
                   produce((draft) => {
-                    draft.cubeSize = value;
+                    draft.cubeSize = event.target.value;
                   }),
                 );
               }}
-              readOnly={edit && !isCustomDistrict}
+              readOnly={isEdit && !isCustomDistrict}
+              min={1}
+              max={1000}
             />
           </div>
 
-          {edit && (
+          {isEdit && (
             <>
               <div className="flex flex-row gap-2 items-center">
                 Texture Height:
@@ -243,7 +251,7 @@ function EditDistrictModal(props: ModalProps) {
           )}
 
           <div className="flex flex-row gap-2 mt-auto justify-end">
-            {edit && (
+            {isEdit && (
               <EditDistrictModalClipboard
                 name={name}
                 data={data}
@@ -251,12 +259,12 @@ function EditDistrictModal(props: ModalProps) {
               />
             )}
 
-            {!edit ||
-              (isCustomDistrict && (
-                <Button onClick={() => createDistrict()} disabled={!isValid}>
-                  {edit ? "Update district" : "Crate new district"}
-                </Button>
-              ))}
+            <Button
+              onClick={() => createDistrict()}
+              disabled={!isValid || (isEdit && !isCustomDistrict)}
+            >
+              {isEdit ? "Update district" : "Crate new district"}
+            </Button>
           </div>
         </div>
       </div>

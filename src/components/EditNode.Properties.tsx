@@ -126,9 +126,9 @@ function EditNodeProperties({ node }: EditNodePropertiesProps) {
               className={clsx("w-20", axiiColors[i])}
               step={3 / (map3d?.camera.zoom ?? 1)}
               value={useLocal ? local[i] : node.position[i]}
-              onChange={(value) => {
+              onChange={(event) => {
                 if (useLocal) {
-                  const newLocal = local.toSpliced(i, 1, value);
+                  const newLocal = local.toSpliced(i, 1, event.target.value);
 
                   setLocal(newLocal);
 
@@ -165,7 +165,7 @@ function EditNodeProperties({ node }: EditNodePropertiesProps) {
                 } else {
                   dispatch(
                     NodesActions.patchNode((draft) => {
-                      draft.position[i] = value;
+                      draft.position[i] = event.target.value;
                     }),
                   );
                 }
@@ -181,10 +181,10 @@ function EditNodeProperties({ node }: EditNodePropertiesProps) {
               className={clsx("w-20", axiiColors[i])}
               step={1.5 / (map3d?.camera.zoom ?? 1)}
               value={node.rotation[i]}
-              onChange={(value) => {
+              onChange={(event) => {
                 dispatch(
                   NodesActions.patchNode((draft) => {
-                    draft.rotation[i] = value;
+                    draft.rotation[i] = event.target.value;
                   }),
                 );
               }}
@@ -201,10 +201,10 @@ function EditNodeProperties({ node }: EditNodePropertiesProps) {
                 node.type === "instance" ? 50 / (map3d?.camera.zoom ?? 1) : 0.1
               }
               value={node.scale[i]}
-              onChange={(value) => {
+              onChange={(event) => {
                 dispatch(
                   NodesActions.patchNode((draft) => {
-                    draft.scale[i] = value;
+                    draft.scale[i] = event.target.value;
                   }),
                 );
               }}

@@ -12,12 +12,15 @@ import type { EditDistrictData } from "./editDistrictModal.types.ts";
 
 export function useDrawOnCanvas(
   canvasRef: React.RefObject<HTMLCanvasElement | null>,
-  renderRef: React.RefObject<((current: EditDistrictData) => void) | null>,
   [data, setData]: [
     EditDistrictData,
     React.Dispatch<React.SetStateAction<EditDistrictData>>,
   ],
 ) {
+  const renderRef = React.useRef<((current: EditDistrictData) => void) | null>(
+    null,
+  );
+
   React.useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -155,6 +158,8 @@ export function useDrawOnCanvas(
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  return renderRef;
 }
 
 export function useDistrictTextureHeight(district: District) {
