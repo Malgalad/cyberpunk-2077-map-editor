@@ -190,7 +190,7 @@ export function useDrawSelection(map3d: Map3D | null) {
 
     const indexes: number[] = [];
     const selectedIds = new Set(
-      editing.type === "instance" ? [editing.id] : cache[editing.id].i,
+      editing.type === "instance" ? [editing.id] : cache[editing.id].instances,
     );
 
     if (mode === "create") {

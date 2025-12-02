@@ -44,8 +44,10 @@ function Tabs() {
             <span>
               Cre<span className="underline">a</span>te nodes
             </span>
-            {(cache?.c.length ?? 0) > 0 && (
-              <span className="text-green-400 text-sm">+{cache?.c.length}</span>
+            {(cache?.additions.length ?? 0) > 0 && (
+              <span className="text-green-400 text-sm">
+                +{cache?.additions.length}
+              </span>
             )}
           </div>
         </Button>
@@ -67,9 +69,9 @@ function Tabs() {
             <span>
               Updat<span className="underline">e</span> nodes
             </span>
-            {(cache?.u.length ?? 0) > 0 && (
+            {(cache?.updates.length ?? 0) > 0 && (
               <span className="text-yellow-400 text-sm">
-                ~{cache?.u.length}
+                ~{cache?.updates.length}
               </span>
             )}
           </div>
@@ -92,8 +94,10 @@ function Tabs() {
             <span>
               <span className="underline">D</span>elete nodes
             </span>
-            {(cache?.d.length ?? 0) > 0 && (
-              <span className="text-red-400 text-sm">-{cache?.d.length}</span>
+            {(cache?.deletions.length ?? 0) > 0 && (
+              <span className="text-red-400 text-sm">
+                -{cache?.deletions.length}
+              </span>
             )}
           </div>
         </Button>

@@ -13,32 +13,26 @@ import Button from "../components/common/Button.tsx";
 import DropdownItem from "../components/common/Dropdown.Item.tsx";
 import DropdownSeparator from "../components/common/Dropdown.Separator.tsx";
 import Dropdown from "../components/common/Dropdown.tsx";
-import { DISTRICTS } from "../constants.ts";
 import { useAppDispatch, useAppSelector } from "../hooks.ts";
-import {
-  useExportDDS,
-  useExportNodes,
-  useImportNodes,
-  useSaveProject,
-} from "../hooks/importExport.ts";
+import { useExportDDS, useSaveProject } from "../hooks/importExport.ts";
 import { getDistrictCache } from "../store/@selectors.ts";
 import { DistrictSelectors } from "../store/district.ts";
 import { ModalsActions } from "../store/modals.ts";
 import { OptionsActions, OptionsSelectors } from "../store/options.ts";
 import { ProjectSelectors } from "../store/project.ts";
+import { getDistrictName } from "../utilities/district.ts";
 import SelectDistrict from "./SelectDistrict.tsx";
 
 function Menu() {
   const dispatch = useAppDispatch();
   const projectName = useAppSelector(ProjectSelectors.getProjectName);
   const district = useAppSelector(DistrictSelectors.getDistrict);
+  const allDistricts = useAppSelector(DistrictSelectors.getAllDistricts);
   const patternView = useAppSelector(OptionsSelectors.getPatternView);
   const districtView = useAppSelector(OptionsSelectors.getDistrictView);
   const visibleDistricts = useAppSelector(OptionsSelectors.getVisibleDistricts);
   const cache = useAppSelector(getDistrictCache);
   const exportDDS = useExportDDS();
-  const importJSON = useImportNodes();
-  const exportJSON = useExportNodes();
   const saveProject = useSaveProject();
 
   return (
@@ -101,11 +95,21 @@ function Menu() {
               </DropdownItem>
             }
           >
-            <DropdownItem onClick={importJSON} disabled={!projectName}>
-              Import nodes from JSON
+            <DropdownItem
+              onClick={() =>
+                dispatch(ModalsActions.openModal("import-export", "import"))
+              }
+              disabled={true /*!projectName*/}
+            >
+              Import nodes to project
             </DropdownItem>
-            <DropdownItem onClick={exportJSON} disabled={!projectName}>
-              Export nodes to JSON
+            <DropdownItem
+              onClick={() =>
+                dispatch(ModalsActions.openModal("import-export", "export"))
+              }
+              disabled={true /*!projectName*/}
+            >
+              Export nodes
             </DropdownItem>
           </Dropdown>
         </Dropdown>
@@ -177,21 +181,21 @@ function Menu() {
               Custom selection
             </DropdownItem>
             <DropdownSeparator />
-            {DISTRICTS.map((item) => (
+            {allDistricts.map((item) => (
               <DropdownItem
-                key={item.key}
+                key={item.name}
                 checked={
-                  visibleDistricts.includes(item.key) ||
-                  item.key === district?.name
+                  visibleDistricts.includes(item.name) ||
+                  item.name === district?.name
                 }
                 disabled={
-                  item.key === district?.name || districtView !== "custom"
+                  item.name === district?.name || districtView !== "custom"
                 }
                 onClick={() =>
-                  dispatch(OptionsActions.toggleDistrictVisibility(item.key))
+                  dispatch(OptionsActions.toggleDistrictVisibility(item.name))
                 }
               >
-                {item.label}
+                {getDistrictName(item)}
               </DropdownItem>
             ))}
           </Dropdown>
@@ -238,7 +242,7 @@ function Menu() {
         <Button
           className="border-none tooltip"
           onClick={exportDDS}
-          disabled={!projectName || !district || !cache?.i.length}
+          disabled={!projectName || !district || !cache?.instances.length}
           data-tooltip="Compile district changes and export to DDS texture"
           data-flow="bottom"
         >

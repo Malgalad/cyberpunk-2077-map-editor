@@ -1,7 +1,8 @@
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 import type * as React from "react";
 
-import type { Tabs } from "../modals/ProjectModal.tsx";
+import type { Tabs as ImportExportTabs } from "../modals/ImportExportNodesModal.tsx";
+import type { Tabs as ProjectTabs } from "../modals/ProjectModal.tsx";
 import type { Modal, ModalType } from "../types/modals.ts";
 import type { AppThunkAction, DistrictProperties } from "../types/types.ts";
 
@@ -42,11 +43,18 @@ function openModal(
   data: { children: React.ReactNode; password: string },
 ): AppThunkAction<Promise<boolean>>;
 function openModal(type: "loading"): AppThunkAction<Promise<void>>;
-function openModal(type: "project", data?: Tabs): AppThunkAction<Promise<void>>;
+function openModal(
+  type: "project",
+  data?: ProjectTabs,
+): AppThunkAction<Promise<void>>;
 function openModal(
   type: "edit-district",
   data: boolean,
 ): AppThunkAction<Promise<DistrictProperties>>;
+function openModal(
+  type: "import-export",
+  data?: ImportExportTabs,
+): AppThunkAction<Promise<void>>;
 function openModal(
   type: "confirm-instance-exclusion",
   data: {

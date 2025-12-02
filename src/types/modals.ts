@@ -6,6 +6,7 @@ export type ModalType =
   | "loading"
   | "project"
   | "edit-district"
+  | "import-export"
   | "confirm-instance-exclusion";
 export type Modal = {
   type: ModalType;

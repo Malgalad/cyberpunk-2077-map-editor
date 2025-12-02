@@ -1,5 +1,3 @@
-import * as React from "react";
-
 import mapData from "./mapData.min.json";
 import type {
   DefaultDistrictNames,
@@ -20,14 +18,6 @@ export const DISTRICT_LABELS: Record<DefaultDistrictNames, string> = {
   ep1_dogtown_data: "Dogtown",
   ep1_spaceport_data: "Spaceport",
 };
-
-export const DISTRICTS: Array<{
-  key: DefaultDistrictNames;
-  label: React.ReactNode;
-}> = Object.keys(mapData.soup).map((key) => ({
-  key: key as DefaultDistrictNames,
-  label: DISTRICT_LABELS[key as DefaultDistrictNames],
-}));
 
 export const DEFAULT_DISTRICT_DATA: DistrictProperties[] = Object.entries(
   mapData.soup,

@@ -9,6 +9,7 @@ import ConfirmExclusionModal from "./ConfirmExclusionModal.tsx";
 import ConfirmModal from "./ConfirmModal.tsx";
 import CriticalErrorModal from "./CriticalErrorModal.tsx";
 import EditDistrictModal from "./EditDistrictModal/EditDistrictModal.tsx";
+import ImportExportNodesModal from "./ImportExportNodesModal.tsx";
 import LoadingModal from "./LoadingModal.tsx";
 import ProjectModal from "./ProjectModal.tsx";
 
@@ -20,6 +21,7 @@ const ComponentMap: Record<ModalType, React.FC<ModalProps>> = {
   loading: LoadingModal,
   project: ProjectModal,
   "edit-district": EditDistrictModal,
+  "import-export": ImportExportNodesModal,
   "confirm-instance-exclusion": ConfirmExclusionModal,
 };
 

@@ -48,7 +48,7 @@ export function getFinalDistrictTransformsFromNodes(
 ): InstancedMeshTransforms[] {
   if (!cache) return district.transforms;
 
-  const districtNodeIds = new Set([...cache.i, ...cache.g]);
+  const districtNodeIds = new Set(cache.nodes);
   const additions: MapNode[] = [];
   const updates: MapNode[] = [];
   const deletions = new Set<string>();

@@ -63,28 +63,17 @@ export type MapNode = NodeProperties<Transform>;
 export type MapNodeParsed = NodeProperties<TransformParsed>;
 export type MapNodeUri = Pick<MapNodeParsed, "id" | "parent" | "type" | "tag">;
 
-/**
- * Represents a cache structure for managing group nodes, storing information about child instances, child groups, and depth levels.
- *
- * The `GroupNodeCache` type is defined as a record where keys are string identifiers, and values hold details about the group node:
- * - `i`: An array of child instance IDs.
- * - `g`: An array of child group IDs.
- * - `c`: IDs of creation instance nodes.
- * - `u`: IDs of update instance nodes.
- * - `d`: IDs of delete instance nodes.
- * - `e`: IDs of instance nodes with error.
- * - `l`: The depth level of the group node.
- */
 export type GroupNodeCache = Record<
   string,
   {
-    i: NestedArray<string>[];
-    g: NestedArray<string>[];
-    c: NestedArray<string>[];
-    u: NestedArray<string>[];
-    d: NestedArray<string>[];
-    e: NestedArray<string>[];
-    l: number;
+    instances: NestedArray<string>[];
+    groups: NestedArray<string>[];
+    nodes: NestedArray<string>[];
+    additions: NestedArray<string>[];
+    updates: NestedArray<string>[];
+    deletions: NestedArray<string>[];
+    errors: NestedArray<string>[];
+    level: number;
   }
 >;
 

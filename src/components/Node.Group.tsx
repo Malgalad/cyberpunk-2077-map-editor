@@ -29,8 +29,7 @@ function Group({ lookAtNode, node }: GroupProps) {
   React.useEffect(() => {
     if (
       editing &&
-      (nodeChildren.i.some((child) => child === editing.id) ||
-        nodeChildren.g.some((child) => child === editing.id)) &&
+      nodeChildren.nodes.some((child) => child === editing.id) &&
       !expanded
     ) {
       setExpanded(true);
@@ -74,7 +73,9 @@ function Group({ lookAtNode, node }: GroupProps) {
         <div className="grow flex flex-row justify-between items-center select-none">
           <span>
             {node.label}{" "}
-            <span className="text-gray-400">({nodeChildren.i.length})</span>
+            <span className="text-gray-400">
+              ({nodeChildren.instances.length})
+            </span>
           </span>
           <div className="flex flex-row gap-1">
             {node.hidden && <EyeOff />}

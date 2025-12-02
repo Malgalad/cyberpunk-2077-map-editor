@@ -71,7 +71,7 @@ export const getDistrictNodes = createSelector(
     (nodes: MapNode[], cache: GroupNodeCache[string] | undefined) => {
       if (!cache) return emptyArray;
 
-      const districtNodeIds = new Set([...cache.i, ...cache.g]);
+      const districtNodeIds = new Set(cache.nodes);
 
       return nodes.filter((node) => districtNodeIds.has(node.id));
     },

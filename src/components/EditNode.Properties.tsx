@@ -260,7 +260,7 @@ function getParentsList(
   ].map((item) => ({
     disabled: node.parent === item.value || node.id === item.value,
     label: `${item.label}${node.parent === item.value ? " (current)" : node.id === item.value ? " (self)" : ""}`,
-    level: cache[item.value]?.l ?? 0,
+    level: cache[item.value]?.level ?? 0,
     value: item.value,
   }));
 }

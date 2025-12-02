@@ -147,10 +147,10 @@ const nodesSlice = createSlice({
           const parent = cache[node.parent] ?? createCacheEntry();
 
           if (node.type === "instance") {
-            parent.i.push(node.id);
-            if (node.tag === "create") parent.c.push(node.id);
-            if (node.tag === "update") parent.u.push(node.id);
-            if (node.tag === "delete") parent.d.push(node.id);
+            parent.instances.push(node.id);
+            if (node.tag === "create") parent.additions.push(node.id);
+            if (node.tag === "update") parent.updates.push(node.id);
+            if (node.tag === "delete") parent.deletions.push(node.id);
           } else {
             let depth = 0;
             let current: MapNodeUri | undefined = node;
@@ -160,14 +160,14 @@ const nodesSlice = createSlice({
             }
 
             const self = cache[node.id] ?? createCacheEntry();
-            self.l = depth;
-            // push reference to the array of own children ids
-            parent.g.push(node.id, self.g);
-            parent.i.push(self.i);
+            self.level = depth;
+            // push reference to the array of own children ids to flatten later
+            parent.groups.push(node.id, self.groups);
+            parent.instances.push(self.instances);
 
-            if (node.tag === "create") parent.c.push(self.c);
-            if (node.tag === "update") parent.u.push(self.u);
-            if (node.tag === "delete") parent.d.push(self.d);
+            if (node.tag === "create") parent.additions.push(self.additions);
+            if (node.tag === "update") parent.updates.push(self.updates);
+            if (node.tag === "delete") parent.deletions.push(self.deletions);
 
             cache[node.id] = self;
           }
@@ -176,11 +176,12 @@ const nodesSlice = createSlice({
         }
 
         for (const entry of Object.values(cache)) {
-          entry.g = entry.g.flat(MAX_DEPTH);
-          entry.i = entry.i.flat(MAX_DEPTH);
-          entry.c = entry.c.flat(MAX_DEPTH);
-          entry.u = entry.u.flat(MAX_DEPTH);
-          entry.d = entry.d.flat(MAX_DEPTH);
+          entry.groups = entry.groups.flat(MAX_DEPTH);
+          entry.instances = entry.instances.flat(MAX_DEPTH);
+          entry.nodes = [...entry.groups, ...entry.instances];
+          entry.additions = entry.additions.flat(MAX_DEPTH);
+          entry.updates = entry.updates.flat(MAX_DEPTH);
+          entry.deletions = entry.deletions.flat(MAX_DEPTH);
         }
 
         return cache;
@@ -220,13 +221,13 @@ export const NodesActions = {
 export const NodesSelectors = nodesSlice.selectors;
 export default nodesSlice;
 
-const createCacheEntry = () =>
-  ({
-    i: [],
-    g: [],
-    c: [],
-    u: [],
-    d: [],
-    e: [],
-    l: 0,
-  }) satisfies GroupNodeCache[string] as GroupNodeCache[string];
+const createCacheEntry = (): GroupNodeCache[string] => ({
+  instances: [],
+  groups: [],
+  nodes: [],
+  additions: [],
+  updates: [],
+  deletions: [],
+  errors: [],
+  level: 0,
+});
