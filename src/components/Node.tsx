@@ -34,7 +34,8 @@ function Node({ node }: NodeProps) {
   const lookAtNode = React.useCallback(() => {
     if (!map3D || !district) return;
 
-    const transformId = node.type === "instance" ? node.id : nodeCache.i[0];
+    const transformId =
+      node.type === "instance" ? node.id : nodeCache.instances[0];
     const transform = transforms.find(({ id }) => id === transformId);
 
     if (transform) {
