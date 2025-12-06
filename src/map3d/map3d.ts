@@ -502,4 +502,19 @@ export class Map3D extends Map3DBase {
     super.render();
     this.#canvasRect = this.canvas.getBoundingClientRect();
   };
+
+  getCenter = () => {
+    const terrain = this.scene.children.find((obj) => obj.userData?.terrain);
+
+    if (!terrain) return;
+
+    this.#raycaster.setFromCamera(new THREE.Vector2(0, 0), this.camera);
+    const intersection = this.#raycaster.intersectObject(terrain);
+
+    if (!intersection.length) return;
+
+    const [{ point }] = intersection;
+
+    return [point.x, -point.z, point.y];
+  };
 }

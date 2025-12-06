@@ -12,6 +12,7 @@ import {
   useMap3DEvents,
 } from "./App.hooks.ts";
 import Button from "./components/common/Button.tsx";
+import Tooltip from "./components/common/Tooltip.tsx";
 import { useAppSelector } from "./hooks.ts";
 import { Map3DContext } from "./map3d/map3d.context.ts";
 import { ProjectSelectors } from "./store/project.ts";
@@ -43,17 +44,17 @@ function App() {
             className={clsx("grow relative", tool === "move" && "cursor-move")}
           >
             <canvas className="w-full h-full block" ref={canvasRef} />
-            <Button
-              className="absolute! bg-slate-800 left-4 top-4 tooltip"
-              onClick={() => {
-                map3d?.resetCamera();
-              }}
-              shortcut="r"
-              data-tooltip="Reset camera [R]"
-              data-flow="right"
-            >
-              <BoxIcon />
-            </Button>
+            <Tooltip tooltip="Reset camera [R]" flow="right">
+              <Button
+                className="absolute! bg-slate-800 left-4 top-4"
+                onClick={() => {
+                  map3d?.resetCamera();
+                }}
+                shortcut="r"
+              >
+                <BoxIcon />
+              </Button>
+            </Tooltip>
             <ToolSelection />
           </div>
         </div>

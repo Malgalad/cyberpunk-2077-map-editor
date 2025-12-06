@@ -36,7 +36,7 @@ function RemoveNodes() {
       ),
     ).then((confirmed) => {
       if (confirmed) {
-        dispatch(NodesActions.deleteNode(editing.id));
+        dispatch(NodesActions.deleteNodes([editing.id]));
       }
     });
   };

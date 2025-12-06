@@ -4,3 +4,8 @@ export interface SelectItem {
   disabled?: boolean;
   level?: number;
 }
+
+export interface DropdownContext {
+  level: number;
+  indent: boolean;
+}

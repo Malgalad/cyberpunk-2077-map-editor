@@ -7,6 +7,7 @@ import type {
 export const PROJECT_VERSION = 3 as const;
 // TODO disable node creation at max depth
 export const MAX_DEPTH = 10 as const;
+export const TEMPLATE_ID = "@@TEMPLATE" as const;
 
 export const DISTRICT_LABELS: Record<DefaultDistrictNames, string> = {
   watson_data: "Watson",

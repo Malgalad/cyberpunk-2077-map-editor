@@ -51,9 +51,7 @@ function Menu() {
 
         <Dropdown
           trigger={
-            <Button className="border-none cursor-default! group-hover/level-0:bg-slate-600">
-              File
-            </Button>
+            <Button className="border-none cursor-default!">File</Button>
           }
         >
           <DropdownItem
@@ -86,14 +84,7 @@ function Menu() {
           <Dropdown
             direction="right"
             align="top"
-            trigger={
-              <DropdownItem
-                className="not-disabled:group-hover/level-1:bg-slate-600"
-                isExpandable
-              >
-                Import/Export
-              </DropdownItem>
-            }
+            trigger={<DropdownItem isExpandable>Import/Export</DropdownItem>}
           >
             <DropdownItem
               onClick={() =>
@@ -116,9 +107,7 @@ function Menu() {
 
         <Dropdown
           trigger={
-            <Button className="border-none cursor-default! group-hover/level-0:bg-slate-600">
-              Edit
-            </Button>
+            <Button className="border-none cursor-default!">Edit</Button>
           }
         >
           <DropdownItem icon={<Undo />} disabled>
@@ -141,23 +130,14 @@ function Menu() {
 
         <Dropdown
           trigger={
-            <Button className="border-none cursor-default! group-hover/level-0:bg-slate-600">
-              View
-            </Button>
+            <Button className="border-none cursor-default!">View</Button>
           }
         >
           <Dropdown
-            trigger={
-              <DropdownItem
-                className="not-disabled:group-hover/level-1:bg-slate-600"
-                isExpandable
-              >
-                Show districts
-              </DropdownItem>
-            }
-            level={1}
+            trigger={<DropdownItem isExpandable>Show districts</DropdownItem>}
             direction="right"
             align="top"
+            // TODO allow view other districts even if no current district
             disabled={!projectName || !district}
           >
             <DropdownItem
@@ -201,15 +181,7 @@ function Menu() {
           </Dropdown>
 
           <Dropdown
-            trigger={
-              <DropdownItem
-                className="group-hover/level-1:bg-slate-600"
-                isExpandable
-              >
-                Render patterns
-              </DropdownItem>
-            }
-            level={1}
+            trigger={<DropdownItem isExpandable>Render patterns</DropdownItem>}
             direction="right"
             align="top"
             disabled={!projectName || !district}

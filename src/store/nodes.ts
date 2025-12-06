@@ -71,22 +71,35 @@ const nodesSlice = createSlice({
     replaceNodes: create.reducer((state, action: PayloadAction<MapNode[]>) => {
       state.nodes = action.payload;
     }),
-    cloneNode: create.reducer((state, action: PayloadAction<MapNode["id"]>) => {
-      const node = state.nodes.find((node) => node.id === action.payload);
-      if (!node) return;
-      const clones = cloneNode(state.nodes, node, node.parent);
-      state.nodes.push(...clones);
-      state.editingId = clones[0].id;
-    }),
+    cloneNode: create.reducer(
+      (
+        state,
+        action: PayloadAction<{
+          id: MapNode["id"];
+          selectAfterClone?: boolean;
+          updates?: Partial<MapNode>;
+        }>,
+      ) => {
+        const { id, selectAfterClone = true, updates } = action.payload;
+        const node = state.nodes.find((node) => node.id === id);
+        if (!node) return;
+        const clones = cloneNode(state.nodes, node, node.parent);
+        Object.assign(clones[0], updates);
+        state.nodes.push(...clones);
+        if (selectAfterClone) state.editingId = clones[0].id;
+      },
+    ),
     editNode: create.reducer((state, action: PayloadAction<MapNode>) => {
       const index = state.nodes.findIndex(
         (node) => node.id === action.payload.id,
       );
       state.nodes.splice(index, 1, action.payload);
     }),
-    deleteNode: create.reducer(
-      (state, action: PayloadAction<MapNode["id"]>) => {
-        state.nodes = state.nodes.filter((node) => node.id !== action.payload);
+    deleteNodes: create.reducer(
+      (state, action: PayloadAction<MapNode["id"][]>) => {
+        state.nodes = state.nodes.filter(
+          (node) => !action.payload.includes(node.id),
+        );
       },
     ),
     setEditing: create.reducer(
@@ -213,10 +226,29 @@ const patchNode =
 
     dispatch(nodesSlice.actions.editNode(update));
   };
+const deleteNodeDeep =
+  (id: MapNode["id"]): AppThunkAction =>
+  (dispatch, getState) => {
+    const state = getState();
+    const nodes = nodesSlice.selectors.getNodes(state);
+    const cache = nodesSlice.selectors.getChildNodesCache(state);
+    const node = nodes.find((node) => node.id === id);
+
+    if (!node) return;
+
+    if (node.type === "instance") {
+      dispatch(nodesSlice.actions.deleteNodes([id]));
+    } else {
+      dispatch(
+        nodesSlice.actions.deleteNodes([id, ...(cache[id].nodes as string[])]),
+      );
+    }
+  };
 
 export const NodesActions = {
   ...nodesSlice.actions,
   patchNode,
+  deleteNodeDeep,
 };
 export const NodesSelectors = nodesSlice.selectors;
 export default nodesSlice;

@@ -2,6 +2,7 @@ import { CheckIcon, ChevronRight, Icon } from "lucide-react";
 import * as React from "react";
 
 import { clsx } from "../../utilities/utilities.ts";
+import { useDropdownContext } from "./dropdown.context.ts";
 
 interface DropdownItemProps {
   checked?: boolean;
@@ -24,6 +25,7 @@ function DropdownItem(props: DropdownItemProps) {
     onClick,
     ...rest
   } = props;
+  const { indent } = useDropdownContext();
   const iconProps = {
     size: 20,
     className: clsx(disabled ? "text-gray-400" : "text-slate-300", "shrink-0"),
@@ -43,7 +45,12 @@ function DropdownItem(props: DropdownItemProps) {
     >
       {checked && !icon && <CheckIcon {...iconProps} />}
       {icon ? React.cloneElement(icon, iconProps) : null}
-      <div className={clsx(!(icon || checked) && "ml-7", "truncate w-full")}>
+      <div
+        className={clsx(
+          !(icon || checked) && indent && "ml-7",
+          "truncate w-full",
+        )}
+      >
         {children}
       </div>
       {isExpandable && (

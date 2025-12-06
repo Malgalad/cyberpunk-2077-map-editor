@@ -10,6 +10,7 @@ const rotateCoordinates = ([x, y, z, w]: number[]) => [x, z, -y, w];
 async function importMesh(
   name: keyof (typeof mapData)["meshes"],
   material: THREE.Material,
+  userData?: Record<string, unknown>,
 ) {
   const data = mapData.meshes[name];
 
@@ -25,11 +26,15 @@ async function importMesh(
     new THREE.Quaternion(...rotateCoordinates(data.orientation)),
   );
 
+  Object.assign(mesh.userData, userData);
+
   return mesh;
 }
 
 export function setupTerrain(addMesh: (promise: Promise<THREE.Mesh>) => void) {
-  addMesh(importMesh("terrain_mesh", materials.terrainMaterial));
+  addMesh(
+    importMesh("terrain_mesh", materials.terrainMaterial, { terrain: true }),
+  );
   addMesh(importMesh("3dmap_cliffs", materials.terrainMaterial));
 
   addMesh(importMesh("3dmap_roads", materials.roadsMaterial));

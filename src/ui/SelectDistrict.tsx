@@ -5,6 +5,7 @@ import DropdownItem from "../components/common/Dropdown.Item.tsx";
 import DropdownSeparator from "../components/common/Dropdown.Separator.tsx";
 import Dropdown from "../components/common/Dropdown.tsx";
 import { useAppDispatch, useAppSelector } from "../hooks.ts";
+import { useMap3D } from "../map3d/map3d.context.ts";
 import { DistrictActions, DistrictSelectors } from "../store/district.ts";
 import { ModalsActions } from "../store/modals.ts";
 import { NodesActions, NodesSelectors } from "../store/nodes.ts";
@@ -31,6 +32,7 @@ const getEdits = (cachedDistrict: GroupNodeCache[string]) => {
 };
 
 function SelectDistrict() {
+  const map3d = useMap3D();
   const dispatch = useAppDispatch();
   const project = useAppSelector(ProjectSelectors.getProjectName);
   const district = useAppSelector(DistrictSelectors.getDistrict);
@@ -80,7 +82,6 @@ function SelectDistrict() {
               className="min-w-auto!"
               key={item.name}
               trigger={element}
-              level={1}
               direction="left"
               align="top"
             >
@@ -97,6 +98,7 @@ function SelectDistrict() {
                   );
                   if (confirmed) {
                     dispatch(DistrictActions.deleteDistrict(item.name));
+                    map3d?.reset();
                   }
                 }}
                 data-tooltip="Can not delete district with nodes"
