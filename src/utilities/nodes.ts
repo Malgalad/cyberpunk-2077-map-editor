@@ -11,6 +11,9 @@ import type {
 import { applyTransforms, parseTransform } from "./transforms.ts";
 import { unwrapDraft } from "./utilities.ts";
 
+const addTuples = (a: number[], b: number[]) => a.map((x, i) => x + b[i]);
+const scalePattern = (i: number) => (value: number) => value * (i + 1);
+
 export function parseNode(node: MapNode): MapNodeParsed {
   return {
     ...parseTransform(node),
@@ -106,31 +109,55 @@ export function normalizeNodes(
   return result;
 }
 
-// TODO validate pattern nodes
+// TODO performance - validate in background worker and defer updates
 export function validateNode(
   node: MapNode,
   map: Map<string, MapNodeParsed>,
   district: District,
 ): MapNode {
   const errors: string[] = [];
-  const { position, scale } = applyTransforms(parseNode(node), map);
-
-  if (
+  const nodeParsed = applyTransforms(parseNode(node), map);
+  const validatePosition = (position: number[]) =>
     position[0] < district.position[0] + district.transMin[0] ||
     position[0] > district.position[0] + district.transMax[0] ||
     position[1] < district.position[1] + district.transMin[1] ||
     position[1] > district.position[1] + district.transMax[1] ||
     position[2] < district.position[2] + district.transMin[2] ||
-    position[2] > district.position[2] + district.transMax[2]
-  ) {
-    errors.push("Node is outside of district bounds");
-  }
-  if (
+    position[2] > district.position[2] + district.transMax[2];
+  const validateScale = (scale: number[]) =>
     scale[0] > district.cubeSize ||
     scale[1] > district.cubeSize ||
-    scale[2] > district.cubeSize
-  ) {
+    scale[2] > district.cubeSize;
+
+  if (validatePosition(nodeParsed.position)) {
+    errors.push("Node is outside of district bounds");
+  }
+  if (validateScale(nodeParsed.scale)) {
     errors.push("Node is larger than district cube size");
+  }
+  if (nodeParsed.pattern?.enabled && nodeParsed.pattern.count > 0) {
+    for (let i = 0; i < nodeParsed.pattern.count; i++) {
+      const clone = { ...nodeParsed };
+
+      clone.position = addTuples(
+        clone.position,
+        nodeParsed.pattern.position.map(scalePattern(i)),
+      ) as THREE.Vector3Tuple;
+
+      clone.scale = addTuples(
+        clone.scale,
+        nodeParsed.pattern.scale.map(scalePattern(i)),
+      ) as THREE.Vector3Tuple;
+
+      if (validatePosition(clone.position)) {
+        errors.push("Pattern nodes are outside of district bounds");
+        break;
+      }
+      if (validateScale(clone.scale)) {
+        errors.push("Pattern nodes are larger than district cube size");
+        break;
+      }
+    }
   }
 
   const nodeErrors = errors.length === 0 ? undefined : errors;

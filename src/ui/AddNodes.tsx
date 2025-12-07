@@ -1,28 +1,17 @@
-import {
-  ChevronLeft,
-  ClipboardPlus,
-  CopyPlus,
-  FilePlus,
-  FolderPlus,
-  LayoutTemplate,
-  Trash2,
-} from "lucide-react";
+import { CopyPlus, FilePlus, FolderPlus, Trash2 } from "lucide-react";
 
 import Button from "../components/common/Button.tsx";
-import DropdownItem from "../components/common/Dropdown.Item.tsx";
-import Dropdown from "../components/common/Dropdown.tsx";
-import Tooltip from "../components/common/Tooltip.tsx";
 import EditNode from "../components/EditNode.tsx";
 import Node from "../components/Node.tsx";
-import { TEMPLATE_ID } from "../constants.ts";
 import { useAppDispatch, useAppSelector } from "../hooks.ts";
 import { useMap3D } from "../map3d/map3d.context.ts";
-import { getAdditions, getTemplateNodes } from "../store/@selectors.ts";
+import { getAdditions } from "../store/@selectors.ts";
 import { DistrictSelectors } from "../store/district.ts";
 import { ModalsActions } from "../store/modals.ts";
 import { NodesActions, NodesSelectors } from "../store/nodes.ts";
 import type { MapNode } from "../types/types.ts";
 import { toString } from "../utilities/utilities.ts";
+import AddNodesTemplates from "./AddNodes.Templates.tsx";
 
 function AddNodes() {
   const dispatch = useAppDispatch();
@@ -30,7 +19,6 @@ function AddNodes() {
   const nodes = useAppSelector(getAdditions);
   const editing = useAppSelector(NodesSelectors.getEditing);
   const district = useAppSelector(DistrictSelectors.getDistrict);
-  const templates = useAppSelector(getTemplateNodes);
   const rootNodes = nodes.filter((node) => node.parent === district?.name);
 
   if (!district) return null;
@@ -60,6 +48,11 @@ function AddNodes() {
         dispatch(NodesActions.deleteNodes([editing.id]));
       }
     });
+  };
+
+  const onClone = () => {
+    if (!editing) return;
+    dispatch(NodesActions.cloneNode({ id: editing.id }));
   };
 
   const onAdd = (type: MapNode["type"]) => {
@@ -100,113 +93,14 @@ function AddNodes() {
         </div>
 
         <div className="flex flex-row gap-2 px-1 bottom-0 justify-end border-t border-slate-900 bg-slate-800">
-          <Dropdown
-            containerClassName="mr-auto"
-            trigger={
-              <Button className="border-none cursor-default! group-hover/level-0:bg-slate-600">
-                <LayoutTemplate />
-              </Button>
-            }
-            direction="left"
-            align="bottom"
-          >
-            {templates.length === 0 && (
-              <DropdownItem>No templates</DropdownItem>
-            )}
-            {templates.length > 0 &&
-              templates.map((template) => (
-                <Dropdown
-                  key={template.id}
-                  trigger={
-                    <DropdownItem
-                      className="group-hover/level-1:bg-slate-600"
-                      icon={<ChevronLeft />}
-                    >
-                      {template.label}
-                    </DropdownItem>
-                  }
-                  className="min-w-auto!"
-                  direction="left"
-                  align="bottom"
-                  indent={false}
-                >
-                  <DropdownItem
-                    onClick={async () => {
-                      if (!map3d) return;
-                      const position = map3d.getCenter();
-                      if (!position) return;
-
-                      dispatch(
-                        NodesActions.cloneNode({
-                          id: template.id,
-                          updates: {
-                            parent: district.name,
-                            label: template.label.replace(
-                              /TEMPLATE <(.+?)>/,
-                              "$1",
-                            ),
-                            position: position.map(toString) as [
-                              string,
-                              string,
-                              string,
-                            ],
-                          },
-                        }),
-                      );
-                    }}
-                  >
-                    Insert
-                  </DropdownItem>
-                  <DropdownItem
-                    onClick={async () => {
-                      const confirmed = await dispatch(
-                        ModalsActions.openModal(
-                          "confirm",
-                          `Do you want to delete template ${template.label}?`,
-                        ),
-                      );
-                      if (confirmed) {
-                        dispatch(NodesActions.deleteNodeDeep(template.id));
-                      }
-                    }}
-                  >
-                    Delete
-                  </DropdownItem>
-                </Dropdown>
-              ))}
-          </Dropdown>
+          <AddNodesTemplates />
 
           {editing && (
             <>
-              <Tooltip
-                tooltip="Create template from node"
-                tooltip2="Template created!"
-              >
-                <Button
-                  className="border-none"
-                  onClick={() => {
-                    dispatch(
-                      NodesActions.cloneNode({
-                        id: editing.id,
-                        updates: {
-                          label: `TEMPLATE <${editing.label}>`,
-                          parent: TEMPLATE_ID,
-                          position: ["0", "0", "0"],
-                        },
-                        selectAfterClone: false,
-                      }),
-                    );
-                  }}
-                >
-                  <ClipboardPlus />
-                </Button>
-              </Tooltip>
               <div className="border border-slate-600 w-[1px]" />
               <Button
                 className="border-none tooltip"
-                onClick={() => {
-                  dispatch(NodesActions.cloneNode({ id: editing.id }));
-                }}
+                onClick={onClone}
                 data-tooltip="Clone node"
                 data-flow="top"
               >
@@ -246,12 +140,13 @@ function AddNodes() {
       </div>
 
       <div className="flex flex-col basis-[320px] shrink-0">
-        {!editing && (
+        {editing ? (
+          <EditNode key={editing.id} />
+        ) : (
           <div className="grow flex items-center justify-center italic bg-slate-800">
             Select node
           </div>
         )}
-        {editing && <EditNode key={editing.id} />}
       </div>
     </>
   );

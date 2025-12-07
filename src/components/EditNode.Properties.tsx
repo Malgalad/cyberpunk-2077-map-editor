@@ -27,6 +27,7 @@ import DraggableInput from "./common/DraggableInput.tsx";
 import Input from "./common/Input.tsx";
 import Select from "./common/Select.tsx";
 import Toggle from "./common/Toggle.tsx";
+import Tooltip from "./common/Tooltip.tsx";
 
 interface EditNodePropertiesProps {
   node: MapNode;
@@ -129,20 +130,21 @@ function EditNodeProperties({ node }: EditNodePropertiesProps) {
           />
         </div>
         <div>
-          <Button
-            className={clsx(
-              "border-none px-0 tooltip",
-              useLocal && "text-amber-300",
-            )}
-            data-tooltip={
-              useLocal ? "Use local position" : "Use global position"
+          <Tooltip
+            tooltip={
+              useLocal
+                ? "Adjust position relative to own rotation"
+                : "Adjust position relative to parent rotation"
             }
-            data-flow="right"
-            onClick={() => setUseLocal(!useLocal)}
           >
-            <span>Position:</span>
-            <Move3D />
-          </Button>
+            <Button
+              className={clsx("border-none px-0", useLocal && "text-amber-300")}
+              onClick={() => setUseLocal(!useLocal)}
+            >
+              <span>Position:</span>
+              <Move3D />
+            </Button>
+          </Tooltip>
         </div>
         <div className="flex flex-row gap-1 items-center">
           {axii.map((i) => (
