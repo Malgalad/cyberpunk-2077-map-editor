@@ -214,7 +214,12 @@ function Menu() {
         <Button
           className="border-none tooltip"
           onClick={exportDDS}
-          disabled={!projectName || !district || !cache?.instances.length}
+          disabled={
+            !projectName ||
+            !district ||
+            !cache?.instances.length ||
+            (cache?.errors.length ?? 0) > 0
+          }
           data-tooltip="Compile district changes and export to DDS texture"
           data-flow="bottom"
         >

@@ -19,8 +19,9 @@ import type {
 } from "../types/types.ts";
 import type { SelectItem } from "../types/ui.types.ts";
 import { getDistrictName } from "../utilities/district.ts";
-import { parseTransform } from "../utilities/transforms.ts";
-import { clsx } from "../utilities/utilities.ts";
+import { parseNode } from "../utilities/nodes.ts";
+import { applyTransforms, parseTransform } from "../utilities/transforms.ts";
+import { clsx, toNumber, toString } from "../utilities/utilities.ts";
 import Button from "./common/Button.tsx";
 import DraggableInput from "./common/DraggableInput.tsx";
 import Input from "./common/Input.tsx";
@@ -93,10 +94,34 @@ function EditNodeProperties({ node }: EditNodePropertiesProps) {
             className="w-[248px]"
             items={parents}
             onChange={(event) => {
-              // TODO calc new position so box stays in place despite parent transforms
+              const parentId = event.target.value;
+              const map = new Map(
+                nodes.map((node) => [node.id, parseNode(node)]),
+              );
+              const { position: oldPosition } = applyTransforms(
+                parseNode(node),
+                map,
+              );
+              const { position: newPosition } = applyTransforms(
+                parseNode({
+                  ...node,
+                  parent: parentId,
+                }),
+                map,
+              );
+              const difference = [
+                newPosition[0] - oldPosition[0],
+                newPosition[1] - oldPosition[1],
+                newPosition[2] - oldPosition[2],
+              ];
               dispatch(
                 NodesActions.patchNode((draft) => {
-                  draft.parent = event.target.value;
+                  draft.parent = parentId;
+                  draft.position = [
+                    toString(toNumber(draft.position[0]) - difference[0]),
+                    toString(toNumber(draft.position[1]) - difference[1]),
+                    toString(toNumber(draft.position[2]) - difference[2]),
+                  ];
                 }),
               );
             }}
@@ -208,6 +233,8 @@ function EditNodeProperties({ node }: EditNodePropertiesProps) {
                   }),
                 );
               }}
+              min={0}
+              max={node.type === "instance" ? district?.cubeSize : 100}
             />
           ))}
         </div>
@@ -246,23 +273,30 @@ function getParentsList(
 ): SelectItem[] {
   if (!district) return emptyArr as SelectItem[];
 
-  return [
-    ...districts.map((district) => ({
-      label: getDistrictName(district),
-      value: district.name,
-    })),
+  const items = districts.map((district) => ({
+    label: getDistrictName(district),
+    value: district.name,
+  }));
+
+  items.splice(
+    items.findIndex((item) => item.value === district.name) + 1,
+    0,
     ...nodes
       .filter((node) => node.type === "group")
       .map((group) => ({
         label: group.label,
         value: group.id,
       })),
-  ].map((item) => ({
-    disabled: node.parent === item.value || node.id === item.value,
-    label: `${item.label}${node.parent === item.value ? " (current)" : node.id === item.value ? " (self)" : ""}`,
-    level: cache[item.value]?.level ?? 0,
-    value: item.value,
-  }));
+  );
+
+  return items
+    .filter((item) => !cache[node.id]?.groups.includes(item.value))
+    .map((item) => ({
+      disabled: node.parent === item.value || node.id === item.value,
+      label: `${item.label}${node.parent === item.value ? " (current)" : node.id === item.value ? " (self)" : ""}`,
+      level: cache[item.value]?.level ?? 0,
+      value: item.value,
+    }));
 }
 
 export default EditNodeProperties;

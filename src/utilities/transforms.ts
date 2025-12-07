@@ -12,12 +12,7 @@ import type {
   Transform,
   TransformParsed,
 } from "../types/types.ts";
-import {
-  cloneNode,
-  nodeToTransform,
-  normalizeNodes,
-  parseNode,
-} from "./nodes.ts";
+import { cloneNode, nodeToTransform, parseNode } from "./nodes.ts";
 import { toNumber, toString } from "./utilities.ts";
 
 const hadamardProduct = (a: number[], b: number[]) => a.map((x, i) => x * b[i]);
@@ -83,15 +78,16 @@ export function projectNodesToDistrict(
   const transforms: InstancedMeshTransforms[] = [];
   const nodesParsed = nodes.map(parseNode);
   const nodesMap = new Map(nodesParsed.map((node) => [node.id, node]));
-  // normalize then reverse the node array to ensure child patterns are resolved before parent patterns
-  const nodesReversed = normalizeNodes(nodesParsed, nodesMap).toReversed();
 
-  for (const node of nodesReversed) {
+  // iterate in reverse order to ensure child patterns are resolved before parent patterns
+  for (let i = nodesParsed.length - 1; i >= 0; i--) {
+    const node = nodesParsed[i];
+
     if (node.hidden) node.scale = [0, 0, 0];
     if (!node.pattern?.enabled || node.virtual) continue;
 
     for (let i = 0; i < node.pattern.count; i++) {
-      const clones = cloneNode(nodesReversed, node, node.parent);
+      const clones = cloneNode(nodesParsed, node, node.parent);
 
       for (const clone of clones) {
         clone.virtual = true;
@@ -113,11 +109,11 @@ export function projectNodesToDistrict(
         node.pattern.scale.map(scalePattern(i)),
       ) as THREE.Vector3Tuple;
 
-      nodesReversed.push(...clones);
+      nodesParsed.push(...clones);
     }
   }
 
-  for (const node of nodesReversed) {
+  for (const node of nodesParsed) {
     if (node.type === "group") continue;
 
     const resolved = applyTransforms(node, nodesMap);

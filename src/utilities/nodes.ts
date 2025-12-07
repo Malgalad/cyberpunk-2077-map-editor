@@ -1,4 +1,5 @@
 import { nanoid } from "nanoid";
+import { shallowEqual } from "react-redux";
 import * as THREE from "three";
 
 import type {
@@ -7,7 +8,7 @@ import type {
   MapNode,
   MapNodeParsed,
 } from "../types/types.ts";
-import { parseTransform } from "./transforms.ts";
+import { applyTransforms, parseTransform } from "./transforms.ts";
 import { unwrapDraft } from "./utilities.ts";
 
 export function parseNode(node: MapNode): MapNodeParsed {
@@ -77,14 +78,14 @@ export const cloneNode = <T extends MapNode | MapNodeParsed>(
   return [clone, ...childClones];
 };
 
-export function normalizeNodes<T extends MapNode | MapNodeParsed>(
-  nodes: T[],
-  nodesMap: Map<string, T>,
-): T[] {
-  const result: T[] = [];
+export function normalizeNodes(
+  nodes: MapNode[],
+  nodesMap: Map<string, MapNode>,
+): MapNode[] {
+  const result: MapNode[] = [];
   const processed = new Set<string>();
 
-  const processNode = (node: T) => {
+  const processNode = (node: MapNode) => {
     if (processed.has(node.id)) return;
 
     if (nodesMap.has(node.parent)) {
@@ -103,4 +104,41 @@ export function normalizeNodes<T extends MapNode | MapNodeParsed>(
   }
 
   return result;
+}
+
+// TODO validate pattern nodes
+export function validateNode(
+  node: MapNode,
+  map: Map<string, MapNodeParsed>,
+  district: District,
+): MapNode {
+  const errors: string[] = [];
+  const { position, scale } = applyTransforms(parseNode(node), map);
+
+  if (
+    position[0] < district.position[0] + district.transMin[0] ||
+    position[0] > district.position[0] + district.transMax[0] ||
+    position[1] < district.position[1] + district.transMin[1] ||
+    position[1] > district.position[1] + district.transMax[1] ||
+    position[2] < district.position[2] + district.transMin[2] ||
+    position[2] > district.position[2] + district.transMax[2]
+  ) {
+    errors.push("Node is outside of district bounds");
+  }
+  if (
+    scale[0] > district.cubeSize ||
+    scale[1] > district.cubeSize ||
+    scale[2] > district.cubeSize
+  ) {
+    errors.push("Node is larger than district cube size");
+  }
+
+  const nodeErrors = errors.length === 0 ? undefined : errors;
+
+  if (shallowEqual(nodeErrors, node.errors)) return node;
+
+  return {
+    ...node,
+    errors: nodeErrors,
+  };
 }

@@ -106,7 +106,9 @@ function EditDistrictModal(props: ModalProps) {
     <Modal
       className="w-[858px]"
       title={
-        isEdit ? `Edit district "${district.name}":` : `Create new district:`
+        isEdit
+          ? `Edit district "${getDistrictName(district)}":`
+          : `Create new district:`
       }
     >
       <div className="flex flex-row gap-4">

@@ -24,7 +24,6 @@ export type DistrictProperties = {
     }
 );
 export type ComputedDistrictProperties = {
-  center: THREE.Vector3Like;
   minMax: THREE.Vector3Like;
   origin: THREE.Vector3Like;
 };
@@ -57,13 +56,30 @@ type NodeProperties<T extends Transform | TransformParsed> = T & {
   virtual?: boolean;
   hidden?: boolean;
   pattern?: T & PatternProperties;
+  errors?: string[];
 };
 
 export type MapNode = NodeProperties<Transform>;
 export type MapNodeParsed = NodeProperties<TransformParsed>;
-export type MapNodeUri = Pick<MapNodeParsed, "id" | "parent" | "type" | "tag">;
+export type MapNodeUri = Pick<
+  MapNodeParsed,
+  "id" | "parent" | "type" | "tag"
+> & { hasErrors: boolean };
 
 export type GroupNodeCache = Record<
+  string,
+  {
+    instances: string[];
+    groups: string[];
+    nodes: string[];
+    additions: string[];
+    updates: string[];
+    deletions: string[];
+    errors: string[];
+    level: number;
+  }
+>;
+export type IntermediateGroupNodeCache = Record<
   string,
   {
     instances: NestedArray<string>[];

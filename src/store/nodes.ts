@@ -11,14 +11,20 @@ import type {
   AppThunkAction,
   District,
   GroupNodeCache,
+  IntermediateGroupNodeCache,
   MapNode,
   MapNodeUri,
   RevivedAppState,
 } from "../types/types.ts";
-import { cloneNode } from "../utilities/nodes.ts";
+import {
+  cloneNode,
+  normalizeNodes,
+  parseNode,
+  validateNode,
+} from "../utilities/nodes.ts";
 import { structuralSharing } from "../utilities/structuralSharing.ts";
 import { hydrateState } from "./@actions.ts";
-import { DistrictActions } from "./district.ts";
+import { DistrictActions, DistrictSelectors } from "./district.ts";
 
 interface NodesState {
   nodes: MapNode[];
@@ -90,10 +96,16 @@ const nodesSlice = createSlice({
       },
     ),
     editNode: create.reducer((state, action: PayloadAction<MapNode>) => {
-      const index = state.nodes.findIndex(
-        (node) => node.id === action.payload.id,
-      );
-      state.nodes.splice(index, 1, action.payload);
+      const next = action.payload;
+      const index = state.nodes.findIndex((node) => node.id === next.id);
+      const previous = state.nodes[index];
+
+      state.nodes.splice(index, 1, next);
+
+      if (previous.parent !== next.parent) {
+        const map = new Map(state.nodes.map((node) => [node.id, node]));
+        state.nodes = normalizeNodes(state.nodes, map);
+      }
     }),
     deleteNodes: create.reducer(
       (state, action: PayloadAction<MapNode["id"][]>) => {
@@ -139,11 +151,12 @@ const nodesSlice = createSlice({
           nodesSlice.getSelectors().getNodes(sliceState),
       ],
       structuralSharing((nodes: MapNode[]): MapNodeUri[] =>
-        nodes.map(({ id, type, tag, parent }) => ({
+        nodes.map(({ id, type, tag, parent, errors }) => ({
           id,
           type,
           tag,
           parent,
+          hasErrors: !!errors,
         })),
       ),
     ),
@@ -153,7 +166,7 @@ const nodesSlice = createSlice({
           nodesSlice.getSelectors().getNodeUris(sliceState),
       ],
       structuralSharing((nodes: MapNodeUri[]) => {
-        const cache: GroupNodeCache = {};
+        const cache: IntermediateGroupNodeCache = {};
         const nodesMap = new Map(nodes.map((node) => [node.id, node]));
 
         for (const node of nodes) {
@@ -164,6 +177,7 @@ const nodesSlice = createSlice({
             if (node.tag === "create") parent.additions.push(node.id);
             if (node.tag === "update") parent.updates.push(node.id);
             if (node.tag === "delete") parent.deletions.push(node.id);
+            if (node.hasErrors) parent.errors.push(node.id);
           } else {
             let depth = 0;
             let current: MapNodeUri | undefined = node;
@@ -177,10 +191,12 @@ const nodesSlice = createSlice({
             // push reference to the array of own children ids to flatten later
             parent.groups.push(node.id, self.groups);
             parent.instances.push(self.instances);
+            parent.errors.push(self.errors);
 
             if (node.tag === "create") parent.additions.push(self.additions);
             if (node.tag === "update") parent.updates.push(self.updates);
             if (node.tag === "delete") parent.deletions.push(self.deletions);
+            if (node.hasErrors) parent.errors.push(node.id);
 
             cache[node.id] = self;
           }
@@ -188,6 +204,7 @@ const nodesSlice = createSlice({
           cache[node.parent] = parent;
         }
 
+        // flatten NestedArray<string>[] to string[]
         for (const entry of Object.values(cache)) {
           entry.groups = entry.groups.flat(MAX_DEPTH);
           entry.instances = entry.instances.flat(MAX_DEPTH);
@@ -195,9 +212,10 @@ const nodesSlice = createSlice({
           entry.additions = entry.additions.flat(MAX_DEPTH);
           entry.updates = entry.updates.flat(MAX_DEPTH);
           entry.deletions = entry.deletions.flat(MAX_DEPTH);
+          entry.errors = entry.errors.flat(MAX_DEPTH);
         }
 
-        return cache;
+        return cache as GroupNodeCache;
       }),
     ),
     getEditing: createSelector(
@@ -218,13 +236,30 @@ const patchNode =
     const state = getState();
     const nodes = nodesSlice.selectors.getNodes(state);
     const editingId = nodesSlice.selectors.getEditingId(state);
+    const district = DistrictSelectors.getDistrict(state);
+    const cache = nodesSlice.selectors.getChildNodesCache(state);
     const node = nodes.find((node) => node.id === editingId);
+    const map = new Map(nodes.map((node) => [node.id, parseNode(node)]));
 
-    if (!node) return;
+    if (!node || !district) return;
 
     const update = produce(node, callback);
+    const validated = validateNode(update, map, district);
 
-    dispatch(nodesSlice.actions.editNode(update));
+    dispatch(nodesSlice.actions.editNode(validated));
+
+    if (node.type === "group") {
+      const children = cache[node.id].nodes;
+
+      for (const childId of children) {
+        const child = nodes.find((node) => node.id === childId);
+        const validated = validateNode(child!, map, district);
+
+        if (validated !== child) {
+          dispatch(nodesSlice.actions.editNode(validated));
+        }
+      }
+    }
   };
 const deleteNodeDeep =
   (id: MapNode["id"]): AppThunkAction =>
@@ -239,9 +274,7 @@ const deleteNodeDeep =
     if (node.type === "instance") {
       dispatch(nodesSlice.actions.deleteNodes([id]));
     } else {
-      dispatch(
-        nodesSlice.actions.deleteNodes([id, ...(cache[id].nodes as string[])]),
-      );
+      dispatch(nodesSlice.actions.deleteNodes([id, ...cache[id].nodes]));
     }
   };
 
@@ -253,7 +286,7 @@ export const NodesActions = {
 export const NodesSelectors = nodesSlice.selectors;
 export default nodesSlice;
 
-const createCacheEntry = (): GroupNodeCache[string] => ({
+const createCacheEntry = (): IntermediateGroupNodeCache[string] => ({
   instances: [],
   groups: [],
   nodes: [],

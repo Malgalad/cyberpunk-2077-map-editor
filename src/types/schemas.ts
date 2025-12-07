@@ -74,6 +74,7 @@ export const NodeSchema = z.object({
       scale: z.tuple([z.string(), z.string(), z.string()]),
     })
     .optional(),
+  errors: z.array(z.string()).optional(),
 });
 export const NodesStateSchema = z.object({
   nodes: z.array(NodeSchema),

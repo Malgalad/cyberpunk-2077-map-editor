@@ -88,7 +88,7 @@ function ImportExportNodesModal(props: ModalProps) {
             <div key={district.name} className="flex flex-col gap-0.5">
               <div
                 className="flex flex-row gap-2 items-center cursor-pointer select-none"
-                onClick={toggleSelected(cache[district.name].nodes as string[])}
+                onClick={toggleSelected(cache[district.name].nodes)}
               >
                 <Button
                   className="p-0! min-w-6! w-6 h-6 border-0!"
@@ -102,11 +102,11 @@ function ImportExportNodesModal(props: ModalProps) {
                 </Button>
                 <Button className="p-0! min-w-6! w-6 h-6 border-0!">
                   {cache[district.name].nodes.every((node) =>
-                    selected.has(node as string),
+                    selected.has(node),
                   ) ? (
                     <SquareCheckBig />
                   ) : cache[district.name].nodes.some((node) =>
-                      selected.has(node as string),
+                      selected.has(node),
                     ) ? (
                     <SquareMinus />
                   ) : (
@@ -129,7 +129,7 @@ function ImportExportNodesModal(props: ModalProps) {
                         className="flex flex-row gap-2 items-center cursor-pointer select-none"
                         onClick={toggleSelected(
                           node.type === "group"
-                            ? [node.id, ...(cache[node.id].nodes as string[])]
+                            ? [node.id, ...cache[node.id].nodes]
                             : [node.id],
                         )}
                       >

@@ -197,20 +197,20 @@ export function useDrawSelection(map3d: Map3D | null) {
       for (let index = 0; index < additions.length; index++) {
         const transform = additions[index];
 
-        if (selectedIds.has(transform.id as string)) {
+        if (selectedIds.has(transform.id)) {
           indexes.push(index);
         }
       }
     } else if (mode === "delete") {
       for (const transform of deletions) {
-        if (selectedIds.has(transform.id as string)) {
-          indexes.push(toNumber(transform.id as string));
+        if (selectedIds.has(transform.id)) {
+          indexes.push(toNumber(transform.id));
         }
       }
     } else if (mode === "update") {
       for (const transform of updates) {
-        if (selectedIds.has(transform.id as string)) {
-          indexes.push(toNumber(transform.id as string));
+        if (selectedIds.has(transform.id)) {
+          indexes.push(toNumber(transform.id));
         }
       }
     }

@@ -1,4 +1,4 @@
-import { ChevronDown, Plus, Trash2 } from "lucide-react";
+import { ChevronDown, Plus, Trash2, TriangleAlert } from "lucide-react";
 
 import Button from "../components/common/Button.tsx";
 import DropdownItem from "../components/common/Dropdown.Item.tsx";
@@ -48,7 +48,12 @@ function SelectDistrict() {
               ? `Selected: ${getDistrictName(district)}`
               : "Select district"}
           </div>
-          <ChevronDown className="shrink-0" />
+          <div className="flex flex-row gap-1 items-center">
+            {((district && cache[district.name]?.errors.length) ?? 0) > 0 && (
+              <TriangleAlert className="text-red-500" />
+            )}
+            <ChevronDown className="shrink-0" />
+          </div>
         </Button>
       }
       align="right"
@@ -68,7 +73,12 @@ function SelectDistrict() {
           >
             <div className="flex flex-row gap-4 items-baseline justify-between">
               {getDistrictName(item)}
-              {getEdits(cache[item.name])}
+              <div className="flex flex-row gap-1 items-center">
+                {getEdits(cache[item.name])}
+                {(cache[item.name]?.errors.length ?? 0) > 0 && (
+                  <TriangleAlert className="text-red-500" size={16} />
+                )}
+              </div>
             </div>
           </DropdownItem>
         );

@@ -244,7 +244,7 @@ export class Map3D extends Map3DBase {
       let needsUpdate = false;
 
       for (let i = 0; i < this.#updates.count; i++) {
-        const index = indexes[i] ? toNumber(indexes[i] as string) : -1;
+        const index = indexes[i] != null ? toNumber(indexes[i] as string) : -1;
         const color =
           mode === "update" && this.#selectedIndexes.includes(index)
             ? UPDATES.selected
@@ -271,7 +271,7 @@ export class Map3D extends Map3DBase {
       let needsUpdate = false;
 
       for (let i = 0; i < this.#deletions.count; i++) {
-        const index = indexes[i] ? toNumber(indexes[i] as string) : -1;
+        const index = indexes[i] != null ? toNumber(indexes[i] as string) : -1;
         const color =
           mode && this.#selectedIndexes.includes(index)
             ? DELETIONS.selected

@@ -28,14 +28,8 @@ export const computeDistrictProperties = (
     y: district.position[1] + district.transMin[1],
     z: district.position[2] + district.transMin[2],
   };
-  const center = {
-    x: origin.x + minMax.x / 2,
-    y: origin.y + minMax.y / 2,
-    z: origin.z + minMax.z / 2,
-  };
 
   return {
-    center,
     minMax,
     origin,
   };

@@ -1,4 +1,10 @@
-import { EyeOff, SquareMinus, SquarePlus, SquareStack } from "lucide-react";
+import {
+  EyeOff,
+  SquareMinus,
+  SquarePlus,
+  SquareStack,
+  TriangleAlert,
+} from "lucide-react";
 import * as React from "react";
 
 import { useAppDispatch, useAppSelector } from "../hooks.ts";
@@ -6,6 +12,7 @@ import { NodesActions, NodesSelectors } from "../store/nodes.ts";
 import type { MapNode } from "../types/types.ts";
 import { clsx } from "../utilities/utilities.ts";
 import Button from "./common/Button.tsx";
+import Tooltip from "./common/Tooltip.tsx";
 import Node from "./Node.tsx";
 
 interface GroupProps {
@@ -80,22 +87,29 @@ function Group({ lookAtNode, node }: GroupProps) {
           <div className="flex flex-row gap-1">
             {node.hidden && <EyeOff />}
             {node.pattern?.enabled && (
-              <Button
-                className="border-none p-0! tooltip"
-                data-tooltip="Has pattern"
-                data-flow="left"
-                onClick={() => {
-                  setTimeout(() => {
-                    window.dispatchEvent(
-                      new CustomEvent("set-editing-tab", {
-                        detail: { tab: "pattern" },
-                      }),
-                    );
-                  });
-                }}
-              >
-                <SquareStack />
-              </Button>
+              <Tooltip tooltip="Has pattern" flow="left">
+                <Button
+                  className="border-none p-0!"
+                  onClick={() => {
+                    setTimeout(() => {
+                      window.dispatchEvent(
+                        new CustomEvent("set-editing-tab", {
+                          detail: { tab: "pattern" },
+                        }),
+                      );
+                    });
+                  }}
+                >
+                  <SquareStack />
+                </Button>
+              </Tooltip>
+            )}
+            {(node.errors || nodeChildren.errors?.length > 0) && (
+              <Tooltip tooltip="Has errors" flow="left">
+                <div>
+                  <TriangleAlert className="text-red-500" />
+                </div>
+              </Tooltip>
             )}
           </div>
         </div>
