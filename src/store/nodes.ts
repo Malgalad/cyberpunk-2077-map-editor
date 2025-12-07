@@ -6,18 +6,17 @@ import {
 import { produce, type WritableDraft } from "immer";
 import { nanoid } from "nanoid";
 
-import { MAX_DEPTH, TEMPLATE_ID } from "../constants.ts";
+import { TEMPLATE_ID } from "../constants.ts";
 import type {
   AppThunkAction,
   District,
-  GroupNodeCache,
-  IntermediateGroupNodeCache,
   MapNode,
   MapNodeUri,
   RevivedAppState,
 } from "../types/types.ts";
 import {
   cloneNode,
+  createGroupNodesCache,
   normalizeNodes,
   parseNode,
   validateNode,
@@ -53,9 +52,7 @@ const nodesSlice = createSlice({
           parent,
           position,
           rotation = ["0", "0", "0"],
-          scale = Array.from({ length: 3 }, () =>
-            type === "instance" ? "100" : "1",
-          ) as [string, string, string],
+          scale = type === "instance" ? ["100", "100", "100"] : ["1", "1", "1"],
         } = init;
         const node: MapNode = {
           id,
@@ -165,58 +162,7 @@ const nodesSlice = createSlice({
         (sliceState: NodesState): MapNodeUri[] =>
           nodesSlice.getSelectors().getNodeUris(sliceState),
       ],
-      structuralSharing((nodes: MapNodeUri[]) => {
-        const cache: IntermediateGroupNodeCache = {};
-        const nodesMap = new Map(nodes.map((node) => [node.id, node]));
-
-        for (const node of nodes) {
-          const parent = cache[node.parent] ?? createCacheEntry();
-
-          if (node.type === "instance") {
-            parent.instances.push(node.id);
-            if (node.tag === "create") parent.additions.push(node.id);
-            if (node.tag === "update") parent.updates.push(node.id);
-            if (node.tag === "delete") parent.deletions.push(node.id);
-            if (node.hasErrors) parent.errors.push(node.id);
-          } else {
-            let depth = 0;
-            let current: MapNodeUri | undefined = node;
-            while (current) {
-              current = nodesMap.get(current!.parent);
-              depth += 1;
-            }
-
-            const self = cache[node.id] ?? createCacheEntry();
-            self.level = depth;
-            // push reference to the array of own children ids to flatten later
-            parent.groups.push(node.id, self.groups);
-            parent.instances.push(self.instances);
-            parent.errors.push(self.errors);
-
-            if (node.tag === "create") parent.additions.push(self.additions);
-            if (node.tag === "update") parent.updates.push(self.updates);
-            if (node.tag === "delete") parent.deletions.push(self.deletions);
-            if (node.hasErrors) parent.errors.push(node.id);
-
-            cache[node.id] = self;
-          }
-
-          cache[node.parent] = parent;
-        }
-
-        // flatten NestedArray<string>[] to string[]
-        for (const entry of Object.values(cache)) {
-          entry.groups = entry.groups.flat(MAX_DEPTH);
-          entry.instances = entry.instances.flat(MAX_DEPTH);
-          entry.nodes = [...entry.groups, ...entry.instances];
-          entry.additions = entry.additions.flat(MAX_DEPTH);
-          entry.updates = entry.updates.flat(MAX_DEPTH);
-          entry.deletions = entry.deletions.flat(MAX_DEPTH);
-          entry.errors = entry.errors.flat(MAX_DEPTH);
-        }
-
-        return cache as GroupNodeCache;
-      }),
+      structuralSharing(createGroupNodesCache),
     ),
     getSelectedNode: createSelector(
       [
@@ -293,14 +239,3 @@ export const NodesActions = {
 };
 export const NodesSelectors = nodesSlice.selectors;
 export default nodesSlice;
-
-const createCacheEntry = (): IntermediateGroupNodeCache[string] => ({
-  instances: [],
-  groups: [],
-  nodes: [],
-  additions: [],
-  updates: [],
-  deletions: [],
-  errors: [],
-  level: 0,
-});

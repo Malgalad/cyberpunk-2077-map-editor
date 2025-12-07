@@ -2,11 +2,15 @@ import { nanoid } from "nanoid";
 import { shallowEqual } from "react-redux";
 import * as THREE from "three";
 
+import { MAX_DEPTH } from "../constants.ts";
 import type {
   District,
+  GroupNodeCache,
   InstancedMeshTransforms,
+  IntermediateGroupNodeCache,
   MapNode,
   MapNodeParsed,
+  MapNodeUri,
 } from "../types/types.ts";
 import { applyTransforms, parseTransform } from "./transforms.ts";
 import { unwrapDraft } from "./utilities.ts";
@@ -67,7 +71,6 @@ export const cloneNode = <T extends MapNode | MapNodeParsed>(
   const childClones: T[] = [];
 
   clone.id = nanoid(8);
-  clone.label = clone.type === "instance" ? "Box" : "Group";
   clone.parent = parentId;
 
   if (clone.type === "group") {
@@ -169,3 +172,67 @@ export function validateNode(
     errors: nodeErrors,
   };
 }
+
+const createCacheEntry = (): IntermediateGroupNodeCache[string] => ({
+  instances: [],
+  groups: [],
+  nodes: [],
+  additions: [],
+  updates: [],
+  deletions: [],
+  errors: [],
+  level: 0,
+});
+
+export const createGroupNodesCache = (nodes: MapNodeUri[]): GroupNodeCache => {
+  const cache: IntermediateGroupNodeCache = {};
+  const nodesMap = new Map(nodes.map((node) => [node.id, node]));
+
+  for (const node of nodes) {
+    const parent = cache[node.parent] ?? createCacheEntry();
+
+    if (node.type === "instance") {
+      parent.instances.push(node.id);
+      if (node.tag === "create") parent.additions.push(node.id);
+      if (node.tag === "update") parent.updates.push(node.id);
+      if (node.tag === "delete") parent.deletions.push(node.id);
+      if (node.hasErrors) parent.errors.push(node.id);
+    } else {
+      let depth = 0;
+      let current: MapNodeUri | undefined = node;
+      while (current) {
+        current = nodesMap.get(current!.parent);
+        depth += 1;
+      }
+
+      const self = cache[node.id] ?? createCacheEntry();
+      self.level = depth;
+      // push reference to the array of own children ids to flatten later
+      parent.groups.push(node.id, self.groups);
+      parent.instances.push(self.instances);
+      parent.errors.push(self.errors);
+
+      if (node.tag === "create") parent.additions.push(self.additions);
+      if (node.tag === "update") parent.updates.push(self.updates);
+      if (node.tag === "delete") parent.deletions.push(self.deletions);
+      if (node.hasErrors) parent.errors.push(node.id);
+
+      cache[node.id] = self;
+    }
+
+    cache[node.parent] = parent;
+  }
+
+  // flatten NestedArray<string>[] to string[]
+  for (const entry of Object.values(cache)) {
+    entry.groups = entry.groups.flat(MAX_DEPTH);
+    entry.instances = entry.instances.flat(MAX_DEPTH);
+    entry.nodes = [...entry.groups, ...entry.instances];
+    entry.additions = entry.additions.flat(MAX_DEPTH);
+    entry.updates = entry.updates.flat(MAX_DEPTH);
+    entry.deletions = entry.deletions.flat(MAX_DEPTH);
+    entry.errors = entry.errors.flat(MAX_DEPTH);
+  }
+
+  return cache as GroupNodeCache;
+};

@@ -90,7 +90,7 @@ function Menu() {
               onClick={() =>
                 dispatch(ModalsActions.openModal("import-export", "import"))
               }
-              disabled={true /*!projectName*/}
+              disabled={!projectName}
             >
               Import nodes to project
             </DropdownItem>
@@ -98,7 +98,7 @@ function Menu() {
               onClick={() =>
                 dispatch(ModalsActions.openModal("import-export", "export"))
               }
-              disabled={true /*!projectName*/}
+              disabled={!projectName}
             >
               Export nodes
             </DropdownItem>
