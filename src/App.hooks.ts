@@ -172,7 +172,7 @@ export function useDrawSelection(map3d: Map3D | null) {
   const additions = useAppSelector(getAdditionsTransforms);
   const updates = useAppSelector(getUpdatesTransforms);
   const deletions = useAppSelector(getDeletionsTransforms);
-  const editing = useAppSelector(NodesSelectors.getEditing);
+  const selected = useAppSelector(NodesSelectors.getSelectedNode);
   const cache = useAppSelector(NodesSelectors.getChildNodesCache);
   const nodes = useAppSelector(getDistrictNodes);
   const nodesMap = React.useMemo(
@@ -183,14 +183,16 @@ export function useDrawSelection(map3d: Map3D | null) {
   React.useEffect(() => {
     if (!map3d) return;
 
-    if (editing == null) {
+    if (selected == null) {
       map3d.selectInstances([]);
       return;
     }
 
     const indexes: number[] = [];
     const selectedIds = new Set(
-      editing.type === "instance" ? [editing.id] : cache[editing.id].instances,
+      selected.type === "instance"
+        ? [selected.id]
+        : cache[selected.id].instances,
     );
 
     if (mode === "create") {
@@ -216,16 +218,16 @@ export function useDrawSelection(map3d: Map3D | null) {
     }
 
     map3d.selectInstances(indexes);
-  }, [editing, cache, deletions, additions, map3d, mode, updates]);
+  }, [selected, cache, deletions, additions, map3d, mode, updates]);
 
   React.useEffect(() => {
     if (!map3d || mode === "delete") return;
-    if (!editing) {
+    if (!selected) {
       map3d.setHelper(undefined);
     } else {
-      map3d.setHelper(applyTransforms(parseNode(editing), nodesMap), true);
+      map3d.setHelper(applyTransforms(parseNode(selected), nodesMap), true);
     }
-  }, [map3d, mode, editing, nodesMap]);
+  }, [map3d, mode, selected, nodesMap]);
 }
 
 export function useMap3DEvents(map3d: Map3D | null) {
@@ -251,10 +253,10 @@ export function useMap3DEvents(map3d: Map3D | null) {
                 : null;
 
           if (id != null) {
-            dispatch(NodesActions.setEditing(id));
+            dispatch(NodesActions.selectNode(id));
           }
         } else {
-          dispatch(NodesActions.setEditing(null));
+          dispatch(NodesActions.selectNode(null));
         }
       }
     }) as EventListener;
@@ -279,7 +281,7 @@ export function useMap3DEvents(map3d: Map3D | null) {
               id: toString(index),
             });
             dispatch(NodesActions.addNode(node));
-            dispatch(NodesActions.setEditing(toString(index)));
+            dispatch(NodesActions.selectNode(toString(index)));
           }
         });
       }
@@ -299,7 +301,7 @@ export function useMap3DEvents(map3d: Map3D | null) {
           });
           dispatch(NodesActions.addNode(node));
         }
-        dispatch(NodesActions.setEditing(id));
+        dispatch(NodesActions.selectNode(id));
       }
     }) as EventListener;
 

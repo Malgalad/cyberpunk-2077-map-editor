@@ -1,6 +1,5 @@
 import { createSelector } from "@reduxjs/toolkit";
 
-import { TEMPLATE_ID } from "../constants.ts";
 import type {
   AppState,
   District,
@@ -77,11 +76,6 @@ export const getDistrictNodes = createSelector(
       return nodes.filter((node) => districtNodeIds.has(node.id));
     },
   ),
-);
-
-export const getTemplateNodes = createSelector(
-  [nodesSlice.selectors.getNodes],
-  (nodes) => nodes.filter((node) => node.parent === TEMPLATE_ID),
 );
 
 export const getAdditions = createSelector([getDistrictNodes], (nodes) =>

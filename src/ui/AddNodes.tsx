@@ -17,18 +17,18 @@ function AddNodes() {
   const dispatch = useAppDispatch();
   const map3d = useMap3D();
   const nodes = useAppSelector(getAdditions);
-  const editing = useAppSelector(NodesSelectors.getEditing);
+  const selected = useAppSelector(NodesSelectors.getSelectedNode);
   const district = useAppSelector(DistrictSelectors.getDistrict);
   const rootNodes = nodes.filter((node) => node.parent === district?.name);
 
   if (!district) return null;
 
   const onDelete = () => {
-    if (!editing) return;
+    if (!selected) return;
 
-    const children = nodes.filter((node) => node.parent === editing.id);
+    const children = nodes.filter((node) => node.parent === selected.id);
 
-    if (editing.type === "group" && children.length > 0) {
+    if (selected.type === "group" && children.length > 0) {
       dispatch(
         ModalsActions.openModal(
           "alert",
@@ -41,27 +41,27 @@ function AddNodes() {
     dispatch(
       ModalsActions.openModal(
         "confirm",
-        `Do you want to delete node "${editing.label}"? This action cannot be undone.`,
+        `Do you want to delete node "${selected.label}"? This action cannot be undone.`,
       ),
     ).then((confirmed) => {
       if (confirmed) {
-        dispatch(NodesActions.deleteNodes([editing.id]));
+        dispatch(NodesActions.deleteNodes([selected.id]));
       }
     });
   };
 
   const onClone = () => {
-    if (!editing) return;
-    dispatch(NodesActions.cloneNode({ id: editing.id }));
+    if (!selected) return;
+    dispatch(NodesActions.cloneNode({ id: selected.id }));
   };
 
   const onAdd = (type: MapNode["type"]) => {
-    const parent = editing ? editing.id : district.name;
+    const parent = selected ? selected.id : district.name;
     if (!map3d) return;
     const center = map3d.getCenter();
     if (!center) return;
     const position = (
-      editing ? ["0", "0", "0"] : center.map(toString)
+      selected ? ["0", "0", "0"] : center.map(toString)
     ) as MapNode["position"];
     const tag = "create";
     const action = dispatch(
@@ -72,7 +72,7 @@ function AddNodes() {
         position,
       }),
     );
-    dispatch(NodesActions.setEditing(action.payload.id));
+    dispatch(NodesActions.selectNode(action.payload.id));
   };
 
   return (
@@ -80,7 +80,7 @@ function AddNodes() {
       <div className="flex flex-col gap-2 grow max-h-[calc(100%_-_320px)] bg-slate-800 relative">
         <div
           className="grow p-2 flex flex-col overflow-auto"
-          onClick={() => dispatch(NodesActions.setEditing(null))}
+          onClick={() => dispatch(NodesActions.selectNode(null))}
         >
           {rootNodes.length === 0 && (
             <div className="grow flex items-center justify-center italic">
@@ -95,7 +95,7 @@ function AddNodes() {
         <div className="flex flex-row gap-2 px-1 bottom-0 justify-end border-t border-slate-900 bg-slate-800">
           <AddNodesTemplates />
 
-          {editing && (
+          {selected && (
             <>
               <div className="border border-slate-600 w-[1px]" />
               <Button
@@ -121,7 +121,7 @@ function AddNodes() {
           <Button
             className="border-none tooltip"
             onClick={() => onAdd("instance")}
-            disabled={editing?.type === "instance"}
+            disabled={selected?.type === "instance"}
             data-tooltip="Add instance"
             data-flow="top"
           >
@@ -130,7 +130,7 @@ function AddNodes() {
           <Button
             className="border-none tooltip"
             onClick={() => onAdd("group")}
-            disabled={editing?.type === "instance"}
+            disabled={selected?.type === "instance"}
             data-tooltip="Add group"
             data-flow="left"
           >
@@ -140,8 +140,8 @@ function AddNodes() {
       </div>
 
       <div className="flex flex-col basis-[320px] shrink-0">
-        {editing ? (
-          <EditNode key={editing.id} />
+        {selected ? (
+          <EditNode key={selected.id} />
         ) : (
           <div className="grow flex items-center justify-center italic bg-slate-800">
             Select node

@@ -14,20 +14,20 @@ interface InstanceProps {
 
 function Instance({ lookAtNode, node }: InstanceProps) {
   const dispatch = useAppDispatch();
-  const editing = useAppSelector(NodesSelectors.getEditing);
+  const selected = useAppSelector(NodesSelectors.getSelectedNode);
 
   return (
     <div
       className={clsx(
         "flex flex-row items-center gap-2 border-2 -m-0.5",
         "border-dotted border-transparent cursor-pointer",
-        editing?.id === node.id && "border-slate-100!",
+        selected?.id === node.id && "border-slate-100!",
       )}
       tabIndex={-1}
       role="button"
       onClick={(event) => {
         event.stopPropagation();
-        dispatch(NodesActions.setEditing(node.id));
+        dispatch(NodesActions.selectNode(node.id));
       }}
       onDoubleClick={(event) => {
         event.preventDefault();
@@ -35,9 +35,9 @@ function Instance({ lookAtNode, node }: InstanceProps) {
       }}
       onKeyDown={(event) => {
         if (event.key === "Enter" || event.key === " ") {
-          dispatch(NodesActions.setEditing(node.id));
+          dispatch(NodesActions.selectNode(node.id));
         } else if (event.key === "Escape") {
-          dispatch(NodesActions.setEditing(null));
+          dispatch(NodesActions.selectNode(null));
         }
       }}
     >

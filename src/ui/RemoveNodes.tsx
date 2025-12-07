@@ -12,14 +12,14 @@ function RemoveNodes() {
   const dispatch = useAppDispatch();
   const district = useAppSelector(DistrictSelectors.getDistrict);
   const removals = useAppSelector(getDeletions);
-  const editing = useAppSelector(NodesSelectors.getEditing);
+  const selected = useAppSelector(NodesSelectors.getSelectedNode);
 
   const onDelete = () => {
-    if (!editing) return;
+    if (!selected) return;
 
-    const children = removals.filter((node) => node.parent === editing.id);
+    const children = removals.filter((node) => node.parent === selected.id);
 
-    if (editing.type === "group" && children.length > 0) {
+    if (selected.type === "group" && children.length > 0) {
       dispatch(
         ModalsActions.openModal(
           "alert",
@@ -32,11 +32,11 @@ function RemoveNodes() {
     dispatch(
       ModalsActions.openModal(
         "confirm",
-        `Do you want to delete node "${editing.label}"? This action cannot be undone.`,
+        `Do you want to delete node "${selected.label}"? This action cannot be undone.`,
       ),
     ).then((confirmed) => {
       if (confirmed) {
-        dispatch(NodesActions.deleteNodes([editing.id]));
+        dispatch(NodesActions.deleteNodes([selected.id]));
       }
     });
   };
@@ -47,7 +47,7 @@ function RemoveNodes() {
     <div className="flex flex-col gap-2 grow overflow-auto bg-slate-800 relative">
       <div
         className="grow p-2 flex flex-col"
-        onClick={() => dispatch(NodesActions.setEditing(null))}
+        onClick={() => dispatch(NodesActions.selectNode(null))}
       >
         {!removals.length && (
           <div className="grow flex items-center justify-center italic bg-slate-800">
@@ -60,7 +60,7 @@ function RemoveNodes() {
         ))}
       </div>
 
-      {editing && (
+      {selected && (
         <div className="flex flex-row gap-2 sticky pr-1 bottom-0 justify-end border-t border-slate-900 bg-slate-800">
           <Button
             className="border-none tooltip"

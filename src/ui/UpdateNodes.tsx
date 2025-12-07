@@ -13,7 +13,7 @@ import { NodesActions, NodesSelectors } from "../store/nodes.ts";
 function UpdateNodes() {
   const dispatch = useAppDispatch();
   const nodes = useAppSelector(getUpdates);
-  const editing = useAppSelector(NodesSelectors.getEditing);
+  const selected = useAppSelector(NodesSelectors.getSelectedNode);
   const district = useAppSelector(DistrictSelectors.getDistrict);
   const rootNodes = React.useMemo(
     () => nodes.filter((node) => node.parent === district?.name),
@@ -23,11 +23,11 @@ function UpdateNodes() {
   if (!district) return null;
 
   const onDelete = () => {
-    if (!editing) return;
+    if (!selected) return;
 
-    const children = nodes.filter((node) => node.parent === editing.id);
+    const children = nodes.filter((node) => node.parent === selected.id);
 
-    if (editing.type === "group" && children.length > 0) {
+    if (selected.type === "group" && children.length > 0) {
       dispatch(
         ModalsActions.openModal(
           "alert",
@@ -40,11 +40,11 @@ function UpdateNodes() {
     dispatch(
       ModalsActions.openModal(
         "confirm",
-        `Do you want to delete node "${editing.label}"? This action cannot be undone.`,
+        `Do you want to delete node "${selected.label}"? This action cannot be undone.`,
       ),
     ).then((confirmed) => {
       if (confirmed) {
-        dispatch(NodesActions.deleteNodes([editing.id]));
+        dispatch(NodesActions.deleteNodes([selected.id]));
       }
     });
   };
@@ -54,7 +54,7 @@ function UpdateNodes() {
       <div className="flex flex-col gap-2 grow overflow-auto bg-slate-800 relative">
         <div
           className="grow p-2 flex flex-col"
-          onClick={() => dispatch(NodesActions.setEditing(null))}
+          onClick={() => dispatch(NodesActions.selectNode(null))}
         >
           {rootNodes.length === 0 && (
             <div className="grow flex items-center justify-center italic">
@@ -67,7 +67,7 @@ function UpdateNodes() {
         </div>
 
         <div className="flex flex-row gap-2 sticky pr-1 bottom-0 justify-end border-t border-slate-900 bg-slate-800">
-          {editing && (
+          {selected && (
             <Button
               className="border-none tooltip"
               onClick={onDelete}
@@ -81,12 +81,12 @@ function UpdateNodes() {
       </div>
 
       <div className="flex flex-col basis-[320px] shrink-0">
-        {!editing && (
+        {!selected && (
           <div className="grow flex items-center justify-center italic bg-slate-800">
             Select node
           </div>
         )}
-        {editing && <EditNode key={editing.id} />}
+        {selected && <EditNode key={selected.id} />}
       </div>
     </>
   );

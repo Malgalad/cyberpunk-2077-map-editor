@@ -6,7 +6,7 @@ import {
 import { produce, type WritableDraft } from "immer";
 import { nanoid } from "nanoid";
 
-import { MAX_DEPTH } from "../constants.ts";
+import { MAX_DEPTH, TEMPLATE_ID } from "../constants.ts";
 import type {
   AppThunkAction,
   District,
@@ -114,7 +114,7 @@ const nodesSlice = createSlice({
         );
       },
     ),
-    setEditing: create.reducer(
+    selectNode: create.reducer(
       (state, action: PayloadAction<MapNode["id"] | null>) => {
         state.editingId = action.payload;
       },
@@ -144,7 +144,7 @@ const nodesSlice = createSlice({
       ),
   selectors: {
     getNodes: (state) => state.nodes,
-    getEditingId: (state) => state.editingId,
+    getSelectedNodeId: (state) => state.editingId,
     getNodeUris: createSelector(
       [
         (sliceState: NodesState): MapNode[] =>
@@ -218,14 +218,23 @@ const nodesSlice = createSlice({
         return cache as GroupNodeCache;
       }),
     ),
-    getEditing: createSelector(
+    getSelectedNode: createSelector(
       [
         (sliceState: NodesState): string | null =>
-          nodesSlice.getSelectors().getEditingId(sliceState),
+          nodesSlice.getSelectors().getSelectedNodeId(sliceState),
         (sliceState: NodesState): MapNode[] =>
           nodesSlice.getSelectors().getNodes(sliceState),
       ],
       (editing, nodes) => nodes.find((node) => node.id === editing),
+    ),
+    getTemplateNodes: createSelector(
+      [
+        (sliceState: NodesState): MapNode[] =>
+          nodesSlice.getSelectors().getNodes(sliceState),
+      ],
+      structuralSharing((nodes: MapNode[]) =>
+        nodes.filter((node) => node.parent === TEMPLATE_ID),
+      ),
     ),
   },
 });
@@ -235,21 +244,20 @@ const patchNode =
   (dispatch, getState) => {
     const state = getState();
     const nodes = nodesSlice.selectors.getNodes(state);
-    const editingId = nodesSlice.selectors.getEditingId(state);
+    const selectedNode = nodesSlice.selectors.getSelectedNode(state);
     const district = DistrictSelectors.getDistrict(state);
     const cache = nodesSlice.selectors.getChildNodesCache(state);
-    const node = nodes.find((node) => node.id === editingId);
     const map = new Map(nodes.map((node) => [node.id, parseNode(node)]));
 
-    if (!node || !district) return;
+    if (!selectedNode || !district) return;
 
-    const update = produce(node, callback);
+    const update = produce(selectedNode, callback);
     const validated = validateNode(update, map, district);
 
     dispatch(nodesSlice.actions.editNode(validated));
 
-    if (node.type === "group") {
-      const children = cache[node.id].nodes;
+    if (selectedNode.type === "group") {
+      const children = cache[selectedNode.id].nodes;
 
       for (const childId of children) {
         const child = nodes.find((node) => node.id === childId);

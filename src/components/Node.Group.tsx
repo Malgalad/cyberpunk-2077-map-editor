@@ -24,7 +24,7 @@ function Group({ lookAtNode, node }: GroupProps) {
   const dispatch = useAppDispatch();
 
   const nodes = useAppSelector(NodesSelectors.getNodes);
-  const editing = useAppSelector(NodesSelectors.getEditing);
+  const selected = useAppSelector(NodesSelectors.getSelectedNode);
   const cache = useAppSelector(NodesSelectors.getChildNodesCache);
   const [expanded, setExpanded] = React.useState(false);
   const children = React.useMemo(
@@ -35,20 +35,20 @@ function Group({ lookAtNode, node }: GroupProps) {
 
   React.useEffect(() => {
     if (
-      editing &&
-      nodeChildren.nodes.some((child) => child === editing.id) &&
+      selected &&
+      nodeChildren.nodes.some((child) => child === selected.id) &&
       !expanded
     ) {
       setExpanded(true);
     }
-  }, [nodeChildren, editing, expanded]);
+  }, [nodeChildren, selected, expanded]);
 
   return (
     <div
       className={clsx(
         "flex flex-col gap-1.5",
         "border-2 -m-0.5 border-dotted border-transparent",
-        editing?.id === node.id && "border-slate-100!",
+        selected?.id === node.id && "border-slate-100!",
       )}
     >
       <div
@@ -57,7 +57,7 @@ function Group({ lookAtNode, node }: GroupProps) {
         role="button"
         onClick={(event) => {
           event.stopPropagation();
-          dispatch(NodesActions.setEditing(node.id));
+          dispatch(NodesActions.selectNode(node.id));
         }}
         onDoubleClick={(event) => {
           event.preventDefault();
@@ -65,9 +65,9 @@ function Group({ lookAtNode, node }: GroupProps) {
         }}
         onKeyDown={(event) => {
           if (event.key === "Enter" || event.key === " ") {
-            dispatch(NodesActions.setEditing(node.id));
+            dispatch(NodesActions.selectNode(node.id));
           } else if (event.key === "Escape") {
-            dispatch(NodesActions.setEditing(null));
+            dispatch(NodesActions.selectNode(null));
           }
         }}
       >
@@ -93,7 +93,7 @@ function Group({ lookAtNode, node }: GroupProps) {
                   onClick={() => {
                     setTimeout(() => {
                       window.dispatchEvent(
-                        new CustomEvent("set-editing-tab", {
+                        new CustomEvent("set-selected-tab", {
                           detail: { tab: "pattern" },
                         }),
                       );

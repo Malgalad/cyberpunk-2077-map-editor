@@ -67,7 +67,7 @@ function SelectDistrict() {
             checked={district?.name === item.name}
             onClick={() => {
               dispatch(DistrictActions.selectDistrict(item.name));
-              dispatch(NodesActions.setEditing(null));
+              dispatch(NodesActions.selectNode(null));
               if (item.isCustom) dispatch(ProjectActions.setMode("create"));
             }}
           >

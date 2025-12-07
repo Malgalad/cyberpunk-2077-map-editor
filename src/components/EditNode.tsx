@@ -16,7 +16,7 @@ const tabs = [
 
 // TODO verify nodes are not out of bounds
 function EditNode() {
-  const node = useAppSelector(NodesSelectors.getEditing) as MapNode;
+  const node = useAppSelector(NodesSelectors.getSelectedNode) as MapNode;
   const [tab, setTab] = React.useState<Tabs>("properties");
 
   React.useEffect(() => {

@@ -13,7 +13,6 @@ import Tooltip from "../components/common/Tooltip.tsx";
 import { TEMPLATE_ID } from "../constants.ts";
 import { useAppDispatch, useAppSelector } from "../hooks.ts";
 import { useMap3D } from "../map3d/map3d.context.ts";
-import { getTemplateNodes } from "../store/@selectors.ts";
 import { DistrictSelectors } from "../store/district.ts";
 import { ModalsActions } from "../store/modals.ts";
 import { NodesActions, NodesSelectors } from "../store/nodes.ts";
@@ -24,8 +23,8 @@ function AddNodesTemplates() {
   const dispatch = useAppDispatch();
   const map3d = useMap3D();
   const district = useAppSelector(DistrictSelectors.getDistrict);
-  const editing = useAppSelector(NodesSelectors.getEditing);
-  const templates = useAppSelector(getTemplateNodes);
+  const selected = useAppSelector(NodesSelectors.getSelectedNode);
+  const templates = useAppSelector(NodesSelectors.getTemplateNodes);
 
   if (!district) return null;
 
@@ -60,12 +59,12 @@ function AddNodesTemplates() {
   };
 
   const onCreate = () => {
-    if (!editing) return;
+    if (!selected) return;
     dispatch(
       NodesActions.cloneNode({
-        id: editing.id,
+        id: selected.id,
         updates: {
-          label: `TEMPLATE <${editing.label}>`,
+          label: `TEMPLATE <${selected.label}>`,
           parent: TEMPLATE_ID,
           position: ["0", "0", "0"],
           errors: undefined,
@@ -116,7 +115,7 @@ function AddNodesTemplates() {
           ))}
       </Dropdown>
 
-      {editing && (
+      {selected && (
         <Tooltip
           tooltip="Create template from node"
           tooltip2="Template created!"

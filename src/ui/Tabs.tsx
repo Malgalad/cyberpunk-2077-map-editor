@@ -21,7 +21,7 @@ function Tabs() {
 
   useGlobalShortcuts(
     "Escape",
-    () => void dispatch(NodesActions.setEditing(null)),
+    () => void dispatch(NodesActions.selectNode(null)),
   );
 
   return (
@@ -35,7 +35,7 @@ function Tabs() {
           )}
           onClick={() => {
             dispatch(ProjectActions.setMode("create"));
-            dispatch(NodesActions.setEditing(null));
+            dispatch(NodesActions.selectNode(null));
           }}
           disabled={!district}
           shortcut="a"
@@ -60,7 +60,7 @@ function Tabs() {
           )}
           onClick={() => {
             dispatch(ProjectActions.setMode("update"));
-            dispatch(NodesActions.setEditing(null));
+            dispatch(NodesActions.selectNode(null));
           }}
           disabled={!district || district.isCustom}
           shortcut="e"
@@ -85,7 +85,7 @@ function Tabs() {
           )}
           onClick={() => {
             dispatch(ProjectActions.setMode("delete"));
-            dispatch(NodesActions.setEditing(null));
+            dispatch(NodesActions.selectNode(null));
           }}
           disabled={!district || district.isCustom}
           shortcut="d"
