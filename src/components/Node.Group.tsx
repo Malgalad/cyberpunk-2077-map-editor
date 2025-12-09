@@ -93,7 +93,7 @@ function Group({ lookAtNode, node }: GroupProps) {
                   onClick={() => {
                     setTimeout(() => {
                       window.dispatchEvent(
-                        new CustomEvent("set-selected-tab", {
+                        new CustomEvent("set-editing-tab", {
                           detail: { tab: "pattern" },
                         }),
                       );

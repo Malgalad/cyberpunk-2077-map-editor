@@ -19,7 +19,7 @@ import {
   getDistrictName,
 } from "../../utilities/district.ts";
 import { invariant, toNumber } from "../../utilities/utilities.ts";
-import EditDistrictModalClipboard from "./editDistrictModal.clipboard.tsx";
+import EditDistrictModalClipboard from "./EditDistrictModal.Clipboard.tsx";
 import { defaultValues } from "./editDistrictModal.constants.ts";
 import {
   useDistrictTextureHeight,
@@ -37,15 +37,17 @@ function EditDistrictModal(props: ModalProps) {
   const dispatch = useAppDispatch();
   const district = useAppSelector(DistrictSelectors.getDistrict);
 
-  invariant(district, "District is not defined");
+  if (isEdit) {
+    invariant(district, "District must be selected to edit it");
+  }
 
   const height = useDistrictTextureHeight(district);
   const ref = React.useRef<HTMLCanvasElement>(null);
   const [data, setData] = React.useState<EditDistrictData>(
-    isEdit ? toData(district) : defaultValues,
+    isEdit ? toData(district!) : defaultValues,
   );
   const [name, setName] = React.useState<string>(
-    isEdit ? getDistrictName(district) : "my_district",
+    isEdit ? getDistrictName(district!) : "my_district",
   );
 
   const validationErrors = useGetErrors(
@@ -53,7 +55,7 @@ function EditDistrictModal(props: ModalProps) {
     data,
     isEdit ? district : undefined,
   );
-  const isCustomDistrict = district.isCustom;
+  const isCustomDistrict = district?.isCustom;
   const isValid = !validationErrors.size;
 
   const redrawCanvasRefFn = useDrawOnCanvas(ref, [data, setData]);
@@ -75,14 +77,14 @@ function EditDistrictModal(props: ModalProps) {
     };
     const computedProperties = computeDistrictProperties(districtProperties);
     const transforms: InstancedMeshTransforms[] = isEdit
-      ? district.transforms
+      ? district!.transforms
       : [];
 
     dispatch(ModalsActions.closeModal());
     if (isEdit) {
       dispatch(
         DistrictActions.updateDistrict({
-          name: district.name,
+          name: district!.name,
           district: {
             ...districtProperties,
             ...computedProperties,
@@ -107,7 +109,7 @@ function EditDistrictModal(props: ModalProps) {
       className="w-[858px]"
       title={
         isEdit
-          ? `Edit district "${getDistrictName(district)}":`
+          ? `Edit district "${getDistrictName(district!)}":`
           : `Create new district:`
       }
     >

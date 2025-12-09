@@ -162,7 +162,7 @@ export function useDrawOnCanvas(
   return renderRef;
 }
 
-export function useDistrictTextureHeight(district: District) {
+export function useDistrictTextureHeight(district?: District) {
   const deletions = useAppSelector(getDeletions);
   const additions = useAppSelector(getAdditionsTransforms);
 

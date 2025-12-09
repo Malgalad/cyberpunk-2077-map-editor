@@ -1,4 +1,4 @@
-import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
+import { createSlice } from "@reduxjs/toolkit";
 import type * as React from "react";
 
 import type { Tabs as ImportExportTabs } from "../modals/ImportExportNodesModal.tsx";
@@ -19,11 +19,11 @@ let deferred: ReturnType<typeof Promise.withResolvers<any>> | undefined;
 const modalsSlice = createSlice({
   name: "modals",
   initialState,
-  reducers: {
-    setModal(state, action: PayloadAction<Modal | undefined>) {
+  reducers: (create) => ({
+    setModal: create.reducer<Modal | undefined>((state, action) => {
       state.modal = action.payload;
-    },
-  },
+    }),
+  }),
   selectors: {
     getModal: (state) => state.modal,
   },
@@ -55,13 +55,6 @@ function openModal(
   type: "import-export",
   data?: ImportExportTabs,
 ): AppThunkAction<Promise<void>>;
-function openModal(
-  type: "confirm-instance-exclusion",
-  data: {
-    index: number;
-    position: [number, number];
-  },
-): AppThunkAction<Promise<boolean>>;
 function openModal<T>(
   type: ModalType,
   data?: unknown,

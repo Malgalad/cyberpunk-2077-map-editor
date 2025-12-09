@@ -7,8 +7,8 @@ import {
 } from "lucide-react";
 
 import Button from "../components/common/Button.tsx";
-import DropdownItem from "../components/common/Dropdown.Item.tsx";
-import Dropdown from "../components/common/Dropdown.tsx";
+import DropdownItem from "../components/common/Dropdown/Dropdown.Item.tsx";
+import Dropdown from "../components/common/Dropdown/Dropdown.tsx";
 import Tooltip from "../components/common/Tooltip.tsx";
 import { TEMPLATE_ID } from "../constants.ts";
 import { useAppDispatch, useAppSelector } from "../hooks.ts";
@@ -86,7 +86,9 @@ function AddNodesTemplates() {
         direction="left"
         align="bottom"
       >
-        {templates.length === 0 && <DropdownItem>No templates</DropdownItem>}
+        {templates.length === 0 && (
+          <DropdownItem disabled>No templates</DropdownItem>
+        )}
 
         {templates.length > 0 &&
           templates.map((template) => (

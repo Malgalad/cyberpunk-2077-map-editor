@@ -1,9 +1,9 @@
 import { ChevronDown, Plus, Trash2, TriangleAlert } from "lucide-react";
 
 import Button from "../components/common/Button.tsx";
-import DropdownItem from "../components/common/Dropdown.Item.tsx";
-import DropdownSeparator from "../components/common/Dropdown.Separator.tsx";
-import Dropdown from "../components/common/Dropdown.tsx";
+import DropdownItem from "../components/common/Dropdown/Dropdown.Item.tsx";
+import DropdownSeparator from "../components/common/Dropdown/Dropdown.Separator.tsx";
+import Dropdown from "../components/common/Dropdown/Dropdown.tsx";
 import { useAppDispatch, useAppSelector } from "../hooks.ts";
 import { useMap3D } from "../map3d/map3d.context.ts";
 import { DistrictActions, DistrictSelectors } from "../store/district.ts";
@@ -83,44 +83,42 @@ function SelectDistrict() {
           </DropdownItem>
         );
 
-        if (item.isCustom) {
-          const districtCache = cache[item.name];
-          const disableDelete = districtCache?.nodes.length > 0;
+        if (!item.isCustom) return element;
 
-          return (
-            <Dropdown
-              className="min-w-auto!"
-              key={item.name}
-              trigger={element}
-              direction="left"
-              align="top"
+        const districtCache = cache[item.name];
+        const disableDelete = districtCache?.nodes.length > 0;
+
+        return (
+          <Dropdown
+            className="min-w-auto!"
+            key={item.name}
+            trigger={element}
+            direction="left"
+            align="top"
+          >
+            <DropdownItem
+              className={disableDelete ? "tooltip" : ""}
+              icon={<Trash2 />}
+              disabled={disableDelete}
+              onClick={async () => {
+                const confirmed = await dispatch(
+                  ModalsActions.openModal(
+                    "confirm",
+                    `Do you want to delete custom district "${item.name}"?`,
+                  ),
+                );
+                if (confirmed) {
+                  dispatch(DistrictActions.deleteDistrict(item.name));
+                  map3d?.reset();
+                }
+              }}
+              data-tooltip="Can not delete district with nodes"
+              data-flow="top"
             >
-              <DropdownItem
-                className={disableDelete ? "tooltip" : ""}
-                icon={<Trash2 />}
-                disabled={disableDelete}
-                onClick={async () => {
-                  const confirmed = await dispatch(
-                    ModalsActions.openModal(
-                      "confirm",
-                      `Do you want to delete custom district "${item.name}"?`,
-                    ),
-                  );
-                  if (confirmed) {
-                    dispatch(DistrictActions.deleteDistrict(item.name));
-                    map3d?.reset();
-                  }
-                }}
-                data-tooltip="Can not delete district with nodes"
-                data-flow="top"
-              >
-                Delete district
-              </DropdownItem>
-            </Dropdown>
-          );
-        }
-
-        return element;
+              Delete district
+            </DropdownItem>
+          </Dropdown>
+        );
       })}
       <DropdownSeparator />
       <DropdownItem

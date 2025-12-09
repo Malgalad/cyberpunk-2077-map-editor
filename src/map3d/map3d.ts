@@ -168,7 +168,7 @@ export class Map3D extends Map3DBase {
     requestAnimationFrame(this.render);
   };
 
-  #onClick = (event: MouseEvent) => {
+  #onClick = () => {
     const mode = this.#mode;
 
     if (
@@ -192,12 +192,7 @@ export class Map3D extends Map3DBase {
       );
     } else if (mode === "delete") {
       window.dispatchEvent(
-        new CustomEvent("remove-node", {
-          detail: {
-            index,
-            position: [event.clientX, event.clientY],
-          },
-        }),
+        new CustomEvent("remove-node", { detail: { index } }),
       );
     } else if (mode === "update") {
       if (this.#pointingAt[1] === this.#updates) {

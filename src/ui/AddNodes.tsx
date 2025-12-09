@@ -3,6 +3,7 @@ import { CopyPlus, FilePlus, FolderPlus, Trash2 } from "lucide-react";
 import Button from "../components/common/Button.tsx";
 import EditNode from "../components/EditNode.tsx";
 import Node from "../components/Node.tsx";
+import { MAX_DEPTH } from "../constants.ts";
 import { useAppDispatch, useAppSelector } from "../hooks.ts";
 import { useMap3D } from "../map3d/map3d.context.ts";
 import { getAdditions } from "../store/@selectors.ts";
@@ -19,35 +20,24 @@ function AddNodes() {
   const nodes = useAppSelector(getAdditions);
   const selected = useAppSelector(NodesSelectors.getSelectedNode);
   const district = useAppSelector(DistrictSelectors.getDistrict);
+  const cache = useAppSelector(NodesSelectors.getChildNodesCache);
   const rootNodes = nodes.filter((node) => node.parent === district?.name);
 
   if (!district) return null;
 
-  const onDelete = () => {
+  const onDelete = async () => {
     if (!selected) return;
 
-    const children = nodes.filter((node) => node.parent === selected.id);
-
-    if (selected.type === "group" && children.length > 0) {
-      dispatch(
-        ModalsActions.openModal(
-          "alert",
-          "Cannot delete group with child nodes. Delete or move child nodes first",
-        ),
-      );
-      return;
-    }
-
-    dispatch(
+    const confirmed = await dispatch(
       ModalsActions.openModal(
         "confirm",
         `Do you want to delete node "${selected.label}"? This action cannot be undone.`,
       ),
-    ).then((confirmed) => {
-      if (confirmed) {
-        dispatch(NodesActions.deleteNodes([selected.id]));
-      }
-    });
+    );
+
+    if (confirmed) {
+      dispatch(NodesActions.deleteNodeDeep(selected.id));
+    }
   };
 
   const onClone = () => {
@@ -84,7 +74,7 @@ function AddNodes() {
         >
           {rootNodes.length === 0 && (
             <div className="grow flex items-center justify-center italic">
-              Add nodes
+              Add new nodes
             </div>
           )}
           {rootNodes.map((node) => (
@@ -130,7 +120,10 @@ function AddNodes() {
           <Button
             className="border-none tooltip"
             onClick={() => onAdd("group")}
-            disabled={selected?.type === "instance"}
+            disabled={
+              selected?.type === "instance" ||
+              (selected && cache[selected.id].level >= MAX_DEPTH - 1)
+            }
             data-tooltip="Add group"
             data-flow="left"
           >

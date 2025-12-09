@@ -1,10 +1,6 @@
-import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
+import { createSlice } from "@reduxjs/toolkit";
 
-import type {
-  DistrictView,
-  PatternView,
-  RevivedAppState,
-} from "../types/types.ts";
+import type { DistrictView, PatternView } from "../types/types.ts";
 import { hydrateState } from "./@actions.ts";
 
 interface OptionsState {
@@ -22,26 +18,26 @@ const initialState: OptionsState = {
 const optionsSlice = createSlice({
   name: "options",
   initialState,
-  reducers: {
-    setDistrictView(state, action: PayloadAction<DistrictView>) {
+  reducers: (create) => ({
+    setDistrictView: create.reducer<DistrictView>((state, action) => {
       state.districtView = action.payload;
-    },
-    setPatternView(state, action: PayloadAction<PatternView>) {
+    }),
+    setPatternView: create.reducer<PatternView>((state, action) => {
       state.patternView = action.payload;
-    },
-    toggleDistrictVisibility(state, action: PayloadAction<string>) {
+    }),
+    toggleDistrictVisibility: create.reducer<string>((state, action) => {
       const index = state.visibleDistricts.indexOf(action.payload);
       if (index === -1) {
         state.visibleDistricts.push(action.payload);
       } else {
         state.visibleDistricts.splice(index, 1);
       }
-    },
-  },
+    }),
+  }),
   extraReducers: (builder) =>
     builder.addCase(
       hydrateState.fulfilled,
-      (_, action: PayloadAction<RevivedAppState>) => action.payload.options,
+      (_, action) => action.payload.options,
     ),
   selectors: {
     getDistrictView: (state) => state.districtView,

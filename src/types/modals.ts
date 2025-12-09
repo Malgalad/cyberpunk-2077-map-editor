@@ -6,8 +6,7 @@ export type ModalType =
   | "loading"
   | "project"
   | "edit-district"
-  | "import-export"
-  | "confirm-instance-exclusion";
+  | "import-export";
 export type Modal = {
   type: ModalType;
   data: unknown;

@@ -14,7 +14,6 @@ const tabs = [
   { key: "pattern", label: "Pattern" },
 ] as { key: Tabs; label: string }[];
 
-// TODO verify nodes are not out of bounds
 function EditNode() {
   const node = useAppSelector(NodesSelectors.getSelectedNode) as MapNode;
   const [tab, setTab] = React.useState<Tabs>("properties");

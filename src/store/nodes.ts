@@ -1,19 +1,13 @@
 import {
   createSelector,
   createSlice,
-  type PayloadAction,
+  prepareAutoBatched,
 } from "@reduxjs/toolkit";
 import { produce, type WritableDraft } from "immer";
 import { nanoid } from "nanoid";
 
 import { TEMPLATE_ID } from "../constants.ts";
-import type {
-  AppThunkAction,
-  District,
-  MapNode,
-  MapNodeUri,
-  RevivedAppState,
-} from "../types/types.ts";
+import type { AppThunkAction, MapNode, MapNodeUri } from "../types/types.ts";
 import {
   cloneNode,
   createGroupNodesCache,
@@ -67,78 +61,63 @@ const nodesSlice = createSlice({
 
         return { payload: node };
       },
-      (state, action: PayloadAction<MapNode>) => {
+      (state, action) => {
         state.nodes.push(action.payload);
       },
     ),
-    replaceNodes: create.reducer((state, action: PayloadAction<MapNode[]>) => {
+    replaceNodes: create.reducer<MapNode[]>((state, action) => {
       state.nodes = action.payload;
     }),
-    cloneNode: create.reducer(
-      (
-        state,
-        action: PayloadAction<{
-          id: MapNode["id"];
-          selectAfterClone?: boolean;
-          updates?: Partial<MapNode>;
-        }>,
-      ) => {
-        const { id, selectAfterClone = true, updates } = action.payload;
-        const node = state.nodes.find((node) => node.id === id);
-        if (!node) return;
-        const clones = cloneNode(state.nodes, node, node.parent);
-        Object.assign(clones[0], updates);
-        state.nodes.push(...clones);
-        if (selectAfterClone) state.editingId = clones[0].id;
-      },
-    ),
-    editNode: create.reducer((state, action: PayloadAction<MapNode>) => {
-      const next = action.payload;
-      const index = state.nodes.findIndex((node) => node.id === next.id);
-      const previous = state.nodes[index];
-
-      state.nodes.splice(index, 1, next);
-
-      if (previous.parent !== next.parent) {
-        const map = new Map(state.nodes.map((node) => [node.id, node]));
-        state.nodes = normalizeNodes(state.nodes, map);
-      }
+    cloneNode: create.reducer<{
+      id: MapNode["id"];
+      selectAfterClone?: boolean;
+      updates?: Partial<MapNode>;
+    }>((state, action) => {
+      const { id, selectAfterClone = true, updates } = action.payload;
+      const node = state.nodes.find((node) => node.id === id);
+      if (!node) return;
+      const clones = cloneNode(state.nodes, node, node.parent);
+      Object.assign(clones[0], updates);
+      state.nodes.push(...clones);
+      if (selectAfterClone) state.editingId = clones[0].id;
     }),
-    deleteNodes: create.reducer(
-      (state, action: PayloadAction<MapNode["id"][]>) => {
-        state.nodes = state.nodes.filter(
-          (node) => !action.payload.includes(node.id),
-        );
+    editNode: create.preparedReducer(
+      prepareAutoBatched<MapNode>(),
+      (state, action) => {
+        const next = action.payload;
+        const index = state.nodes.findIndex((node) => node.id === next.id);
+        const previous = state.nodes[index];
+
+        state.nodes.splice(index, 1, next);
+
+        if (previous.parent !== next.parent) {
+          const map = new Map(state.nodes.map((node) => [node.id, node]));
+          state.nodes = normalizeNodes(state.nodes, map);
+        }
       },
     ),
-    selectNode: create.reducer(
-      (state, action: PayloadAction<MapNode["id"] | null>) => {
-        state.editingId = action.payload;
-      },
-    ),
+    deleteNodes: create.reducer<string[]>((state, action) => {
+      state.nodes = state.nodes.filter(
+        (node) => !action.payload.includes(node.id),
+      );
+    }),
+    selectNode: create.reducer<string | null>((state, action) => {
+      state.editingId = action.payload;
+    }),
   }),
   extraReducers: (builder) =>
     builder
-      .addCase(
-        hydrateState.fulfilled,
-        (_, action: PayloadAction<RevivedAppState>) => action.payload.nodes,
-      )
-      .addCase(
-        DistrictActions.updateDistrict,
-        (
-          state,
-          action: PayloadAction<{ name: string; district: District }>,
-        ) => {
-          const { name, district } = action.payload;
-          if (name === district.name) return;
+      .addCase(hydrateState.fulfilled, (_, action) => action.payload.nodes)
+      .addCase(DistrictActions.updateDistrict, (state, action) => {
+        const { name, district } = action.payload;
+        if (name === district.name) return;
 
-          for (const node of state.nodes) {
-            if (node.parent === name) {
-              node.parent = district.name;
-            }
+        for (const node of state.nodes) {
+          if (node.parent === name) {
+            node.parent = district.name;
           }
-        },
-      ),
+        }
+      }),
   selectors: {
     getNodes: (state) => state.nodes,
     getSelectedNodeId: (state) => state.editingId,

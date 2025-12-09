@@ -4,44 +4,28 @@ import Button from "../components/common/Button.tsx";
 import Node from "../components/Node.tsx";
 import { useAppDispatch, useAppSelector } from "../hooks.ts";
 import { getDeletions } from "../store/@selectors.ts";
-import { DistrictSelectors } from "../store/district.ts";
 import { ModalsActions } from "../store/modals.ts";
 import { NodesActions, NodesSelectors } from "../store/nodes.ts";
 
 function RemoveNodes() {
   const dispatch = useAppDispatch();
-  const district = useAppSelector(DistrictSelectors.getDistrict);
   const removals = useAppSelector(getDeletions);
   const selected = useAppSelector(NodesSelectors.getSelectedNode);
 
-  const onDelete = () => {
+  const onDelete = async () => {
     if (!selected) return;
 
-    const children = removals.filter((node) => node.parent === selected.id);
-
-    if (selected.type === "group" && children.length > 0) {
-      dispatch(
-        ModalsActions.openModal(
-          "alert",
-          "Cannot delete group with child nodes. Delete or move child nodes first",
-        ),
-      );
-      return;
-    }
-
-    dispatch(
+    const confirmed = await dispatch(
       ModalsActions.openModal(
         "confirm",
         `Do you want to delete node "${selected.label}"? This action cannot be undone.`,
       ),
-    ).then((confirmed) => {
-      if (confirmed) {
-        dispatch(NodesActions.deleteNodes([selected.id]));
-      }
-    });
-  };
+    );
 
-  if (!district) return null;
+    if (confirmed) {
+      dispatch(NodesActions.deleteNodeDeep(selected.id));
+    }
+  };
 
   return (
     <div className="flex flex-col gap-2 grow overflow-auto bg-slate-800 relative">
@@ -51,7 +35,7 @@ function RemoveNodes() {
       >
         {!removals.length && (
           <div className="grow flex items-center justify-center italic bg-slate-800">
-            Select and double click box to remove it.
+            Pick box using "Select" or "Multiselect" tool on the map
           </div>
         )}
 

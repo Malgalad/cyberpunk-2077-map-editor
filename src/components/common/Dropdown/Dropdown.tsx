@@ -1,9 +1,10 @@
 import * as React from "react";
 
-import { useGlobalShortcuts } from "../../hooks.ts";
-import { clsx } from "../../utilities/utilities.ts";
+import { useGlobalShortcuts } from "../../../hooks.ts";
+import { clsx } from "../../../utilities/utilities.ts";
 import {
   DropdownContextProvider,
+  DropdownTriggerContextProvider,
   useDropdownContext,
 } from "./dropdown.context.ts";
 
@@ -52,13 +53,15 @@ function Dropdown({
         onMouseEnter={() => setIsOpen(true)}
         onMouseLeave={() => setIsOpen(false)}
       >
-        {React.cloneElement(trigger, {
-          disabled,
-          className: clsx(
-            trigger.props.className,
-            `group-hover/level-${level}:bg-slate-600`,
-          ),
-        })}
+        <DropdownTriggerContextProvider value={{ direction, isTrigger: true }}>
+          {React.cloneElement(trigger, {
+            disabled,
+            className: clsx(
+              trigger.props.className,
+              `group-hover/level-${level}:bg-slate-600`,
+            ),
+          })}
+        </DropdownTriggerContextProvider>
         {isOpen && !disabled && (
           <div
             className={clsx(

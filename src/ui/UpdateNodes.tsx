@@ -1,5 +1,4 @@
 import { Trash2 } from "lucide-react";
-import * as React from "react";
 
 import Button from "../components/common/Button.tsx";
 import EditNode from "../components/EditNode.tsx";
@@ -15,38 +14,23 @@ function UpdateNodes() {
   const nodes = useAppSelector(getUpdates);
   const selected = useAppSelector(NodesSelectors.getSelectedNode);
   const district = useAppSelector(DistrictSelectors.getDistrict);
-  const rootNodes = React.useMemo(
-    () => nodes.filter((node) => node.parent === district?.name),
-    [nodes, district],
-  );
+  const rootNodes = nodes.filter((node) => node.parent === district?.name);
 
   if (!district) return null;
 
-  const onDelete = () => {
+  const onDelete = async () => {
     if (!selected) return;
 
-    const children = nodes.filter((node) => node.parent === selected.id);
-
-    if (selected.type === "group" && children.length > 0) {
-      dispatch(
-        ModalsActions.openModal(
-          "alert",
-          "Cannot delete group with child nodes. Delete or move child nodes first",
-        ),
-      );
-      return;
-    }
-
-    dispatch(
+    const confirmed = await dispatch(
       ModalsActions.openModal(
         "confirm",
         `Do you want to delete node "${selected.label}"? This action cannot be undone.`,
       ),
-    ).then((confirmed) => {
-      if (confirmed) {
-        dispatch(NodesActions.deleteNodes([selected.id]));
-      }
-    });
+    );
+
+    if (confirmed) {
+      dispatch(NodesActions.deleteNodeDeep(selected.id));
+    }
   };
 
   return (
@@ -58,7 +42,7 @@ function UpdateNodes() {
         >
           {rootNodes.length === 0 && (
             <div className="grow flex items-center justify-center italic">
-              Add nodes
+              Pick box using "Select" or "Multiselect" tool on the map
             </div>
           )}
           {rootNodes.map((node) => (

@@ -1,6 +1,6 @@
-import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
+import { createSlice } from "@reduxjs/toolkit";
 
-import type { District, RevivedAppState } from "../types/types.ts";
+import type { District } from "../types/types.ts";
 import { hydrateState } from "./@actions.ts";
 
 interface DistrictState {
@@ -16,42 +16,41 @@ const initialState: DistrictState = {
 const districtSlice = createSlice({
   name: "district",
   initialState,
-  reducers: {
-    addDistrict(state, action: PayloadAction<District>) {
+  reducers: (create) => ({
+    addDistrict: create.reducer<District>((state, action) => {
       state.districts.push(action.payload);
-    },
-    selectDistrict(state, action: PayloadAction<string | null>) {
+    }),
+    selectDistrict: create.reducer<string | null>((state, action) => {
       state.current = action.payload;
-    },
-    updateDistrict(
-      state,
-      action: PayloadAction<{ name: string; district: District }>,
-    ) {
-      const { name, district } = action.payload;
+    }),
+    updateDistrict: create.reducer<{ name: string; district: District }>(
+      (state, action) => {
+        const { name, district } = action.payload;
 
-      state.districts.splice(
-        state.districts.findIndex((district) => district.name === name),
-        1,
-        district,
-      );
+        state.districts.splice(
+          state.districts.findIndex((district) => district.name === name),
+          1,
+          district,
+        );
 
-      if (state.current === name && name !== district.name) {
-        state.current = district.name;
-      }
-    },
-    deleteDistrict(state, action: PayloadAction<string>) {
+        if (state.current === name && name !== district.name) {
+          state.current = district.name;
+        }
+      },
+    ),
+    deleteDistrict: create.reducer<string>((state, action) => {
       state.districts.splice(
         state.districts.findIndex(
           (district) => district.name === action.payload,
         ),
         1,
       );
-    },
-  },
+    }),
+  }),
   extraReducers: (builder) =>
     builder.addCase(
       hydrateState.fulfilled,
-      (_, action: PayloadAction<RevivedAppState>) => action.payload.district,
+      (_, action) => action.payload.district,
     ),
   selectors: {
     getDistrict: (state) =>

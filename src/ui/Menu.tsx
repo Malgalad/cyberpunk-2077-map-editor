@@ -1,5 +1,7 @@
 import {
+  FileDown,
   FilePlus2,
+  FileUp,
   FolderOpen,
   HardDriveDownload,
   HardDriveUpload,
@@ -10,9 +12,9 @@ import {
 } from "lucide-react";
 
 import Button from "../components/common/Button.tsx";
-import DropdownItem from "../components/common/Dropdown.Item.tsx";
-import DropdownSeparator from "../components/common/Dropdown.Separator.tsx";
-import Dropdown from "../components/common/Dropdown.tsx";
+import DropdownItem from "../components/common/Dropdown/Dropdown.Item.tsx";
+import DropdownSeparator from "../components/common/Dropdown/Dropdown.Separator.tsx";
+import Dropdown from "../components/common/Dropdown/Dropdown.tsx";
 import { useAppDispatch, useAppSelector } from "../hooks.ts";
 import { useExportDDS, useSaveProject } from "../hooks/importExport.ts";
 import { getDistrictCache } from "../store/@selectors.ts";
@@ -84,13 +86,14 @@ function Menu() {
           <Dropdown
             direction="right"
             align="top"
-            trigger={<DropdownItem isExpandable>Import/Export</DropdownItem>}
+            trigger={<DropdownItem>Import/Export</DropdownItem>}
           >
             <DropdownItem
               onClick={() =>
                 dispatch(ModalsActions.openModal("import-export", "import"))
               }
               disabled={!projectName}
+              icon={<FileUp />}
             >
               Import nodes to project
             </DropdownItem>
@@ -99,6 +102,7 @@ function Menu() {
                 dispatch(ModalsActions.openModal("import-export", "export"))
               }
               disabled={!projectName}
+              icon={<FileDown />}
             >
               Export nodes
             </DropdownItem>
@@ -134,11 +138,10 @@ function Menu() {
           }
         >
           <Dropdown
-            trigger={<DropdownItem isExpandable>Show districts</DropdownItem>}
+            trigger={<DropdownItem>Show districts</DropdownItem>}
             direction="right"
             align="top"
-            // TODO allow view other districts even if no current district
-            disabled={!projectName || !district}
+            disabled={!projectName}
           >
             <DropdownItem
               checked={districtView === "all"}
@@ -151,6 +154,7 @@ function Menu() {
               onClick={() =>
                 dispatch(OptionsActions.setDistrictView("current"))
               }
+              disabled={!district}
             >
               Current
             </DropdownItem>
@@ -181,10 +185,10 @@ function Menu() {
           </Dropdown>
 
           <Dropdown
-            trigger={<DropdownItem isExpandable>Render patterns</DropdownItem>}
+            trigger={<DropdownItem>Render patterns</DropdownItem>}
             direction="right"
             align="top"
-            disabled={!projectName || !district}
+            disabled={!projectName}
           >
             <DropdownItem
               checked={patternView === "none"}

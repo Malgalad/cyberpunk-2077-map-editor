@@ -8,17 +8,10 @@ type ButtonProps = React.ButtonHTMLAttributes<HTMLButtonElement> & {
   onClick?: (
     event: React.MouseEvent<HTMLButtonElement, MouseEvent>,
   ) => void | Promise<void>;
-  rounded?: boolean;
   shortcut?: string | ((event: KeyboardEvent) => boolean);
 };
 
-function Button({
-  rounded = false,
-  onClick,
-  children,
-  shortcut,
-  ...props
-}: ButtonProps) {
+function Button({ onClick, children, shortcut, ...props }: ButtonProps) {
   const [isLoading, setIsLoading] = React.useState(false);
   const onClickAsync = React.useCallback(
     (event: React.MouseEvent<HTMLButtonElement, MouseEvent>) => {
@@ -51,7 +44,6 @@ function Button({
         "aria-selected:not-disabled:ring-2 aria-selected:not-disabled:ring-slate-200",
         "active:not-disabled:bg-slate-500 active:not-disabled:text-slate-900",
         "disabled:cursor-not-allowed disabled:text-gray-500",
-        rounded && "rounded-md",
         props.className,
       )}
       disabled={props.disabled || isLoading}

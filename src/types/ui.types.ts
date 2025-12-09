@@ -9,3 +9,7 @@ export interface DropdownContext {
   level: number;
   indent: boolean;
 }
+export interface DropdownTriggerContext {
+  direction: "top" | "bottom" | "left" | "right";
+  isTrigger: boolean;
+}

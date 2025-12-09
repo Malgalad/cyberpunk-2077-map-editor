@@ -11,7 +11,6 @@ import {
   getUpdatesTransforms,
 } from "./store/@selectors.ts";
 import { DistrictSelectors } from "./store/district.ts";
-import { ModalsActions } from "./store/modals.ts";
 import { NodesActions, NodesSelectors } from "./store/nodes.ts";
 import { OptionsSelectors } from "./store/options.ts";
 import { ProjectSelectors } from "./store/project.ts";
@@ -21,7 +20,7 @@ import { parseNode } from "./utilities/nodes.ts";
 import { applyTransforms, transformToNode } from "./utilities/transforms.ts";
 import { invariant, toNumber, toString } from "./utilities/utilities.ts";
 
-const emptyArray: unknown[] = [];
+const emptyArray: District[] = [];
 
 export function useInitMap3D(ref: React.RefObject<HTMLCanvasElement | null>) {
   const [map3d, setMap3D] = React.useState<Map3D | null>(null);
@@ -51,16 +50,16 @@ export function useDrawAllDistricts(map3d: Map3D | null) {
     OptionsSelectors.getVisibleDistricts,
   );
   const nonCurrentDistricts = React.useMemo(() => {
-    if (!currentDistrict) return emptyArray as District[];
-
     const districtsVisibilityMap: Record<string, District[]> = {
       all: allDistricts,
-      current: [currentDistrict],
+      current: emptyArray,
       custom: allDistricts.filter((district) =>
         visibleDistrictNames.includes(district.name),
       ),
     };
     const visibleDistricts = districtsVisibilityMap[districtView];
+
+    if (!currentDistrict) return visibleDistricts;
 
     return visibleDistricts.filter(
       (district) => district.name !== currentDistrict.name,
@@ -107,7 +106,6 @@ export function useDrawCurrentDistrict(map3d: Map3D | null) {
     [deletions],
   );
 
-  // TODO optimize - don't recalc updates/deletions if additions change
   React.useEffect(() => {
     if (!map3d || !district) return;
 
@@ -242,7 +240,7 @@ export function useMap3DEvents(map3d: Map3D | null) {
 
     const onSelect = ((event: CustomEvent<{ index: number }>) => {
       if (event.detail) {
-        const index = event.detail.index;
+        const { index } = event.detail;
 
         if (index != null) {
           const id =
@@ -260,30 +258,19 @@ export function useMap3DEvents(map3d: Map3D | null) {
         }
       }
     }) as EventListener;
-    const onRemove = ((
-      event: CustomEvent<{ index: number; position: [number, number] }>,
-    ) => {
+    const onRemove = ((event: CustomEvent<{ index: number }>) => {
       if (event.detail) {
-        const { index, position } = event.detail;
+        const { index } = event.detail;
 
-        dispatch(
-          ModalsActions.openModal("confirm-instance-exclusion", {
-            index,
-            position,
-          }),
-        ).then((confirmed) => {
-          if (confirmed) {
-            invariant(district, "District is not defined");
-            const node = transformToNode(district.transforms[index], district, {
-              label: `Box #${index}`,
-              parent: district.name,
-              tag: "delete",
-              id: toString(index),
-            });
-            dispatch(NodesActions.addNode(node));
-            dispatch(NodesActions.selectNode(toString(index)));
-          }
+        invariant(district, "District is not defined");
+        const node = transformToNode(district.transforms[index], district, {
+          label: `Box #${index}`,
+          parent: district.name,
+          tag: "delete",
+          id: toString(index),
         });
+        dispatch(NodesActions.addNode(node));
+        dispatch(NodesActions.selectNode(toString(index)));
       }
     }) as EventListener;
     const onUpdate = ((event: CustomEvent<{ index: number }>) => {

@@ -10,7 +10,7 @@ function AlertModal(props: ModalProps) {
       alignFooter="center"
       closeButton={false}
       footer={
-        <Button rounded={true} className="w-12" onClick={() => props.onClose()}>
+        <Button className="w-12" onClick={() => props.onClose()}>
           OK
         </Button>
       }
