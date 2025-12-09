@@ -5,7 +5,6 @@ import { ModalsActions, ModalsSelectors } from "../store/modals.ts";
 import type { ModalProps, ModalType } from "../types/modals.ts";
 import AlertModal from "./AlertModal.tsx";
 import ConfirmByTypingModal from "./ConfirmByTypingModal.tsx";
-import ConfirmExclusionModal from "./ConfirmExclusionModal.tsx";
 import ConfirmModal from "./ConfirmModal.tsx";
 import CriticalErrorModal from "./CriticalErrorModal.tsx";
 import EditDistrictModal from "./EditDistrictModal/EditDistrictModal.tsx";
@@ -22,7 +21,6 @@ const ComponentMap: Record<ModalType, React.FC<ModalProps>> = {
   project: ProjectModal,
   "edit-district": EditDistrictModal,
   "import-export": ImportExportNodesModal,
-  "confirm-instance-exclusion": ConfirmExclusionModal,
 };
 
 function ModalContainer() {
