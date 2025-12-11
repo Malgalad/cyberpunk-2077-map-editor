@@ -21,7 +21,7 @@ function EditNodePattern({ node }: EditNodePatternProps) {
             <Button
               onClick={() => {
                 dispatch(
-                  NodesActions.patchNode((draft) => {
+                  NodesActions.patchNode(node.id, (draft) => {
                     draft.pattern!.enabled = false;
                   }),
                 );
@@ -33,7 +33,7 @@ function EditNodePattern({ node }: EditNodePatternProps) {
             <Button
               onClick={() => {
                 dispatch(
-                  NodesActions.patchNode((draft) => {
+                  NodesActions.patchNode(node.id, (draft) => {
                     if (!draft.pattern) {
                       draft.pattern = {
                         count: 1,
@@ -65,7 +65,7 @@ function EditNodePattern({ node }: EditNodePatternProps) {
                 value={node.pattern.count.toString()}
                 onChange={(event) => {
                   dispatch(
-                    NodesActions.patchNode((draft) => {
+                    NodesActions.patchNode(node.id, (draft) => {
                       draft.pattern!.count = parseInt(event.target.value, 10);
                     }),
                   );
@@ -83,7 +83,7 @@ function EditNodePattern({ node }: EditNodePatternProps) {
                     value={node.pattern!.position[i]}
                     onChange={(event) => {
                       dispatch(
-                        NodesActions.patchNode((draft) => {
+                        NodesActions.patchNode(node.id, (draft) => {
                           draft.pattern!.position[i] = event.target.value;
                         }),
                       );
@@ -103,7 +103,7 @@ function EditNodePattern({ node }: EditNodePatternProps) {
                     value={node.pattern!.rotation[i]}
                     onChange={(event) => {
                       dispatch(
-                        NodesActions.patchNode((draft) => {
+                        NodesActions.patchNode(node.id, (draft) => {
                           draft.pattern!.rotation[i] = event.target.value;
                         }),
                       );
@@ -123,7 +123,7 @@ function EditNodePattern({ node }: EditNodePatternProps) {
                     value={node.pattern!.scale[i]}
                     onChange={(event) => {
                       dispatch(
-                        NodesActions.patchNode((draft) => {
+                        NodesActions.patchNode(node.id, (draft) => {
                           draft.pattern!.scale[i] = event.target.value;
                         }),
                       );

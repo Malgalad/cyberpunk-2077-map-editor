@@ -21,7 +21,7 @@ import { DistrictActions, DistrictSelectors } from "./district.ts";
 
 interface NodesState {
   nodes: MapNode[];
-  editingId: string | null;
+  editingId: string | string[] | null;
 }
 
 const initialState: NodesState = {
@@ -101,8 +101,32 @@ const nodesSlice = createSlice({
         (node) => !action.payload.includes(node.id),
       );
     }),
-    selectNode: create.reducer<string | null>((state, action) => {
-      state.editingId = action.payload;
+    selectNode: create.reducer<null | {
+      id: string;
+      modifier?: "shift" | "ctrl" | "alt";
+    }>((state, action) => {
+      if (action.payload == null) {
+        state.editingId = null;
+        return;
+      }
+
+      const { id, modifier } = action.payload;
+      const set = new Set<string>(
+        state.editingId
+          ? Array.isArray(state.editingId)
+            ? state.editingId
+            : [state.editingId]
+          : [],
+      );
+      if (!modifier) {
+        state.editingId = [id];
+      } else if (modifier === "ctrl") {
+        set.add(id);
+        state.editingId = [...set.values()];
+      } else if (modifier === "alt") {
+        set.delete(id);
+        state.editingId = [...set.values()];
+      }
     }),
   }),
   extraReducers: (builder) =>
@@ -120,7 +144,12 @@ const nodesSlice = createSlice({
       }),
   selectors: {
     getNodes: (state) => state.nodes,
-    getSelectedNodeId: (state) => state.editingId,
+    getSelectedNodeIds: structuralSharing((state): string[] => {
+      const selected = state.editingId;
+      if (selected == null) return [];
+      if (Array.isArray(selected)) return selected;
+      return [selected];
+    }),
     getNodeUris: createSelector(
       [
         (sliceState: NodesState): MapNode[] =>
@@ -143,14 +172,16 @@ const nodesSlice = createSlice({
       ],
       structuralSharing(createGroupNodesCache),
     ),
-    getSelectedNode: createSelector(
+    getSelectedNodes: createSelector(
       [
-        (sliceState: NodesState): string | null =>
-          nodesSlice.getSelectors().getSelectedNodeId(sliceState),
+        (sliceState: NodesState): string[] =>
+          nodesSlice.getSelectors().getSelectedNodeIds(sliceState),
         (sliceState: NodesState): MapNode[] =>
           nodesSlice.getSelectors().getNodes(sliceState),
       ],
-      (editing, nodes) => nodes.find((node) => node.id === editing),
+      structuralSharing((selected: string[], nodes: MapNode[]): MapNode[] =>
+        nodes.filter((node) => selected.includes(node.id)),
+      ),
     ),
     getTemplateNodes: createSelector(
       [
@@ -165,11 +196,14 @@ const nodesSlice = createSlice({
 });
 
 const patchNode =
-  (callback: (draft: WritableDraft<MapNode>) => void): AppThunkAction =>
+  (
+    id: string,
+    callback: (draft: WritableDraft<MapNode>) => void,
+  ): AppThunkAction =>
   (dispatch, getState) => {
     const state = getState();
     const nodes = nodesSlice.selectors.getNodes(state);
-    const selectedNode = nodesSlice.selectors.getSelectedNode(state);
+    const selectedNode = nodes.find((node) => node.id === id);
     const district = DistrictSelectors.getDistrict(state);
     const cache = nodesSlice.selectors.getChildNodesCache(state);
     const map = new Map(nodes.map((node) => [node.id, parseNode(node)]));

@@ -2,7 +2,6 @@ import * as React from "react";
 
 import { useAppSelector } from "../hooks.ts";
 import { NodesSelectors } from "../store/nodes.ts";
-import type { MapNode } from "../types/types.ts";
 import { clsx } from "../utilities/utilities.ts";
 import Button from "./common/Button.tsx";
 import EditNodePattern from "./EditNode.Pattern.tsx";
@@ -15,7 +14,7 @@ const tabs = [
 ] as { key: Tabs; label: string }[];
 
 function EditNode() {
-  const node = useAppSelector(NodesSelectors.getSelectedNode) as MapNode;
+  const [node] = useAppSelector(NodesSelectors.getSelectedNodes);
   const [tab, setTab] = React.useState<Tabs>("properties");
 
   React.useEffect(() => {

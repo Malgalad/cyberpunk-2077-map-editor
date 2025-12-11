@@ -23,7 +23,7 @@ function AddNodesTemplates() {
   const dispatch = useAppDispatch();
   const map3d = useMap3D();
   const district = useAppSelector(DistrictSelectors.getDistrict);
-  const selected = useAppSelector(NodesSelectors.getSelectedNode);
+  const selected = useAppSelector(NodesSelectors.getSelectedNodes);
   const templates = useAppSelector(NodesSelectors.getTemplateNodes);
 
   if (!district) return null;
@@ -59,12 +59,12 @@ function AddNodesTemplates() {
   };
 
   const onCreate = () => {
-    if (!selected) return;
+    if (selected.length !== 1) return;
     dispatch(
       NodesActions.cloneNode({
-        id: selected.id,
+        id: selected[0].id,
         updates: {
-          label: `TEMPLATE <${selected.label}>`,
+          label: `TEMPLATE <${selected[0].label}>`,
           parent: TEMPLATE_ID,
           position: ["0", "0", "0"],
           errors: undefined,
@@ -117,7 +117,7 @@ function AddNodesTemplates() {
           ))}
       </Dropdown>
 
-      {selected && (
+      {selected.length === 1 && (
         <Tooltip
           tooltip="Create template from node"
           tooltip2="Template created!"

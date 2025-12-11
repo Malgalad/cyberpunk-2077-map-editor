@@ -78,7 +78,7 @@ export const NodeSchema = z.object({
 });
 export const NodesStateSchema = z.object({
   nodes: z.array(NodeSchema),
-  editingId: z.union([z.string(), z.null()]),
+  editingId: z.union([z.string(), z.array(z.string()), z.null()]),
 });
 
 export const PersistentStateSchema = z.object({

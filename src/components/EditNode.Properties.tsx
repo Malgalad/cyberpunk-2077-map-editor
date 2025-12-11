@@ -81,7 +81,7 @@ function EditNodeProperties({ node }: EditNodePropertiesProps) {
             value={node.label}
             onChange={(event) => {
               dispatch(
-                NodesActions.patchNode((draft) => {
+                NodesActions.patchNode(node.id, (draft) => {
                   draft.label = event.target.value;
                 }),
               );
@@ -116,7 +116,7 @@ function EditNodeProperties({ node }: EditNodePropertiesProps) {
                 newPosition[2] - oldPosition[2],
               ];
               dispatch(
-                NodesActions.patchNode((draft) => {
+                NodesActions.patchNode(node.id, (draft) => {
                   draft.parent = parentId;
                   draft.position = [
                     toString(toNumber(draft.position[0]) - difference[0]),
@@ -179,7 +179,7 @@ function EditNodeProperties({ node }: EditNodePropertiesProps) {
                     );
 
                   dispatch(
-                    NodesActions.patchNode((draft) => {
+                    NodesActions.patchNode(node.id, (draft) => {
                       draft.position = position
                         .toArray()
                         .map((number) => number.toString()) as [
@@ -191,7 +191,7 @@ function EditNodeProperties({ node }: EditNodePropertiesProps) {
                   );
                 } else {
                   dispatch(
-                    NodesActions.patchNode((draft) => {
+                    NodesActions.patchNode(node.id, (draft) => {
                       draft.position[i] = event.target.value;
                     }),
                   );
@@ -210,7 +210,7 @@ function EditNodeProperties({ node }: EditNodePropertiesProps) {
               value={node.rotation[i]}
               onChange={(event) => {
                 dispatch(
-                  NodesActions.patchNode((draft) => {
+                  NodesActions.patchNode(node.id, (draft) => {
                     draft.rotation[i] = event.target.value;
                   }),
                 );
@@ -230,7 +230,7 @@ function EditNodeProperties({ node }: EditNodePropertiesProps) {
               value={node.scale[i]}
               onChange={(event) => {
                 dispatch(
-                  NodesActions.patchNode((draft) => {
+                  NodesActions.patchNode(node.id, (draft) => {
                     draft.scale[i] = event.target.value;
                   }),
                 );
@@ -252,7 +252,7 @@ function EditNodeProperties({ node }: EditNodePropertiesProps) {
             enabled={!!node.hidden}
             onChange={(enabled) => {
               dispatch(
-                NodesActions.patchNode((draft) => {
+                NodesActions.patchNode(node.id, (draft) => {
                   draft.hidden = enabled;
                 }),
               );

@@ -170,7 +170,7 @@ export function useDrawSelection(map3d: Map3D | null) {
   const additions = useAppSelector(getAdditionsTransforms);
   const updates = useAppSelector(getUpdatesTransforms);
   const deletions = useAppSelector(getDeletionsTransforms);
-  const selected = useAppSelector(NodesSelectors.getSelectedNode);
+  const selected = useAppSelector(NodesSelectors.getSelectedNodes);
   const cache = useAppSelector(NodesSelectors.getChildNodesCache);
   const nodes = useAppSelector(getDistrictNodes);
   const nodesMap = React.useMemo(
@@ -181,17 +181,17 @@ export function useDrawSelection(map3d: Map3D | null) {
   React.useEffect(() => {
     if (!map3d) return;
 
-    if (selected == null) {
+    if (selected.length === 0) {
       map3d.selectInstances([]);
       return;
     }
 
     const indexes: number[] = [];
-    const selectedIds = new Set(
-      selected.type === "instance"
-        ? [selected.id]
-        : cache[selected.id].instances,
-    );
+    const selectedIds = selected.reduce((set, node) => {
+      if (node.type === "instance") set.add(node.id);
+      else cache[node.id].instances.forEach((id) => set.add(id));
+      return set;
+    }, new Set<string>());
 
     if (mode === "create") {
       for (let index = 0; index < additions.length; index++) {
@@ -220,10 +220,10 @@ export function useDrawSelection(map3d: Map3D | null) {
 
   React.useEffect(() => {
     if (!map3d || mode === "delete") return;
-    if (!selected) {
+    if (selected.length !== 1) {
       map3d.setHelper(undefined);
     } else {
-      map3d.setHelper(applyTransforms(parseNode(selected), nodesMap), true);
+      map3d.setHelper(applyTransforms(parseNode(selected[0]), nodesMap), true);
     }
   }, [map3d, mode, selected, nodesMap]);
 }
@@ -251,7 +251,7 @@ export function useMap3DEvents(map3d: Map3D | null) {
                 : null;
 
           if (id != null) {
-            dispatch(NodesActions.selectNode(id));
+            dispatch(NodesActions.selectNode({ id }));
           }
         } else {
           dispatch(NodesActions.selectNode(null));
@@ -270,7 +270,7 @@ export function useMap3DEvents(map3d: Map3D | null) {
           id: toString(index),
         });
         dispatch(NodesActions.addNode(node));
-        dispatch(NodesActions.selectNode(toString(index)));
+        dispatch(NodesActions.selectNode({ id: toString(index) }));
       }
     }) as EventListener;
     const onUpdate = ((event: CustomEvent<{ index: number }>) => {
@@ -288,7 +288,7 @@ export function useMap3DEvents(map3d: Map3D | null) {
           });
           dispatch(NodesActions.addNode(node));
         }
-        dispatch(NodesActions.selectNode(id));
+        dispatch(NodesActions.selectNode({ id }));
       }
     }) as EventListener;
 

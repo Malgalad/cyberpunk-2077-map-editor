@@ -1,10 +1,15 @@
 import { CopyPlus, FilePlus, FolderPlus, Trash2 } from "lucide-react";
 
 import Button from "../components/common/Button.tsx";
+import Tooltip from "../components/common/Tooltip.tsx";
 import EditNode from "../components/EditNode.tsx";
 import Node from "../components/Node.tsx";
 import { MAX_DEPTH } from "../constants.ts";
-import { useAppDispatch, useAppSelector } from "../hooks.ts";
+import {
+  useAppDispatch,
+  useAppSelector,
+  useGlobalShortcuts,
+} from "../hooks.ts";
 import { useMap3D } from "../map3d/map3d.context.ts";
 import { getAdditions } from "../store/@selectors.ts";
 import { DistrictSelectors } from "../store/district.ts";
@@ -18,40 +23,46 @@ function AddNodes() {
   const dispatch = useAppDispatch();
   const map3d = useMap3D();
   const nodes = useAppSelector(getAdditions);
-  const selected = useAppSelector(NodesSelectors.getSelectedNode);
+  const selected = useAppSelector(NodesSelectors.getSelectedNodes);
   const district = useAppSelector(DistrictSelectors.getDistrict);
   const cache = useAppSelector(NodesSelectors.getChildNodesCache);
   const rootNodes = nodes.filter((node) => node.parent === district?.name);
 
-  if (!district) return null;
-
   const onDelete = async () => {
-    if (!selected) return;
+    if (selected.length === 0) return;
 
+    const message =
+      selected.length > 1
+        ? `Do you want to delete ${selected.length} nodes?`
+        : `Do you want to delete node "${selected[0].label}"?`;
     const confirmed = await dispatch(
-      ModalsActions.openModal(
-        "confirm",
-        `Do you want to delete node "${selected.label}"? This action cannot be undone.`,
-      ),
+      ModalsActions.openModal("confirm", message),
     );
 
     if (confirmed) {
-      dispatch(NodesActions.deleteNodeDeep(selected.id));
+      for (const node of selected) {
+        dispatch(NodesActions.deleteNodeDeep(node.id));
+      }
     }
   };
 
   const onClone = () => {
-    if (!selected) return;
-    dispatch(NodesActions.cloneNode({ id: selected.id }));
+    if (selected.length !== 1) return;
+    dispatch(NodesActions.cloneNode({ id: selected[0].id }));
   };
 
   const onAdd = (type: MapNode["type"]) => {
-    const parent = selected ? selected.id : district.name;
+    if (selected.length > 1 || !district) return;
+    const parent = selected[0]
+      ? selected[0].type === "group"
+        ? selected[0].id
+        : selected[0].parent
+      : district.name;
     if (!map3d) return;
     const center = map3d.getCenter();
     if (!center) return;
     const position = (
-      selected ? ["0", "0", "0"] : center.map(toString)
+      selected[0] ? ["0", "0", "0"] : center.map(toString)
     ) as MapNode["position"];
     const tag = "create";
     const action = dispatch(
@@ -62,8 +73,28 @@ function AddNodes() {
         position,
       }),
     );
-    dispatch(NodesActions.selectNode(action.payload.id));
+    dispatch(
+      NodesActions.selectNode({
+        id: action.payload.id,
+      }),
+    );
   };
+
+  const onHide = () => {
+    if (selected.length === 0) return;
+    for (const node of selected) {
+      dispatch(
+        NodesActions.patchNode(node.id, (draft) => {
+          draft.hidden = !draft.hidden;
+        }),
+      );
+    }
+  };
+
+  useGlobalShortcuts("Delete", onDelete);
+  useGlobalShortcuts("h", onHide);
+
+  if (!district) return null;
 
   return (
     <>
@@ -85,56 +116,55 @@ function AddNodes() {
         <div className="flex flex-row gap-2 px-1 bottom-0 justify-end border-t border-slate-900 bg-slate-800">
           <AddNodesTemplates />
 
-          {selected && (
+          {selected.length > 0 && (
             <>
               <div className="border border-slate-600 w-[1px]" />
-              <Button
-                className="border-none tooltip"
-                onClick={onClone}
-                data-tooltip="Clone node"
-                data-flow="top"
-              >
-                <CopyPlus />
-              </Button>
-              <Button
-                className="border-none tooltip"
-                onClick={onDelete}
-                data-tooltip="Delete node"
-                data-flow="top"
-              >
-                <Trash2 />
-              </Button>
+              <Tooltip tooltip="Clone node" tooltip2="Cloned!">
+                <Button
+                  className="border-none"
+                  onClick={onClone}
+                  disabled={selected.length !== 1}
+                >
+                  <CopyPlus />
+                </Button>
+              </Tooltip>
+              <Tooltip tooltip="Remove node">
+                <Button className="border-none" onClick={onDelete}>
+                  <Trash2 />
+                </Button>
+              </Tooltip>
               <div className="border border-slate-600 w-[1px]" />
             </>
           )}
 
-          <Button
-            className="border-none tooltip"
-            onClick={() => onAdd("instance")}
-            disabled={selected?.type === "instance"}
-            data-tooltip="Add instance"
-            data-flow="top"
-          >
-            <FilePlus />
-          </Button>
-          <Button
-            className="border-none tooltip"
-            onClick={() => onAdd("group")}
-            disabled={
-              selected?.type === "instance" ||
-              (selected && cache[selected.id].level >= MAX_DEPTH - 1)
-            }
-            data-tooltip="Add group"
-            data-flow="left"
-          >
-            <FolderPlus />
-          </Button>
+          <Tooltip tooltip="Add instance">
+            <Button
+              className="border-none"
+              onClick={() => onAdd("instance")}
+              disabled={selected.length > 1}
+            >
+              <FilePlus />
+            </Button>
+          </Tooltip>
+          <Tooltip tooltip="Add group" flow="left">
+            <Button
+              className="border-none"
+              onClick={() => onAdd("group")}
+              disabled={
+                selected.length > 1 ||
+                (selected[0]?.type === "group" &&
+                  cache[selected[0].id].level >= MAX_DEPTH - 1)
+              }
+            >
+              <FolderPlus />
+            </Button>
+          </Tooltip>
         </div>
       </div>
 
       <div className="flex flex-col basis-[320px] shrink-0">
-        {selected ? (
-          <EditNode key={selected.id} />
+        {selected.length === 1 ? (
+          <EditNode key={selected[0].id} />
         ) : (
           <div className="grow flex items-center justify-center italic bg-slate-800">
             Select node

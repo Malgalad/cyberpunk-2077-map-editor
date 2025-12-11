@@ -14,31 +14,29 @@ interface InstanceProps {
 
 function Instance({ lookAtNode, node }: InstanceProps) {
   const dispatch = useAppDispatch();
-  const selected = useAppSelector(NodesSelectors.getSelectedNode);
+  const selected = useAppSelector(NodesSelectors.getSelectedNodeIds);
 
   return (
     <div
       className={clsx(
         "flex flex-row items-center gap-2 border-2 -m-0.5",
         "border-dotted border-transparent cursor-pointer",
-        selected?.id === node.id && "border-slate-100!",
+        selected.includes(node.id) && "border-slate-100!",
       )}
       tabIndex={-1}
       role="button"
       onClick={(event) => {
         event.stopPropagation();
-        dispatch(NodesActions.selectNode(node.id));
+        const modifier = event.getModifierState("Alt")
+          ? "alt"
+          : event.getModifierState("Control")
+            ? "ctrl"
+            : undefined;
+        dispatch(NodesActions.selectNode({ id: node.id, modifier }));
       }}
       onDoubleClick={(event) => {
         event.preventDefault();
         lookAtNode();
-      }}
-      onKeyDown={(event) => {
-        if (event.key === "Enter" || event.key === " ") {
-          dispatch(NodesActions.selectNode(node.id));
-        } else if (event.key === "Escape") {
-          dispatch(NodesActions.selectNode(null));
-        }
       }}
     >
       <div className="grow flex flex-row justify-between items-center select-none">

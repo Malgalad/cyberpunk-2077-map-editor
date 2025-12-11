@@ -24,7 +24,7 @@ function Group({ lookAtNode, node }: GroupProps) {
   const dispatch = useAppDispatch();
 
   const nodes = useAppSelector(NodesSelectors.getNodes);
-  const selected = useAppSelector(NodesSelectors.getSelectedNode);
+  const selected = useAppSelector(NodesSelectors.getSelectedNodeIds);
   const cache = useAppSelector(NodesSelectors.getChildNodesCache);
   const [expanded, setExpanded] = React.useState(false);
   const children = React.useMemo(
@@ -35,8 +35,8 @@ function Group({ lookAtNode, node }: GroupProps) {
 
   React.useEffect(() => {
     if (
-      selected &&
-      nodeChildren.nodes.some((child) => child === selected.id) &&
+      selected.length > 0 &&
+      nodeChildren.nodes.some((child) => selected.includes(child)) &&
       !expanded
     ) {
       setExpanded(true);
@@ -48,7 +48,7 @@ function Group({ lookAtNode, node }: GroupProps) {
       className={clsx(
         "flex flex-col gap-1.5",
         "border-2 -m-0.5 border-dotted border-transparent",
-        selected?.id === node.id && "border-slate-100!",
+        selected.includes(node.id) && "border-slate-100!",
       )}
     >
       <div
@@ -57,18 +57,16 @@ function Group({ lookAtNode, node }: GroupProps) {
         role="button"
         onClick={(event) => {
           event.stopPropagation();
-          dispatch(NodesActions.selectNode(node.id));
+          const modifier = event.getModifierState("Alt")
+            ? "alt"
+            : event.getModifierState("Control")
+              ? "ctrl"
+              : undefined;
+          dispatch(NodesActions.selectNode({ id: node.id, modifier }));
         }}
         onDoubleClick={(event) => {
           event.preventDefault();
           lookAtNode();
-        }}
-        onKeyDown={(event) => {
-          if (event.key === "Enter" || event.key === " ") {
-            dispatch(NodesActions.selectNode(node.id));
-          } else if (event.key === "Escape") {
-            dispatch(NodesActions.selectNode(null));
-          }
         }}
       >
         <Button
