@@ -206,7 +206,7 @@ function EditNodeProperties({ node }: EditNodePropertiesProps) {
             <DraggableInput
               key={i}
               className={clsx("w-20", axiiColors[i])}
-              step={1.5 / (map3d?.camera.zoom ?? 1)}
+              step={5 / (map3d?.camera.zoom ?? 1)}
               value={node.rotation[i]}
               onChange={(event) => {
                 dispatch(

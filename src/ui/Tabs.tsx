@@ -1,4 +1,5 @@
 import Button from "../components/common/Button.tsx";
+import Tooltip from "../components/common/Tooltip.tsx";
 import {
   useAppDispatch,
   useAppSelector,
@@ -12,6 +13,15 @@ import { clsx } from "../utilities/utilities.ts";
 import AddNodes from "./AddNodes.tsx";
 import RemoveNodes from "./RemoveNodes.tsx";
 import UpdateNodes from "./UpdateNodes.tsx";
+
+const formatLength = (length: number) =>
+  length > 100 ? (
+    <Tooltip tooltip={`${length}`}>
+      <span>99+</span>
+    </Tooltip>
+  ) : (
+    length
+  );
 
 function Tabs() {
   const mode = useAppSelector(ProjectSelectors.getMode);
@@ -46,7 +56,7 @@ function Tabs() {
             </span>
             {(cache?.additions.length ?? 0) > 0 && (
               <span className="text-green-400 text-sm">
-                +{cache?.additions.length}
+                {formatLength(cache!.additions.length)}
               </span>
             )}
           </div>
@@ -71,7 +81,7 @@ function Tabs() {
             </span>
             {(cache?.updates.length ?? 0) > 0 && (
               <span className="text-yellow-400 text-sm">
-                ~{cache?.updates.length}
+                {formatLength(cache!.updates.length)}
               </span>
             )}
           </div>
@@ -96,7 +106,7 @@ function Tabs() {
             </span>
             {(cache?.deletions.length ?? 0) > 0 && (
               <span className="text-red-400 text-sm">
-                -{cache?.deletions.length}
+                {formatLength(cache!.deletions.length)}
               </span>
             )}
           </div>

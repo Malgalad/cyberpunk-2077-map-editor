@@ -128,15 +128,18 @@ export function validateNode(
     position[2] < district.position[2] + district.transMin[2] ||
     position[2] > district.position[2] + district.transMax[2];
   const validateScale = (scale: number[]) =>
-    scale[0] > district.cubeSize ||
-    scale[1] > district.cubeSize ||
-    scale[2] > district.cubeSize;
+    scale[0] > district.cubeSize * 2 ||
+    scale[1] > district.cubeSize * 2 ||
+    scale[2] > district.cubeSize * 2 ||
+    scale[0] < 0 ||
+    scale[1] < 0 ||
+    scale[2] < 0;
 
   if (validatePosition(nodeParsed.position)) {
     errors.push("Node is outside of district bounds");
   }
   if (validateScale(nodeParsed.scale)) {
-    errors.push("Node is larger than district cube size");
+    errors.push("Node is larger than district cube size or less than 0");
   }
   if (nodeParsed.pattern?.enabled && nodeParsed.pattern.count > 0) {
     for (let i = 0; i < nodeParsed.pattern.count; i++) {
@@ -157,7 +160,9 @@ export function validateNode(
         break;
       }
       if (validateScale(clone.scale)) {
-        errors.push("Pattern nodes are larger than district cube size");
+        errors.push(
+          "Pattern nodes are larger than district cube size or less than 0",
+        );
         break;
       }
     }
