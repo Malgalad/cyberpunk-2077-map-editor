@@ -13,7 +13,11 @@ const tabs = [
   { key: "pattern", label: "Pattern" },
 ] as { key: Tabs; label: string }[];
 
-function EditNode() {
+interface EditNodeProps {
+  mode: "create" | "update" | "delete";
+}
+
+function EditNode(props: EditNodeProps) {
   const [node] = useAppSelector(NodesSelectors.getSelectedNodes);
   const [tab, setTab] = React.useState<Tabs>("properties");
 
@@ -30,6 +34,14 @@ function EditNode() {
       window.removeEventListener("set-editing-tab", listener);
     };
   }, []);
+
+  if (props.mode !== "create") {
+    return (
+      <div className="grow flex flex-col">
+        <EditNodeProperties node={node} mode={props.mode} />
+      </div>
+    );
+  }
 
   return (
     <div className="grow flex flex-col">
@@ -48,7 +60,9 @@ function EditNode() {
           </Button>
         ))}
       </div>
-      {tab === "properties" && <EditNodeProperties node={node} />}
+      {tab === "properties" && (
+        <EditNodeProperties node={node} mode={props.mode} />
+      )}
       {tab === "pattern" && <EditNodePattern node={node} />}
     </div>
   );

@@ -31,6 +31,7 @@ import Tooltip from "./common/Tooltip.tsx";
 
 interface EditNodePropertiesProps {
   node: MapNode;
+  mode: "create" | "update" | "delete";
 }
 
 const axii = [0, 1, 2] as const;
@@ -40,7 +41,7 @@ const axiiColors = [
   "border-blue-500!",
 ] as const;
 
-function EditNodeProperties({ node }: EditNodePropertiesProps) {
+function EditNodeProperties({ node, mode }: EditNodePropertiesProps) {
   const dispatch = useAppDispatch();
   const forceUpdate = useForceUpdate();
   const map3d = useMap3D();
@@ -49,8 +50,8 @@ function EditNodeProperties({ node }: EditNodePropertiesProps) {
   const districts = useAppSelector(DistrictSelectors.getAllDistricts);
   const cache = useAppSelector(NodesSelectors.getChildNodesCache);
   const parents = React.useMemo(
-    () => getParentsList(node, nodes, district, districts, cache),
-    [district, districts, nodes, node, cache],
+    () => getParentsList(node, nodes, district, districts, cache, mode),
+    [district, districts, nodes, node, cache, mode],
   );
   const [useLocal, setUseLocal] = React.useState(false);
   const wasLocal = usePreviousValue(useLocal);
@@ -69,6 +70,56 @@ function EditNodeProperties({ node }: EditNodePropertiesProps) {
 
     return map3d.onZoomChange(forceUpdate);
   }, [map3d, forceUpdate]);
+
+  if (mode === "delete") {
+    return (
+      <div className="grow bg-slate-800">
+        <div className="grid grid-cols-[120px_auto] items-center gap-2 p-2 ">
+          <div>Parent:</div>
+          <div>
+            {/* TODO split parent nodes and district select */}
+            <Select
+              className="w-[248px]"
+              items={parents}
+              onChange={(event) => {
+                const parentId = event.target.value;
+                const map = new Map(
+                  nodes.map((node) => [node.id, parseNode(node)]),
+                );
+                const { position: oldPosition } = applyTransforms(
+                  parseNode(node),
+                  map,
+                );
+                const { position: newPosition } = applyTransforms(
+                  parseNode({
+                    ...node,
+                    parent: parentId,
+                  }),
+                  map,
+                );
+                const difference = [
+                  newPosition[0] - oldPosition[0],
+                  newPosition[1] - oldPosition[1],
+                  newPosition[2] - oldPosition[2],
+                ];
+                dispatch(
+                  NodesActions.patchNode(node.id, (draft) => {
+                    draft.parent = parentId;
+                    draft.position = [
+                      toString(toNumber(draft.position[0]) - difference[0]),
+                      toString(toNumber(draft.position[1]) - difference[1]),
+                      toString(toNumber(draft.position[2]) - difference[2]),
+                    ];
+                  }),
+                );
+              }}
+              value={node.parent}
+            />
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="grow bg-slate-800">
@@ -133,8 +184,8 @@ function EditNodeProperties({ node }: EditNodePropertiesProps) {
           <Tooltip
             tooltip={
               useLocal
-                ? "Adjust position relative to own rotation"
-                : "Adjust position relative to parent rotation"
+                ? "Currently changing position relative to own rotation. Toggle after changing angle."
+                : "Currently changing position relative to parent rotation"
             }
           >
             <Button
@@ -161,6 +212,7 @@ function EditNodeProperties({ node }: EditNodePropertiesProps) {
 
                   if (!copy) return;
 
+                  // FIXME use new rotation when changing angle while local transform is used
                   const parsedNode = parseTransform(copy);
                   const parsedLocalPosition = parseTransform({
                     position: newLocal as [string, string, string],
@@ -236,16 +288,15 @@ function EditNodeProperties({ node }: EditNodePropertiesProps) {
                 );
               }}
               min={0}
-              max={node.type === "instance" ? district?.cubeSize : 100}
+              max={
+                node.type === "instance" ? (district?.cubeSize ?? 0) * 2 : 100
+              }
             />
           ))}
         </div>
-        <div
-          className="tooltip"
-          data-tooltip="Visually hide this node and children"
-          data-flow="top"
-        >
-          Hidden:
+
+        <div>
+          <span className="underline">H</span>idden:
         </div>
         <div>
           <Toggle
@@ -272,19 +323,25 @@ function getParentsList(
   district: DistrictProperties | undefined,
   districts: DistrictProperties[],
   cache: GroupNodeCache,
+  mode: "create" | "update" | "delete",
 ): SelectItem[] {
   if (!district) return emptyArr as SelectItem[];
 
-  const items = districts.map((district) => ({
-    label: getDistrictName(district),
-    value: district.name,
-  }));
+  const { tag } = node;
+  const items = districts
+    .map((district) => ({
+      label: getDistrictName(district),
+      value: district.name,
+    }))
+    .filter((item) =>
+      mode === "create" ? true : item.value === district.name,
+    );
 
   items.splice(
     items.findIndex((item) => item.value === district.name) + 1,
     0,
     ...nodes
-      .filter((node) => node.type === "group")
+      .filter((node) => node.type === "group" && node.tag === tag)
       .map((group) => ({
         label: group.label,
         value: group.id,

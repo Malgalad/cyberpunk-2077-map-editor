@@ -36,8 +36,16 @@ export default function DraggableInput(
           parseFloat(startValue) + deltaY * parseFloat(`${step}`),
         ),
       );
+      const precision =
+        Math.abs(newValue) > 1000
+          ? 8
+          : Math.abs(newValue) > 100
+            ? 7
+            : Math.abs(newValue) > 10
+              ? 6
+              : 5;
       onChange?.({
-        target: { value: `${newValue}` },
+        target: { value: newValue.toPrecision(precision) },
       } as React.ChangeEvent<HTMLInputElement>);
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -77,7 +85,7 @@ export default function DraggableInput(
       <input
         {...props}
         ref={inputRef}
-        type="number"
+        type="text"
         onMouseDown={handleMouseDown}
         className={clsx(
           "cursor-ns-resize border p-1.5",

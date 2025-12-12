@@ -128,7 +128,11 @@ function AddNodes() {
                   <CopyPlus />
                 </Button>
               </Tooltip>
-              <Tooltip tooltip="Remove node">
+              <Tooltip
+                tooltip={
+                  selected.length > 1 ? "[Delete] nodes" : "[Delete] node"
+                }
+              >
                 <Button className="border-none" onClick={onDelete}>
                   <Trash2 />
                 </Button>
@@ -164,7 +168,7 @@ function AddNodes() {
 
       <div className="flex flex-col basis-[320px] shrink-0">
         {selected.length === 1 ? (
-          <EditNode key={selected[0].id} />
+          <EditNode key={selected[0].id} mode="create" />
         ) : (
           <div className="grow flex items-center justify-center italic bg-slate-800">
             Select node
