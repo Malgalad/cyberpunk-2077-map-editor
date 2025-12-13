@@ -1,5 +1,6 @@
 import { createAsyncThunk } from "@reduxjs/toolkit";
 
+import { TEMPLATE_ID } from "../constants.ts";
 import type {
   District,
   MapNode,
@@ -34,6 +35,9 @@ export const hydrateState = createAsyncThunk(
       while (map.has(parent)) {
         parent = map.get(parent)!.parent;
       }
+
+      if (parent === TEMPLATE_ID) return node;
+
       const district = resolvedDistricts.find(
         (district) => district.name === parent,
       );
