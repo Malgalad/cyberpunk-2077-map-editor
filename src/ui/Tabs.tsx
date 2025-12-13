@@ -1,10 +1,12 @@
+import * as React from "react";
+
 import Button from "../components/common/Button.tsx";
 import Tooltip from "../components/common/Tooltip.tsx";
 import {
   useAppDispatch,
   useAppSelector,
   useGlobalShortcuts,
-} from "../hooks.ts";
+} from "../hooks/hooks.ts";
 import { getDistrictCache } from "../store/@selectors.ts";
 import { DistrictSelectors } from "../store/district.ts";
 import { NodesActions } from "../store/nodes.ts";
@@ -29,10 +31,11 @@ function Tabs() {
   const cache = useAppSelector(getDistrictCache);
   const dispatch = useAppDispatch();
 
-  useGlobalShortcuts(
-    "Escape",
-    () => void dispatch(NodesActions.selectNode(null)),
-  );
+  useGlobalShortcuts("Escape", () => dispatch(NodesActions.selectNode(null)));
+
+  React.useEffect(() => {
+    dispatch(NodesActions.selectNode(null));
+  }, [mode, dispatch]);
 
   return (
     <div className="w-[450px] h-full flex flex-col p-2 shrink-0">
@@ -43,12 +46,9 @@ function Tabs() {
             mode === "create" && "border-b-slate-900",
             mode !== "create" && "border-transparent",
           )}
-          onClick={() => {
-            dispatch(ProjectActions.setMode("create"));
-            dispatch(NodesActions.selectNode(null));
-          }}
+          onClick={() => void dispatch(ProjectActions.setMode("create"))}
           disabled={!district}
-          shortcut="a"
+          shortcut="KeyA"
         >
           <div className="flex flex-row gap-1.5 items-baseline">
             <span>
@@ -68,12 +68,9 @@ function Tabs() {
             mode === "update" && "border-b-slate-900",
             mode !== "update" && "border-transparent",
           )}
-          onClick={() => {
-            dispatch(ProjectActions.setMode("update"));
-            dispatch(NodesActions.selectNode(null));
-          }}
+          onClick={() => void dispatch(ProjectActions.setMode("update"))}
           disabled={!district || district.isCustom}
-          shortcut="e"
+          shortcut="KeyE"
         >
           <div className="flex flex-row gap-1.5 items-baseline">
             <span>
@@ -93,12 +90,9 @@ function Tabs() {
             mode === "delete" && "border-b-slate-900",
             mode !== "delete" && "border-transparent",
           )}
-          onClick={() => {
-            dispatch(ProjectActions.setMode("delete"));
-            dispatch(NodesActions.selectNode(null));
-          }}
+          onClick={() => void dispatch(ProjectActions.setMode("delete"))}
           disabled={!district || district.isCustom}
-          shortcut="d"
+          shortcut="KeyD"
         >
           <div className="flex flex-row gap-1.5 items-baseline">
             <span>

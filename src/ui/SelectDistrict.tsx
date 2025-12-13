@@ -4,7 +4,7 @@ import Button from "../components/common/Button.tsx";
 import DropdownItem from "../components/common/Dropdown/Dropdown.Item.tsx";
 import DropdownSeparator from "../components/common/Dropdown/Dropdown.Separator.tsx";
 import Dropdown from "../components/common/Dropdown/Dropdown.tsx";
-import { useAppDispatch, useAppSelector } from "../hooks.ts";
+import { useAppDispatch, useAppSelector } from "../hooks/hooks.ts";
 import { useMap3D } from "../map3d/map3d.context.ts";
 import { DistrictActions, DistrictSelectors } from "../store/district.ts";
 import { ModalsActions } from "../store/modals.ts";

@@ -12,7 +12,7 @@ import Button from "../components/common/Button.tsx";
 import Modal from "../components/common/Modal.tsx";
 import Select from "../components/common/Select.tsx";
 import { loadFile, saveBlobToFile } from "../helpers.ts";
-import { useAppDispatch, useAppSelector } from "../hooks.ts";
+import { useAppDispatch, useAppSelector } from "../hooks/hooks.ts";
 import { DistrictActions, DistrictSelectors } from "../store/district.ts";
 import { NodesActions, NodesSelectors } from "../store/nodes.ts";
 import type { ModalProps } from "../types/modals.ts";

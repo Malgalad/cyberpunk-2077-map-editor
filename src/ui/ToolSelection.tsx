@@ -5,7 +5,7 @@ import {
 } from "lucide-react";
 
 import Button from "../components/common/Button.tsx";
-import { useAppDispatch, useAppSelector } from "../hooks.ts";
+import { useAppDispatch, useAppSelector } from "../hooks/hooks.ts";
 import { ProjectActions, ProjectSelectors } from "../store/project.ts";
 import { clsx } from "../utilities/utilities.ts";
 
@@ -25,7 +25,7 @@ function ToolSelection() {
         aria-selected={tool === "move"}
         className={clsx("tooltip")}
         onClick={() => void dispatch(ProjectActions.setTool("move"))}
-        shortcut="w"
+        shortcut="KeyW"
         data-tooltip="Move [W]"
         data-flow="top"
       >
@@ -35,7 +35,7 @@ function ToolSelection() {
         aria-selected={tool === "select"}
         className="tooltip"
         onClick={() => void dispatch(ProjectActions.setTool("select"))}
-        shortcut="s"
+        shortcut="KeyS"
         data-tooltip="Select [S]"
         data-flow="top"
       >
@@ -45,7 +45,7 @@ function ToolSelection() {
         aria-selected={tool === "multiselect"}
         className="tooltip"
         onClick={() => void dispatch(ProjectActions.setTool("multiselect"))}
-        shortcut="m"
+        shortcut="KeyM"
         data-tooltip="Select area [M]"
         data-flow="top"
         disabled

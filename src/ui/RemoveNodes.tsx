@@ -5,15 +5,22 @@ import Tooltip from "../components/common/Tooltip.tsx";
 import EditNode from "../components/EditNode.tsx";
 import Node from "../components/Node.tsx";
 import { MAX_DEPTH } from "../constants.ts";
-import { useAppDispatch, useAppSelector } from "../hooks.ts";
+import {
+  useAppDispatch,
+  useAppSelector,
+  useGlobalShortcuts,
+} from "../hooks/hooks.ts";
+import { useMap3D } from "../map3d/map3d.context.ts";
 import { getDeletions } from "../store/@selectors.ts";
 import { DistrictSelectors } from "../store/district.ts";
 import { ModalsActions } from "../store/modals.ts";
 import { NodesActions, NodesSelectors } from "../store/nodes.ts";
 import type { MapNode } from "../types/types.ts";
+import { toString } from "../utilities/utilities.ts";
 
 function RemoveNodes() {
   const dispatch = useAppDispatch();
+  const map3d = useMap3D();
   const removals = useAppSelector(getDeletions);
   const selected = useAppSelector(NodesSelectors.getSelectedNodes);
   const district = useAppSelector(DistrictSelectors.getDistrict);
@@ -44,7 +51,12 @@ function RemoveNodes() {
         ? selected[0].id
         : selected[0].parent
       : district.name;
-    const position = ["0", "0", "0"] as MapNode["position"];
+    if (!map3d) return;
+    const center = map3d.getCenter();
+    if (!center) return;
+    const position = (
+      selected[0] ? ["0", "0", "0"] : center.map(toString)
+    ) as MapNode["position"];
     const tag = "delete";
     const action = dispatch(
       NodesActions.addNode({
@@ -60,6 +72,10 @@ function RemoveNodes() {
       }),
     );
   };
+
+  useGlobalShortcuts("Delete", onDelete);
+
+  if (!district) return null;
 
   return (
     <>
@@ -117,8 +133,8 @@ function RemoveNodes() {
         </div>
       </div>
 
-      <div className="flex flex-col basis-[60px] shrink-0">
-        {selected.length === 1 ? (
+      <div className="flex flex-col basis-[90px] shrink-0">
+        {selected.length > 0 ? (
           <EditNode key={selected[0].id} mode="delete" />
         ) : (
           <div className="grow flex items-center justify-center italic bg-slate-800">

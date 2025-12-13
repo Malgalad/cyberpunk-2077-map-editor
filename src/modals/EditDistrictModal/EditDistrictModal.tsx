@@ -6,7 +6,7 @@ import Button from "../../components/common/Button.tsx";
 import DraggableInput from "../../components/common/DraggableInput.tsx";
 import Input from "../../components/common/Input.tsx";
 import Modal from "../../components/common/Modal.tsx";
-import { useAppDispatch, useAppSelector } from "../../hooks.ts";
+import { useAppDispatch, useAppSelector } from "../../hooks/hooks.ts";
 import { DistrictActions, DistrictSelectors } from "../../store/district.ts";
 import { ModalsActions } from "../../store/modals.ts";
 import type { ModalProps } from "../../types/modals.ts";

@@ -1,6 +1,6 @@
 import * as React from "react";
 
-import { useAppSelector } from "../hooks.ts";
+import { useAppSelector } from "../hooks/hooks.ts";
 import { useMap3D } from "../map3d/map3d.context.ts";
 import {
   getAdditionsTransforms,

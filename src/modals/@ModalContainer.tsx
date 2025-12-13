@@ -1,6 +1,6 @@
 import * as React from "react";
 
-import { useAppDispatch, useAppSelector } from "../hooks.ts";
+import { useAppDispatch, useAppSelector } from "../hooks/hooks.ts";
 import { ModalsActions, ModalsSelectors } from "../store/modals.ts";
 import type { ModalProps, ModalType } from "../types/modals.ts";
 import AlertModal from "./AlertModal.tsx";

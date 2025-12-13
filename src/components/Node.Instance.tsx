@@ -1,6 +1,6 @@
 import { EyeOff, SquareStack, TriangleAlert } from "lucide-react";
 
-import { useAppDispatch, useAppSelector } from "../hooks.ts";
+import { useAppDispatch, useAppSelector } from "../hooks/hooks.ts";
 import { NodesActions, NodesSelectors } from "../store/nodes.ts";
 import type { MapNode } from "../types/types.ts";
 import { clsx } from "../utilities/utilities.ts";
@@ -27,10 +27,10 @@ function Instance({ lookAtNode, node }: InstanceProps) {
       role="button"
       onClick={(event) => {
         event.stopPropagation();
-        const modifier = event.getModifierState("Alt")
-          ? "alt"
-          : event.getModifierState("Control")
-            ? "ctrl"
+        const modifier = event.getModifierState("Control")
+          ? "ctrl"
+          : event.getModifierState("Shift")
+            ? "shift"
             : undefined;
         dispatch(NodesActions.selectNode({ id: node.id, modifier }));
       }}

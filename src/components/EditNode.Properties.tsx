@@ -6,8 +6,9 @@ import {
   useAppDispatch,
   useAppSelector,
   useForceUpdate,
+  useGlobalShortcuts,
   usePreviousValue,
-} from "../hooks.ts";
+} from "../hooks/hooks.ts";
 import { useMap3D } from "../map3d/map3d.context.ts";
 import { getDistrictNodes } from "../store/@selectors.ts";
 import { DistrictSelectors } from "../store/district.ts";
@@ -30,7 +31,7 @@ import Toggle from "./common/Toggle.tsx";
 import Tooltip from "./common/Tooltip.tsx";
 
 interface EditNodePropertiesProps {
-  node: MapNode;
+  selected: MapNode[];
   mode: "create" | "update" | "delete";
 }
 
@@ -41,7 +42,9 @@ const axiiColors = [
   "border-blue-500!",
 ] as const;
 
-function EditNodeProperties({ node, mode }: EditNodePropertiesProps) {
+function EditNodeProperties({ selected, mode }: EditNodePropertiesProps) {
+  const [node] = selected;
+  const isMultiple = selected.length > 1;
   const dispatch = useAppDispatch();
   const forceUpdate = useForceUpdate();
   const map3d = useMap3D();
@@ -50,8 +53,8 @@ function EditNodeProperties({ node, mode }: EditNodePropertiesProps) {
   const districts = useAppSelector(DistrictSelectors.getAllDistricts);
   const cache = useAppSelector(NodesSelectors.getChildNodesCache);
   const parents = React.useMemo(
-    () => getParentsList(node, nodes, district, districts, cache, mode),
-    [district, districts, nodes, node, cache, mode],
+    () => getParentsList(selected, nodes, district, districts, cache, mode),
+    [district, districts, nodes, selected, cache, mode],
   );
   const [useLocal, setUseLocal] = React.useState(false);
   const wasLocal = usePreviousValue(useLocal);
@@ -71,85 +74,36 @@ function EditNodeProperties({ node, mode }: EditNodePropertiesProps) {
     return map3d.onZoomChange(forceUpdate);
   }, [map3d, forceUpdate]);
 
-  if (mode === "delete") {
-    return (
-      <div className="grow bg-slate-800">
-        <div className="grid grid-cols-[120px_auto] items-center gap-2 p-2 ">
-          <div>Parent:</div>
-          <div>
-            {/* TODO split parent nodes and district select */}
-            <Select
-              className="w-[248px]"
-              items={parents}
-              onChange={(event) => {
-                const parentId = event.target.value;
-                const map = new Map(
-                  nodes.map((node) => [node.id, parseNode(node)]),
-                );
-                const { position: oldPosition } = applyTransforms(
-                  parseNode(node),
-                  map,
-                );
-                const { position: newPosition } = applyTransforms(
-                  parseNode({
-                    ...node,
-                    parent: parentId,
-                  }),
-                  map,
-                );
-                const difference = [
-                  newPosition[0] - oldPosition[0],
-                  newPosition[1] - oldPosition[1],
-                  newPosition[2] - oldPosition[2],
-                ];
-                dispatch(
-                  NodesActions.patchNode(node.id, (draft) => {
-                    draft.parent = parentId;
-                    draft.position = [
-                      toString(toNumber(draft.position[0]) - difference[0]),
-                      toString(toNumber(draft.position[1]) - difference[1]),
-                      toString(toNumber(draft.position[2]) - difference[2]),
-                    ];
-                  }),
-                );
-              }}
-              value={node.parent}
-            />
-          </div>
-        </div>
-      </div>
-    );
-  }
+  const onHide = () => {
+    if (selected.length === 0) return;
+    for (const node of selected) {
+      dispatch(
+        NodesActions.patchNode(node.id, (draft) => {
+          draft.hidden = !draft.hidden;
+        }),
+      );
+    }
+  };
 
-  return (
-    <div className="grow bg-slate-800">
-      <div className="grid grid-cols-[120px_auto] items-center gap-2 p-2 ">
-        <div>Label:</div>
-        <div>
-          <Input
-            type="text"
-            className="w-[248px]"
-            value={node.label}
-            onChange={(event) => {
-              dispatch(
-                NodesActions.patchNode(node.id, (draft) => {
-                  draft.label = event.target.value;
-                }),
-              );
-            }}
-          />
-        </div>
-        <div>Parent:</div>
-        <div>
-          {/* TODO split parent nodes and district select */}
-          <Select
-            className="w-[248px]"
-            items={parents}
-            onChange={(event) => {
-              const parentId = event.target.value;
-              const map = new Map(
-                nodes.map((node) => [node.id, parseNode(node)]),
-              );
+  useGlobalShortcuts("KeyH", onHide);
+
+  const parentSelector = (
+    <>
+      <div>Parent:</div>
+      <div>
+        {/* TODO split parent nodes and district select */}
+        <Select
+          className="w-[248px]"
+          disabled={
+            !selected.every((node) => node.parent === selected[0].parent)
+          }
+          items={parents}
+          onChange={(event) => {
+            const parentId = event.target.value;
+            const map = new Map(
+              nodes.map((node) => [node.id, parseNode(node)]),
+            );
+            for (const node of selected) {
               const { position: oldPosition } = applyTransforms(
                 parseNode(node),
                 map,
@@ -176,10 +130,56 @@ function EditNodeProperties({ node, mode }: EditNodePropertiesProps) {
                   ];
                 }),
               );
+            }
+          }}
+          value={node.parent}
+        />
+      </div>
+    </>
+  );
+  const hiddenSelector = (
+    <>
+      <div>
+        <span className="underline">H</span>idden:
+      </div>
+      <div>
+        <Toggle enabled={!!node.hidden} onChange={() => onHide()} />
+      </div>
+    </>
+  );
+
+  if (mode === "delete" || isMultiple) {
+    return (
+      <div className="grow bg-slate-800">
+        <div className="grid grid-cols-[120px_auto] items-center gap-2 p-2">
+          {parentSelector}
+          {hiddenSelector}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="grow bg-slate-800">
+      <div className="grid grid-cols-[120px_auto] items-center gap-2 p-2">
+        <div>Label:</div>
+        <div>
+          <Input
+            type="text"
+            className="w-[248px]"
+            value={node.label}
+            onChange={(event) => {
+              dispatch(
+                NodesActions.patchNode(node.id, (draft) => {
+                  draft.label = event.target.value;
+                }),
+              );
             }}
-            value={node.parent}
           />
         </div>
+
+        {parentSelector}
+
         <div>
           <Tooltip
             tooltip={
@@ -197,6 +197,7 @@ function EditNodeProperties({ node, mode }: EditNodePropertiesProps) {
             </Button>
           </Tooltip>
         </div>
+
         <div className="flex flex-row gap-1 items-center">
           {axii.map((i) => (
             <DraggableInput
@@ -252,6 +253,7 @@ function EditNodeProperties({ node, mode }: EditNodePropertiesProps) {
             />
           ))}
         </div>
+
         <div>Rotation:</div>
         <div className="flex flex-row gap-1">
           {axii.map((i) => (
@@ -295,21 +297,7 @@ function EditNodeProperties({ node, mode }: EditNodePropertiesProps) {
           ))}
         </div>
 
-        <div>
-          <span className="underline">H</span>idden:
-        </div>
-        <div>
-          <Toggle
-            enabled={!!node.hidden}
-            onChange={(enabled) => {
-              dispatch(
-                NodesActions.patchNode(node.id, (draft) => {
-                  draft.hidden = enabled;
-                }),
-              );
-            }}
-          />
-        </div>
+        {hiddenSelector}
       </div>
     </div>
   );
@@ -318,7 +306,7 @@ function EditNodeProperties({ node, mode }: EditNodePropertiesProps) {
 const emptyArr: unknown[] = [];
 
 function getParentsList(
-  node: MapNode,
+  selected: MapNode[],
   nodes: MapNode[],
   district: DistrictProperties | undefined,
   districts: DistrictProperties[],
@@ -327,7 +315,14 @@ function getParentsList(
 ): SelectItem[] {
   if (!district) return emptyArr as SelectItem[];
 
-  const { tag } = node;
+  const { tag, parent } = selected[0];
+  const excludedGroups = new Set(
+    selected.reduce(
+      (acc, node) => acc.concat(cache[node.id]?.groups ?? []),
+      [] as string[],
+    ),
+  );
+  const selectedIds = new Set(selected.map((node) => node.id));
   const items = districts
     .map((district) => ({
       label: getDistrictName(district),
@@ -349,10 +344,10 @@ function getParentsList(
   );
 
   return items
-    .filter((item) => !cache[node.id]?.groups.includes(item.value))
+    .filter((item) => !excludedGroups.has(item.value))
     .map((item) => ({
-      disabled: node.parent === item.value || node.id === item.value,
-      label: `${item.label}${node.parent === item.value ? " (current)" : node.id === item.value ? " (self)" : ""}`,
+      disabled: parent === item.value || selectedIds.has(item.value),
+      label: `${item.label}${parent === item.value ? " (current)" : selectedIds.has(item.value) ? " (self)" : ""}`,
       level: cache[item.value]?.level ?? 0,
       value: item.value,
     }));

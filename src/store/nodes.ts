@@ -121,11 +121,36 @@ const nodesSlice = createSlice({
       if (!modifier) {
         state.editingId = [id];
       } else if (modifier === "ctrl") {
-        set.add(id);
+        void (set.has(id) ? set.delete(id) : set.add(id));
         state.editingId = [...set.values()];
-      } else if (modifier === "alt") {
-        set.delete(id);
-        state.editingId = [...set.values()];
+      } else if (modifier === "shift") {
+        if (!set.size) {
+          state.editingId = [id];
+        } else {
+          const startId = [...set.values()].at(0)!;
+          const start = state.nodes.findIndex((node) => node.id === startId);
+          const startNode = state.nodes[start];
+          const end = state.nodes.findIndex((node) => node.id === id);
+          const endNode = state.nodes[end];
+
+          if (!startNode || !endNode) return;
+          if (startNode.parent !== endNode.parent) return;
+          if (startNode.tag !== endNode.tag) return;
+
+          const interval = state.nodes
+            .slice(Math.min(start, end), Math.max(start, end))
+            .filter((node) => node.tag === startNode.tag);
+
+          for (const node of interval) {
+            if (node.parent === startNode.parent) {
+              set.add(node.id);
+            }
+          }
+
+          set.add(id);
+
+          state.editingId = [...set.values()];
+        }
       }
     }),
   }),

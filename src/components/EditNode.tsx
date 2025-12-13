@@ -1,6 +1,6 @@
 import * as React from "react";
 
-import { useAppSelector } from "../hooks.ts";
+import { useAppSelector } from "../hooks/hooks.ts";
 import { NodesSelectors } from "../store/nodes.ts";
 import { clsx } from "../utilities/utilities.ts";
 import Button from "./common/Button.tsx";
@@ -18,7 +18,7 @@ interface EditNodeProps {
 }
 
 function EditNode(props: EditNodeProps) {
-  const [node] = useAppSelector(NodesSelectors.getSelectedNodes);
+  const selected = useAppSelector(NodesSelectors.getSelectedNodes);
   const [tab, setTab] = React.useState<Tabs>("properties");
 
   React.useEffect(() => {
@@ -35,10 +35,10 @@ function EditNode(props: EditNodeProps) {
     };
   }, []);
 
-  if (props.mode !== "create") {
+  if (props.mode !== "create" || selected.length > 1) {
     return (
       <div className="grow flex flex-col">
-        <EditNodeProperties node={node} mode={props.mode} />
+        <EditNodeProperties selected={selected} mode={props.mode} />
       </div>
     );
   }
@@ -61,9 +61,9 @@ function EditNode(props: EditNodeProps) {
         ))}
       </div>
       {tab === "properties" && (
-        <EditNodeProperties node={node} mode={props.mode} />
+        <EditNodeProperties selected={selected} mode={props.mode} />
       )}
-      {tab === "pattern" && <EditNodePattern node={node} />}
+      {tab === "pattern" && <EditNodePattern node={selected[0]} />}
     </div>
   );
 }

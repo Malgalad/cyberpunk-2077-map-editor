@@ -9,7 +9,7 @@ import {
   useAppDispatch,
   useAppSelector,
   useGlobalShortcuts,
-} from "../hooks.ts";
+} from "../hooks/hooks.ts";
 import { useMap3D } from "../map3d/map3d.context.ts";
 import { getAdditions } from "../store/@selectors.ts";
 import { DistrictSelectors } from "../store/district.ts";
@@ -80,19 +80,7 @@ function AddNodes() {
     );
   };
 
-  const onHide = () => {
-    if (selected.length === 0) return;
-    for (const node of selected) {
-      dispatch(
-        NodesActions.patchNode(node.id, (draft) => {
-          draft.hidden = !draft.hidden;
-        }),
-      );
-    }
-  };
-
   useGlobalShortcuts("Delete", onDelete);
-  useGlobalShortcuts("h", onHide);
 
   if (!district) return null;
 
@@ -167,7 +155,7 @@ function AddNodes() {
       </div>
 
       <div className="flex flex-col basis-[320px] shrink-0">
-        {selected.length === 1 ? (
+        {selected.length > 0 ? (
           <EditNode key={selected[0].id} mode="create" />
         ) : (
           <div className="grow flex items-center justify-center italic bg-slate-800">

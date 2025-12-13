@@ -5,22 +5,27 @@ import Tooltip from "../components/common/Tooltip.tsx";
 import EditNode from "../components/EditNode.tsx";
 import Node from "../components/Node.tsx";
 import { MAX_DEPTH } from "../constants.ts";
-import { useAppDispatch, useAppSelector } from "../hooks.ts";
+import {
+  useAppDispatch,
+  useAppSelector,
+  useGlobalShortcuts,
+} from "../hooks/hooks.ts";
+import { useMap3D } from "../map3d/map3d.context.ts";
 import { getUpdates } from "../store/@selectors.ts";
 import { DistrictSelectors } from "../store/district.ts";
 import { ModalsActions } from "../store/modals.ts";
 import { NodesActions, NodesSelectors } from "../store/nodes.ts";
 import type { MapNode } from "../types/types.ts";
+import { toString } from "../utilities/utilities.ts";
 
 function UpdateNodes() {
   const dispatch = useAppDispatch();
+  const map3d = useMap3D();
   const nodes = useAppSelector(getUpdates);
   const selected = useAppSelector(NodesSelectors.getSelectedNodes);
   const district = useAppSelector(DistrictSelectors.getDistrict);
   const cache = useAppSelector(NodesSelectors.getChildNodesCache);
   const rootNodes = nodes.filter((node) => node.parent === district?.name);
-
-  if (!district) return null;
 
   const onDelete = async () => {
     if (selected.length === 0) return;
@@ -46,7 +51,12 @@ function UpdateNodes() {
         ? selected[0].id
         : selected[0].parent
       : district.name;
-    const position = ["0", "0", "0"] as MapNode["position"];
+    if (!map3d) return;
+    const center = map3d.getCenter();
+    if (!center) return;
+    const position = (
+      selected[0] ? ["0", "0", "0"] : center.map(toString)
+    ) as MapNode["position"];
     const tag = "update";
     const action = dispatch(
       NodesActions.addNode({
@@ -62,6 +72,10 @@ function UpdateNodes() {
       }),
     );
   };
+
+  useGlobalShortcuts("Delete", onDelete);
+
+  if (!district) return null;
 
   return (
     <>
@@ -119,7 +133,7 @@ function UpdateNodes() {
       </div>
 
       <div className="flex flex-col basis-[270px] shrink-0">
-        {selected.length === 1 ? (
+        {selected.length > 0 ? (
           <EditNode key={selected[0].id} mode="update" />
         ) : (
           <div className="grow flex items-center justify-center italic bg-slate-800">

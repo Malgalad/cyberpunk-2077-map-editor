@@ -1,6 +1,6 @@
 import * as React from "react";
 
-import { useAppDispatch, useAppSelector, useAppStore } from "./hooks.ts";
+import { useAppDispatch, useAppSelector, useAppStore } from "./hooks/hooks.ts";
 import { Map3D } from "./map3d/map3d.ts";
 import {
   getAdditionsTransforms,

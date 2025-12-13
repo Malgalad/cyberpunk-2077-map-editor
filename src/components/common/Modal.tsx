@@ -1,7 +1,7 @@
 import { XIcon } from "lucide-react";
 import * as React from "react";
 
-import { useAppDispatch } from "../../hooks.ts";
+import { useAppDispatch } from "../../hooks/hooks.ts";
 import { ModalsActions } from "../../store/modals.ts";
 import { clsx } from "../../utilities/utilities.ts";
 import Button from "./Button.tsx";

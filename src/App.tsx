@@ -13,7 +13,7 @@ import {
 } from "./App.hooks.ts";
 import Button from "./components/common/Button.tsx";
 import Tooltip from "./components/common/Tooltip.tsx";
-import { useAppSelector } from "./hooks.ts";
+import { useAppSelector } from "./hooks/hooks.ts";
 import { Map3DContext } from "./map3d/map3d.context.ts";
 import { ProjectSelectors } from "./store/project.ts";
 import Menu from "./ui/Menu.tsx";
@@ -50,7 +50,7 @@ function App() {
                 onClick={() => {
                   map3d?.resetCamera();
                 }}
-                shortcut="r"
+                shortcut="KeyR"
               >
                 <BoxIcon />
               </Button>

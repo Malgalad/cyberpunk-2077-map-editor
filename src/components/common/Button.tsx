@@ -1,7 +1,7 @@
 import { LoaderCircle } from "lucide-react";
 import * as React from "react";
 
-import { useGlobalShortcuts } from "../../hooks.ts";
+import { useGlobalShortcuts } from "../../hooks/hooks.ts";
 import { clsx } from "../../utilities/utilities.ts";
 
 type ButtonProps = React.ButtonHTMLAttributes<HTMLButtonElement> & {

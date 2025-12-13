@@ -1,6 +1,6 @@
 import * as React from "react";
 
-import { useAppSelector } from "../../hooks.ts";
+import { useAppSelector } from "../../hooks/hooks.ts";
 import { DistrictSelectors } from "../../store/district.ts";
 import type { District } from "../../types/types.ts";
 import { getDistrictName } from "../../utilities/district.ts";
