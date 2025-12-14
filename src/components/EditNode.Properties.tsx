@@ -305,6 +305,7 @@ function EditNodeProperties({ selected, mode }: EditNodePropertiesProps) {
 
 const emptyArr: unknown[] = [];
 
+// TODO node order according to hierarchy and not insertion time
 function getParentsList(
   selected: MapNode[],
   nodes: MapNode[],

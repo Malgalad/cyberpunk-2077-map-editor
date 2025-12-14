@@ -46,6 +46,7 @@ export class Map3D extends Map3DBase {
   #startedPointingAt: [number, THREE.Object3D] | null = null;
   #pointingAt: [number, THREE.Object3D] | null = null;
   #helper = new AxesHelper(50);
+  #markers: string[] = [];
 
   constructor(canvas: HTMLCanvasElement, store: AppStore) {
     super(canvas);
@@ -213,15 +214,23 @@ export class Map3D extends Map3DBase {
     const mode = this.#mode;
 
     if (this.#additions) {
+      const indexes: Array<string | undefined> =
+        this.#additions.userData.indexes;
       let needsUpdate = false;
 
       for (let i = 0; i < this.#additions.count; i++) {
+        const id = indexes[i] ?? "";
+        const isMarker = this.#markers.includes(id);
         const color =
           mode === "create" && this.#selectedIndexes.includes(i)
-            ? ADDITIONS.selected
-            : mode === "create" && i === this.#pointingAt?.[0]
-              ? ADDITIONS.pointingAt
-              : ADDITIONS.default;
+            ? isMarker
+              ? DELETIONS.selected
+              : ADDITIONS.selected
+            : isMarker
+              ? ADDITIONS.marker
+              : mode === "create" && i === this.#pointingAt?.[0]
+                ? ADDITIONS.pointingAt
+                : ADDITIONS.default;
 
         this.#additions.getColorAt(i, current);
         if (!current.equals(color)) {
@@ -316,6 +325,12 @@ export class Map3D extends Map3DBase {
     }
   }
 
+  clearPointer() {
+    this.#pointingAt = null;
+    this.#startedPointingAt = null;
+    requestAnimationFrame(this.render);
+  }
+
   lookAtCurrentDistrict() {
     if (!this.#currentDistrictBoundaries) return;
 
@@ -357,12 +372,16 @@ export class Map3D extends Map3DBase {
       this.#helper.rotation.set(0, 0, 0);
     }
     this.#helper.visible = true;
+    requestAnimationFrame(this.render);
   }
 
   setAdditions({ district, transforms }: DistrictWithTransforms) {
     this.#remove(this.#additions);
     this.#remove(this.#additionsVirtual);
 
+    this.#markers = transforms
+      .filter(({ scale }) => scale.w === 0)
+      .map(({ id }) => id);
     const [real, virtual] = partition(transforms, (item) => !item.virtual);
 
     this.#additions = this.#add(

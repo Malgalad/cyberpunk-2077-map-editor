@@ -102,15 +102,8 @@ function Group({ lookAtNode, node }: GroupProps) {
                 </Button>
               </Tooltip>
             )}
-            {(node.errors || nodeChildren.errors?.length > 0) && (
-              <Tooltip
-                tooltip={
-                  nodeChildren.errors?.length > 0
-                    ? "Node children have errors"
-                    : node.errors!.join("\n")
-                }
-                flow="left"
-              >
+            {nodeChildren.errors?.length > 0 && (
+              <Tooltip tooltip="Node children have errors" flow="left">
                 <div>
                   <TriangleAlert className="text-red-500" />
                 </div>

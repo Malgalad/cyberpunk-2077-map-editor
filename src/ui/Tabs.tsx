@@ -18,7 +18,7 @@ import UpdateNodes from "./UpdateNodes.tsx";
 
 const formatLength = (length: number) =>
   length > 100 ? (
-    <Tooltip tooltip={`${length}`}>
+    <Tooltip tooltip={`${length}`} flow="bottom">
       <span>99+</span>
     </Tooltip>
   ) : (

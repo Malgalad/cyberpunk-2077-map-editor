@@ -177,6 +177,7 @@ export function useDrawSelection(map3d: Map3D | null) {
     () => new Map(nodes.map((node) => [node.id, parseNode(node)])),
     [nodes],
   );
+  const tool = useAppSelector(ProjectSelectors.getTool);
 
   React.useEffect(() => {
     if (!map3d) return;
@@ -226,6 +227,11 @@ export function useDrawSelection(map3d: Map3D | null) {
       map3d.setHelper(applyTransforms(parseNode(selected[0]), nodesMap), true);
     }
   }, [map3d, mode, selected, nodesMap]);
+
+  React.useEffect(() => {
+    if (!map3d) return;
+    map3d.clearPointer();
+  }, [map3d, tool]);
 }
 
 export function useMap3DEvents(map3d: Map3D | null) {

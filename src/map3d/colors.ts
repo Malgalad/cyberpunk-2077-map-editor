@@ -10,6 +10,7 @@ export const ADDITIONS = {
   default: new THREE.Color(0xffff00),
   pointingAt: new THREE.Color(0x88ff88),
   selected: new THREE.Color(0x00ff00),
+  marker: new THREE.Color(0x00ffff),
 };
 
 export const UPDATES = {
