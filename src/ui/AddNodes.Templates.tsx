@@ -30,16 +30,25 @@ function AddNodesTemplates() {
 
   const onInsert = (template: MapNode) => () => {
     if (!map3d) return;
-    const position = map3d.getCenter();
-    if (!position) return;
+    const center = map3d.getCenter();
+    if (!center) return;
+    const parent = selected[0]
+      ? selected[0].type === "group"
+        ? selected[0].id
+        : selected[0].parent
+      : district.name;
+    const position = (
+      selected[0] ? ["0", "0", "0"] : center.map(toString)
+    ) as MapNode["position"];
+    const label = template.label.replace(/TEMPLATE <(.+?)>/, "$1");
 
     dispatch(
       NodesActions.cloneNode({
         id: template.id,
         updates: {
-          parent: district.name,
-          label: template.label.replace(/TEMPLATE <(.+?)>/, "$1"),
-          position: position.map(toString) as [string, string, string],
+          parent,
+          label,
+          position,
         },
       }),
     );
