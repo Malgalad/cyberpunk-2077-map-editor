@@ -17,6 +17,7 @@ import type {
   DistrictProperties,
   GroupNodeCache,
   MapNode,
+  Modes,
 } from "../types/types.ts";
 import type { SelectItem } from "../types/ui.types.ts";
 import { getDistrictName } from "../utilities/district.ts";
@@ -307,51 +308,65 @@ const emptyArr: unknown[] = [];
 
 // TODO node order according to hierarchy and not insertion time
 function getParentsList(
-  selected: MapNode[],
+  selectedNodes: MapNode[],
   nodes: MapNode[],
-  district: DistrictProperties | undefined,
+  selectedDistrict: DistrictProperties | undefined,
   districts: DistrictProperties[],
   cache: GroupNodeCache,
-  mode: "create" | "update" | "delete",
+  mode: Modes,
 ): SelectItem[] {
-  if (!district) return emptyArr as SelectItem[];
+  if (!selectedDistrict) return emptyArr as SelectItem[];
 
-  const { tag, parent } = selected[0];
+  const { tag, parent } = selectedNodes[0];
   const excludedGroups = new Set(
-    selected.reduce(
+    selectedNodes.reduce(
       (acc, node) => acc.concat(cache[node.id]?.groups ?? []),
       [] as string[],
     ),
   );
-  const selectedIds = new Set(selected.map((node) => node.id));
-  const items = districts
-    .map((district) => ({
-      label: getDistrictName(district),
+  const selectedIds = new Set(selectedNodes.map((node) => node.id));
+  const items: SelectItem[] = [];
+  const wrapLabel = (label: string, value: string) =>
+    [
+      label,
+      parent === value && " (current)",
+      selectedIds.has(value) && " (self)",
+    ]
+      .filter(Boolean)
+      .join(" ");
+
+  const addItem = (node: MapNode, parentId: string, level: number) => {
+    if (excludedGroups.has(node.id)) return;
+    if (node.parent === parentId && node.tag === tag && node.type === "group") {
+      items.push({
+        disabled: parent === node.id || selectedIds.has(node.id),
+        label: wrapLabel(node.label, node.id),
+        level,
+        value: node.id,
+      });
+
+      for (const child of nodes) {
+        addItem(child, node.id, level + 1);
+      }
+    }
+  };
+
+  for (const district of districts) {
+    if (mode !== "create" && district.name !== selectedDistrict.name) continue;
+
+    items.push({
+      disabled: parent === district.name,
+      label: wrapLabel(getDistrictName(district), district.name),
+      level: 0,
       value: district.name,
-    }))
-    .filter((item) =>
-      mode === "create" ? true : item.value === district.name,
-    );
+    });
 
-  items.splice(
-    items.findIndex((item) => item.value === district.name) + 1,
-    0,
-    ...nodes
-      .filter((node) => node.type === "group" && node.tag === tag)
-      .map((group) => ({
-        label: group.label,
-        value: group.id,
-      })),
-  );
+    for (const node of nodes) {
+      addItem(node, district.name, 1);
+    }
+  }
 
-  return items
-    .filter((item) => !excludedGroups.has(item.value))
-    .map((item) => ({
-      disabled: parent === item.value || selectedIds.has(item.value),
-      label: `${item.label}${parent === item.value ? " (current)" : selectedIds.has(item.value) ? " (self)" : ""}`,
-      level: cache[item.value]?.level ?? 0,
-      value: item.value,
-    }));
+  return items;
 }
 
 export default EditNodeProperties;

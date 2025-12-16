@@ -86,7 +86,7 @@ function RemoveNodes() {
         >
           {!removals.length && (
             <div className="grow flex items-center justify-center italic bg-slate-800">
-              Pick box using "Select" or "Multiselect" tool on the map
+              Pick box using "Select" tool on the map
             </div>
           )}
 

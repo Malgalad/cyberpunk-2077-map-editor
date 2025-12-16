@@ -86,7 +86,7 @@ function UpdateNodes() {
         >
           {rootNodes.length === 0 && (
             <div className="grow flex items-center justify-center italic">
-              Pick box using "Select" or "Multiselect" tool on the map
+              Pick box using "Select" tool on the map
             </div>
           )}
           {rootNodes.map((node) => (

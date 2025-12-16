@@ -4,13 +4,12 @@ import { loadFile, saveBlobToFile } from "../helpers.ts";
 import { encodeImageData } from "../map3d/processDDS.ts";
 import { getDistrictCache, getPersistentState } from "../store/@selectors.ts";
 import { DistrictSelectors } from "../store/district.ts";
-import { NodesActions, NodesSelectors } from "../store/nodes.ts";
-import { ProjectSelectors } from "../store/project.ts";
-import { NodeSchema, PersistentStateSchema } from "../types/schemas.ts";
-import type { MapNode, PersistentAppState } from "../types/types.ts";
+import { NodesSelectors } from "../store/nodes.ts";
+import { PersistentStateSchema } from "../types/schemas.ts";
+import type { PersistentAppState } from "../types/types.ts";
 import { unzip, zip } from "../utilities/compression.ts";
 import { getFinalDistrictTransformsFromNodes } from "../utilities/district.ts";
-import { useAppDispatch, useAppSelector } from "./hooks.ts";
+import { useAppSelector } from "./hooks.ts";
 
 export function useSaveProject() {
   const persistentState = useAppSelector(getPersistentState);
@@ -40,43 +39,6 @@ export function useLoadProject() {
 
     return [file.name, state];
   }, []);
-}
-
-export function useImportNodes() {
-  const dispatch = useAppDispatch();
-  const nodes = useAppSelector(NodesSelectors.getNodes);
-
-  return React.useCallback(async () => {
-    const file = await loadFile(".json");
-    const content = await file.text();
-    const data = JSON.parse(content);
-    const parsed: MapNode[] = [];
-
-    for (const maybeNode of data) {
-      maybeNode.tag ||= "create";
-      parsed.push(NodeSchema.parse(maybeNode));
-    }
-
-    const merged = new Map(nodes.map((node) => [node.id, node]));
-
-    for (const node of parsed) {
-      merged.set(node.id, node);
-    }
-
-    dispatch(NodesActions.replaceNodes([...merged.values()]));
-  }, [nodes, dispatch]);
-}
-
-export function useExportNodes() {
-  const nodes = useAppSelector(NodesSelectors.getNodes);
-  const project = useAppSelector(ProjectSelectors.getProjectName);
-
-  return React.useCallback(async () => {
-    const json = JSON.stringify(nodes, null, 2);
-    const blob = new Blob([json], { type: "application/json" });
-
-    saveBlobToFile(blob, `${project}_nodes.json`);
-  }, [nodes, project]);
 }
 
 // TODO export _m base color texture (?) or use Pacifica

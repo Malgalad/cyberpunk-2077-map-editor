@@ -1,8 +1,4 @@
-import {
-  MousePointer2,
-  Rotate3d,
-  SquareDashedMousePointer,
-} from "lucide-react";
+import { MousePointer2, Rotate3d } from "lucide-react";
 
 import Button from "../components/common/Button.tsx";
 import { useAppDispatch, useAppSelector } from "../hooks/hooks.ts";
@@ -40,17 +36,6 @@ function ToolSelection() {
         data-flow="top"
       >
         <MousePointer2 />
-      </Button>
-      <Button
-        aria-selected={tool === "multiselect"}
-        className="tooltip"
-        onClick={() => void dispatch(ProjectActions.setTool("multiselect"))}
-        shortcut="KeyM"
-        data-tooltip="Select area [M]"
-        data-flow="top"
-        disabled
-      >
-        <SquareDashedMousePointer />
       </Button>
     </div>
   );

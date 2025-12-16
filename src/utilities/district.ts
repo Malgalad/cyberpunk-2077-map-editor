@@ -35,6 +35,8 @@ export const computeDistrictProperties = (
   };
 };
 
+const isHidden = (transform: InstancedMeshTransforms) =>
+  Object.values(transform.scale).every((number) => number === 0);
 export function getFinalDistrictTransformsFromNodes(
   nodes: MapNode[],
   district: District,
@@ -58,7 +60,11 @@ export function getFinalDistrictTransformsFromNodes(
     }
   }
 
-  const additionTransforms = projectNodesToDistrict(additions, district, true);
+  const additionTransforms = projectNodesToDistrict(
+    additions,
+    district,
+    true,
+  ).filter((transform) => !isHidden(transform));
   const updateTransforms = new Map(
     projectNodesToDistrict(updates, district, false).map((transform) => [
       transform.id,

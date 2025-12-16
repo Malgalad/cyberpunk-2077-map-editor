@@ -52,9 +52,7 @@ export const additionsMaterial = new THREE.MeshToonMaterial({
   color: 0xffffff,
 });
 
-export const patternMaterial = additionsMaterial.clone();
-patternMaterial.opacity = 0.75;
-patternMaterial.transparent = true;
+export const patternMaterial = additionsMaterial;
 
 export const wireframeMaterial = new THREE.MeshBasicMaterial({
   color: 0xffffff,
