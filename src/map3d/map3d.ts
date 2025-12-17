@@ -241,6 +241,30 @@ export class Map3D extends Map3DBase {
 
       if (needsUpdate && this.#additions.instanceColor)
         this.#additions.instanceColor.needsUpdate = true;
+
+      if (this.#additionsVirtual) {
+        let needsUpdate = false;
+        const origins: Array<string | undefined> =
+          this.#additionsVirtual.userData.originIndexes;
+
+        for (let i = 0; i < this.#additionsVirtual.count; i++) {
+          const originId = origins[i] ?? "";
+          const index = indexes.findIndex((k) => k === originId);
+          const color =
+            mode === "create" && this.#selectedIndexes.includes(index)
+              ? ADDITIONS.selected
+              : ADDITIONS.default;
+
+          this.#additionsVirtual.getColorAt(i, current);
+          if (!current.equals(color)) {
+            this.#additionsVirtual.setColorAt(i, color);
+            needsUpdate = true;
+          }
+        }
+
+        if (needsUpdate && this.#additionsVirtual.instanceColor)
+          this.#additionsVirtual.instanceColor.needsUpdate = true;
+      }
     }
 
     if (this.#updates) {

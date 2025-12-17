@@ -91,8 +91,7 @@ const nodesSlice = createSlice({
         state.nodes.splice(index, 1, next);
 
         if (previous.parent !== next.parent) {
-          const map = new Map(state.nodes.map((node) => [node.id, node]));
-          state.nodes = normalizeNodes(state.nodes, map);
+          state.nodes = normalizeNodes(state.nodes);
         }
       },
     ),

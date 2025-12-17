@@ -54,6 +54,7 @@ type NodeProperties<T extends Transform | TransformParsed> = T & {
   tag: "create" | "update" | "delete";
   parent: string;
   virtual?: boolean;
+  originId?: string;
   hidden?: boolean;
   pattern?: T & PatternProperties;
   errors?: string[];
@@ -96,6 +97,7 @@ export type IntermediateGroupNodeCache = Record<
 export type InstancedMeshTransforms = {
   id: string;
   virtual?: boolean;
+  originId?: string;
   position: { x: number; y: number; z: number; w: number };
   orientation: { x: number; y: number; z: number; w: number };
   scale: { x: number; y: number; z: number; w: number };

@@ -56,6 +56,7 @@ export function nodeToTransform(
   return {
     id: node.id,
     virtual: node.virtual,
+    originId: node.originId,
     position,
     orientation,
     scale,
@@ -72,6 +73,7 @@ export const cloneNode = <T extends MapNode | MapNodeParsed>(
 
   clone.id = nanoid(8);
   clone.parent = parentId;
+  clone.originId = node.originId ?? node.id;
 
   if (clone.type === "group") {
     const children = nodes.filter((child) => child.parent === node.id);
@@ -84,11 +86,9 @@ export const cloneNode = <T extends MapNode | MapNodeParsed>(
   return [clone, ...childClones];
 };
 
-export function normalizeNodes(
-  nodes: MapNode[],
-  nodesMap: Map<string, MapNode>,
-): MapNode[] {
+export function normalizeNodes(nodes: MapNode[]): MapNode[] {
   const result: MapNode[] = [];
+  const nodesMap = new Map(nodes.map((node) => [node.id, node]));
   const processed = new Set<string>();
 
   const processNode = (node: MapNode) => {

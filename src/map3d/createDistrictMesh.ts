@@ -23,6 +23,7 @@ export function createDistrictMesh(
   const positionRange = transformMax.sub(transformMin);
 
   mesh.userData.indexes = instances.map((item) => item.id);
+  mesh.userData.originIndexes = instances.map((item) => item.originId);
   mesh.userData.count = instances.length;
   mesh.position.set(
     position.x + transformMin.x,

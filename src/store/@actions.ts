@@ -9,7 +9,7 @@ import type {
   RevivedAppState,
 } from "../types/types.ts";
 import { computeDistrictProperties } from "../utilities/district.ts";
-import { parseNode, validateNode } from "../utilities/nodes.ts";
+import { normalizeNodes, parseNode, validateNode } from "../utilities/nodes.ts";
 import { getDistrictTransforms } from "../utilities/transforms.ts";
 import { invariant } from "../utilities/utilities.ts";
 
@@ -30,7 +30,7 @@ export const hydrateState = createAsyncThunk(
     const map = new Map<string, MapNodeParsed>(
       nodes.map((node) => [node.id, parseNode(node)]),
     );
-    const validatedNodes: MapNode[] = nodes.map((node) => {
+    const validatedNodes: MapNode[] = normalizeNodes(nodes).map((node) => {
       let parent = node.parent;
       while (map.has(parent)) {
         parent = map.get(parent)!.parent;
