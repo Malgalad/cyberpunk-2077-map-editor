@@ -10,7 +10,6 @@ const rotateCoordinates = ([x, y, z, w]: number[]) => [x, z, -y, w];
 async function importMesh(
   name: keyof (typeof mapData)["meshes"],
   material: THREE.Material,
-  userData?: Record<string, unknown>,
 ) {
   const data = mapData.meshes[name];
 
@@ -18,6 +17,7 @@ async function importMesh(
     `${STATIC_ASSETS}/3dmodels/${data.model.replace(".mesh", ".drc")}`,
     material,
   );
+  mesh.name = name;
   mesh.position.set(
     ...(rotateCoordinates(data.position) as THREE.Vector3Tuple),
   );
@@ -26,15 +26,11 @@ async function importMesh(
     new THREE.Quaternion(...rotateCoordinates(data.orientation)),
   );
 
-  Object.assign(mesh.userData, userData);
-
   return mesh;
 }
 
 export function setupTerrain(addMesh: (promise: Promise<THREE.Mesh>) => void) {
-  addMesh(
-    importMesh("terrain_mesh", materials.terrainMaterial, { terrain: true }),
-  );
+  addMesh(importMesh("terrain_mesh", materials.terrainMaterial));
   addMesh(importMesh("3dmap_cliffs", materials.terrainMaterial));
 
   addMesh(importMesh("3dmap_roads", materials.roadsMaterial));
@@ -44,12 +40,13 @@ export function setupTerrain(addMesh: (promise: Promise<THREE.Mesh>) => void) {
 
   addMesh(importMesh("water_mesh", materials.waterMaterial));
 
-  addMesh(importMesh("northoak_sign_a", materials.staticMaterial));
-  addMesh(importMesh("monument_ave_pyramid", materials.staticMaterial));
-  addMesh(importMesh("obelisk", materials.staticMaterial));
-  addMesh(importMesh("cz_cz_building_h_icosphere", materials.staticMaterial));
-  addMesh(importMesh("statue_splash_a", materials.staticMaterial));
-  addMesh(importMesh("ferris_wheel_collapsed", materials.staticMaterial));
-  addMesh(importMesh("ferris_wheel_pacifica", materials.staticMaterial));
-  addMesh(importMesh("ext_monument_av_building_b", materials.staticMaterial));
+  // TODO make meshes configurable (project level?)
+  addMesh(importMesh("northoak_sign_a", materials.statuesMaterial));
+  addMesh(importMesh("monument_ave_pyramid", materials.statuesMaterial));
+  addMesh(importMesh("obelisk", materials.statuesMaterial));
+  addMesh(importMesh("cz_cz_building_h_icosphere", materials.statuesMaterial));
+  addMesh(importMesh("statue_splash_a", materials.statuesMaterial));
+  addMesh(importMesh("ferris_wheel_collapsed", materials.statuesMaterial));
+  addMesh(importMesh("ferris_wheel_pacifica", materials.statuesMaterial));
+  addMesh(importMesh("ext_monument_av_building_b", materials.statuesMaterial));
 }

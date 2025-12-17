@@ -5,18 +5,24 @@ import { clsx } from "../../utilities/utilities.ts";
 export default function DraggableInput(
   props: React.InputHTMLAttributes<HTMLInputElement>,
 ) {
-  const { onChange, onMouseDown } = props;
+  const {
+    onChange,
+    onMouseDown,
+    max = Infinity,
+    min = -Infinity,
+    step = 1,
+  } = props;
   const [isDragging, setIsDragging] = React.useState(false);
   const [startY, setStartY] = React.useState(0);
   const [startValue, setStartValue] = React.useState("0");
   const inputRef = React.useRef<HTMLInputElement>(null);
 
   const handleMouseDown = React.useCallback(
-    (e: React.MouseEvent<HTMLInputElement, MouseEvent>) => {
-      onMouseDown?.(e);
+    (event: React.MouseEvent<HTMLInputElement, MouseEvent>) => {
+      onMouseDown?.(event);
       if (props.disabled || props.readOnly) return;
       setIsDragging(true);
-      setStartY(e.clientY);
+      setStartY(event.clientY);
       setStartValue(`${props.value}`);
       document.body.style.cursor = "ns-resize";
     },
@@ -24,12 +30,11 @@ export default function DraggableInput(
   );
 
   const handleMouseMove = React.useCallback(
-    (e: MouseEvent) => {
+    (event: MouseEvent) => {
       if (!isDragging) return;
 
-      const { max = Infinity, min = -Infinity, step = 1 } = props;
-      const deltaY = startY - e.clientY;
-      const newValue = Math.min(
+      const deltaY = startY - event.clientY;
+      const value = Math.min(
         parseFloat(`${max}`),
         Math.max(
           parseFloat(`${min}`),
@@ -37,27 +42,17 @@ export default function DraggableInput(
         ),
       );
       const precision =
-        Math.abs(newValue) > 1000
+        Math.abs(value) > 1000
           ? 8
-          : Math.abs(newValue) > 100
+          : Math.abs(value) > 100
             ? 7
-            : Math.abs(newValue) > 10
+            : Math.abs(value) > 10
               ? 6
               : 5;
-      onChange?.({
-        target: { value: newValue.toPrecision(precision) },
-      } as React.ChangeEvent<HTMLInputElement>);
+      const eventLike = { target: { value: value.toPrecision(precision) } };
+      onChange?.(eventLike as React.ChangeEvent<HTMLInputElement>);
     },
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [
-      isDragging,
-      props.max,
-      props.min,
-      onChange,
-      startValue,
-      startY,
-      props.step,
-    ],
+    [isDragging, max, min, onChange, startValue, startY, step],
   );
 
   const handleMouseUp = React.useCallback(() => {

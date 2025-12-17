@@ -62,6 +62,7 @@ function Dropdown({
             ),
           })}
         </DropdownTriggerContextProvider>
+
         {isOpen && !disabled && (
           <div
             className={clsx(

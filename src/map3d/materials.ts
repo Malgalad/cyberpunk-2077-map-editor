@@ -45,8 +45,11 @@ staticMaterial.onBeforeCompile = (shader) => {
       "\tfloat colorMix = 1.0 - pow( 1.0 - clamp(vPos.y / vMaxHeight, 0.0, 1.0), 3.0 );\n" +
         "\tvec4 diffuseColor = vec4( mix(vColorBase, vColorUp, colorMix), opacity );\n",
     );
-  buildingsMaterial.userData.shader = shader;
 };
+
+export const statuesMaterial = staticMaterial.clone();
+statuesMaterial.opacity = 0.5;
+statuesMaterial.transparent = true;
 
 export const additionsMaterial = new THREE.MeshToonMaterial({
   color: 0xffffff,

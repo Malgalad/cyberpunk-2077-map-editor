@@ -105,6 +105,7 @@ function EditNodeProperties({ selected, mode }: EditNodePropertiesProps) {
               nodes.map((node) => [node.id, parseNode(node)]),
             );
             for (const node of selected) {
+              // FIXME include rotation into calculations
               const { position: oldPosition } = applyTransforms(
                 parseNode(node),
                 map,
@@ -120,7 +121,7 @@ function EditNodeProperties({ selected, mode }: EditNodePropertiesProps) {
                 newPosition[0] - oldPosition[0],
                 newPosition[1] - oldPosition[1],
                 newPosition[2] - oldPosition[2],
-              ];
+              ] as THREE.Vector3Tuple;
               dispatch(
                 NodesActions.patchNode(node.id, (draft) => {
                   draft.parent = parentId;

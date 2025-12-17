@@ -32,13 +32,20 @@ function DropdownItem(props: DropdownItemProps) {
     size: 20,
     className: clsx(disabled ? "text-gray-400" : "text-slate-300", "shrink-0"),
   };
-  const iconElement =
+  const leftIcon =
     icon ||
     (checked ? (
       <CheckIcon />
     ) : (
       isTrigger && direction === "left" && <ChevronLeft />
     ));
+  const rightIcon = isTrigger && (
+    <div className="ml-auto shrink-0">
+      {direction === "right" && <ChevronRight {...iconProps} />}
+      {direction === "top" && <ChevronUp {...iconProps} />}
+      {direction === "bottom" && <ChevronDown {...iconProps} />}
+    </div>
+  );
 
   return (
     <div
@@ -52,19 +59,11 @@ function DropdownItem(props: DropdownItemProps) {
       onClick={() => !disabled && onClick?.()}
       {...rest}
     >
-      {iconElement && React.cloneElement(iconElement, iconProps)}
-      <div
-        className={clsx(!iconElement && indent && "ml-7", "truncate w-full")}
-      >
+      {leftIcon && React.cloneElement(leftIcon, iconProps)}
+      <div className={clsx(!leftIcon && indent && "ml-7", "truncate w-full")}>
         {children}
       </div>
-      {isTrigger && (
-        <div className="ml-auto shrink-0">
-          {direction === "right" && <ChevronRight {...iconProps} />}
-          {direction === "top" && <ChevronUp {...iconProps} />}
-          {direction === "bottom" && <ChevronDown {...iconProps} />}
-        </div>
-      )}
+      {rightIcon}
     </div>
   );
 }

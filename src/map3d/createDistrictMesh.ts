@@ -22,9 +22,7 @@ export function createDistrictMesh(
   const mesh = new THREE.InstancedMesh(geometry, material, instances.length);
   const positionRange = transformMax.sub(transformMin);
 
-  mesh.userData.indexes = instances.map((item) => item.id);
-  mesh.userData.originIndexes = instances.map((item) => item.originId);
-  mesh.userData.count = instances.length;
+  mesh.userData.instances = instances;
   mesh.position.set(
     position.x + transformMin.x,
     position.z + transformMin.z,

@@ -5,6 +5,7 @@ import { ProjectSelectors } from "../store/project.ts";
 import type {
   AppStore,
   DistrictWithTransforms,
+  InstancedMeshTransforms,
   MapNodeParsed,
   PatternView,
 } from "../types/types.ts";
@@ -214,12 +215,12 @@ export class Map3D extends Map3DBase {
     const mode = this.#mode;
 
     if (this.#additions) {
-      const indexes: Array<string | undefined> =
-        this.#additions.userData.indexes;
+      const instances: Array<InstancedMeshTransforms> =
+        this.#additions.userData.instances;
       let needsUpdate = false;
 
       for (let i = 0; i < this.#additions.count; i++) {
-        const id = indexes[i] ?? "";
+        const id = instances[i].id ?? "";
         const isMarker = this.#markers.includes(id);
         const color =
           mode === "create" && this.#selectedIndexes.includes(i)
@@ -244,12 +245,12 @@ export class Map3D extends Map3DBase {
 
       if (this.#additionsVirtual) {
         let needsUpdate = false;
-        const origins: Array<string | undefined> =
-          this.#additionsVirtual.userData.originIndexes;
+        const origins: Array<InstancedMeshTransforms> =
+          this.#additionsVirtual.userData.instances;
 
         for (let i = 0; i < this.#additionsVirtual.count; i++) {
-          const originId = origins[i] ?? "";
-          const index = indexes.findIndex((k) => k === originId);
+          const originId = origins[i].originId ?? "";
+          const index = instances.findIndex((k) => k.id === originId);
           const color =
             mode === "create" && this.#selectedIndexes.includes(index)
               ? ADDITIONS.selected
@@ -268,11 +269,12 @@ export class Map3D extends Map3DBase {
     }
 
     if (this.#updates) {
-      const indexes: Array<string | undefined> = this.#updates.userData.indexes;
+      const instances: Array<InstancedMeshTransforms> =
+        this.#updates.userData.instances;
       let needsUpdate = false;
 
       for (let i = 0; i < this.#updates.count; i++) {
-        const index = indexes[i] != null ? toNumber(indexes[i] as string) : -1;
+        const index = instances[i] != null ? toNumber(instances[i].id) : -1;
         const color =
           mode === "update" && this.#selectedIndexes.includes(index)
             ? UPDATES.selected
@@ -294,12 +296,12 @@ export class Map3D extends Map3DBase {
     }
 
     if (this.#deletions) {
-      const indexes: Array<string | undefined> =
-        this.#deletions.userData.indexes;
+      const instances: Array<InstancedMeshTransforms> =
+        this.#deletions.userData.instances;
       let needsUpdate = false;
 
       for (let i = 0; i < this.#deletions.count; i++) {
-        const index = indexes[i] != null ? toNumber(indexes[i] as string) : -1;
+        const index = instances[i] != null ? toNumber(instances[i].id) : -1;
         const color =
           mode && this.#selectedIndexes.includes(index)
             ? DELETIONS.selected
@@ -490,7 +492,7 @@ export class Map3D extends Map3DBase {
 
     const objectsToRemove: THREE.Object3D[] = [];
     for (const object3d of this.#visibleDistricts.children) {
-      const { name } = object3d.userData;
+      const { name } = object3d;
 
       if (!visibleNames.includes(name)) {
         objectsToRemove.push(object3d);
@@ -501,7 +503,7 @@ export class Map3D extends Map3DBase {
       this.#visibleDistricts.remove(...objectsToRemove);
 
     const currentNames = this.#visibleDistricts.children.map(
-      (object3d) => object3d.userData.name as string,
+      (object3d) => object3d.name,
     );
 
     const objectsToAdd: THREE.Object3D[] = [];
@@ -510,7 +512,7 @@ export class Map3D extends Map3DBase {
 
       if (!currentNames.includes(district.name)) {
         const mesh = createDistrictMesh(district, transforms, staticMaterial);
-        mesh.userData = { name: district.name };
+        mesh.name = district.name;
         objectsToAdd.push(mesh);
       }
     }
@@ -542,7 +544,7 @@ export class Map3D extends Map3DBase {
   };
 
   getCenter = () => {
-    const terrain = this.scene.children.find((obj) => obj.userData?.terrain);
+    const terrain = this.scene.getObjectByName("terrain_mesh");
 
     if (!terrain) return;
 

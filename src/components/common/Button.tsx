@@ -7,7 +7,7 @@ import { clsx } from "../../utilities/utilities.ts";
 type ButtonProps = React.ButtonHTMLAttributes<HTMLButtonElement> & {
   onClick?: (
     event: React.MouseEvent<HTMLButtonElement, MouseEvent>,
-  ) => void | Promise<void>;
+  ) => unknown | Promise<unknown>;
   shortcut?: string | ((event: KeyboardEvent) => boolean);
 };
 
@@ -17,7 +17,7 @@ function Button({ onClick, children, shortcut, ...props }: ButtonProps) {
     (event: React.MouseEvent<HTMLButtonElement, MouseEvent>) => {
       if (!onClick) return;
 
-      const result = onClick(event) as void | Promise<void>;
+      const result = onClick(event) as unknown | Promise<unknown>;
 
       if (result instanceof Promise) {
         setIsLoading(true);
