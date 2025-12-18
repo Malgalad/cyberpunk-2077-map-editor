@@ -5,7 +5,7 @@ import type {
 } from "./types/types.ts";
 
 export const PROJECT_VERSION = 3 as const;
-export const MAX_DEPTH = 5 as const;
+export const MAX_DEPTH = 6 as const;
 export const TEMPLATE_ID = "@@TEMPLATE" as const;
 
 export const DISTRICT_LABELS: Record<DefaultDistrictNames, string> = {

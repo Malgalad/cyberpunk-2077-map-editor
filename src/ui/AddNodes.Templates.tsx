@@ -63,7 +63,7 @@ function AddNodesTemplates() {
     );
 
     if (confirmed) {
-      dispatch(NodesActions.deleteNodeDeep(template.id));
+      dispatch(NodesActions.deleteNodesDeep([template.id]));
     }
   };
 

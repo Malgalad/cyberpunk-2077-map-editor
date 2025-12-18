@@ -5,105 +5,57 @@ import Tooltip from "../components/common/Tooltip.tsx";
 import EditNode from "../components/EditNode.tsx";
 import Node from "../components/Node.tsx";
 import { MAX_DEPTH } from "../constants.ts";
+import { useAppSelector, useGlobalShortcuts } from "../hooks/hooks.ts";
 import {
-  useAppDispatch,
-  useAppSelector,
-  useGlobalShortcuts,
-} from "../hooks/hooks.ts";
-import { useMap3D } from "../map3d/map3d.context.ts";
+  useAddNode,
+  useDeleteNode,
+  useDeselectNode,
+} from "../hooks/nodes.hooks.ts";
 import { getDeletions } from "../store/@selectors.ts";
 import { DistrictSelectors } from "../store/district.ts";
-import { ModalsActions } from "../store/modals.ts";
-import { NodesActions, NodesSelectors } from "../store/nodes.ts";
-import type { MapNode } from "../types/types.ts";
-import { toString } from "../utilities/utilities.ts";
+import { NodesSelectors } from "../store/nodes.ts";
 
 function RemoveNodes() {
-  const dispatch = useAppDispatch();
-  const map3d = useMap3D();
-  const removals = useAppSelector(getDeletions);
-  const selected = useAppSelector(NodesSelectors.getSelectedNodes);
-  const district = useAppSelector(DistrictSelectors.getDistrict);
-  const cache = useAppSelector(NodesSelectors.getChildNodesCache);
+  const deleteNodes = useAppSelector(getDeletions);
+  const selectedNodes = useAppSelector(NodesSelectors.getSelectedNodes);
+  const selectedDistrict = useAppSelector(DistrictSelectors.getDistrict);
+  const nodesIndex = useAppSelector(NodesSelectors.getChildNodesCache);
+  const rootNodes = deleteNodes.filter(
+    (node) => node.parent === selectedDistrict?.name,
+  );
 
-  const onDelete = async () => {
-    if (selected.length === 0) return;
-
-    const message =
-      selected.length > 1
-        ? `Do you want to delete ${selected.length} nodes?`
-        : `Do you want to delete node "${selected[0].label}"?`;
-    const confirmed = await dispatch(
-      ModalsActions.openModal("confirm", message),
-    );
-
-    if (confirmed) {
-      for (const node of selected) {
-        dispatch(NodesActions.deleteNodeDeep(node.id));
-      }
-    }
-  };
-
-  const onAddGroup = () => {
-    if (selected.length > 1 || !district) return;
-    const parent = selected[0]
-      ? selected[0].type === "group"
-        ? selected[0].id
-        : selected[0].parent
-      : district.name;
-    if (!map3d) return;
-    const center = map3d.getCenter();
-    if (!center) return;
-    const position = (
-      selected[0] ? ["0", "0", "0"] : center.map(toString)
-    ) as MapNode["position"];
-    const tag = "delete";
-    const action = dispatch(
-      NodesActions.addNode({
-        type: "group",
-        tag,
-        parent,
-        position,
-      }),
-    );
-    dispatch(
-      NodesActions.selectNode({
-        id: action.payload.id,
-      }),
-    );
-  };
+  const onDeselect = useDeselectNode();
+  const onDelete = useDeleteNode();
+  const onAddGroup = useAddNode("group", "delete");
 
   useGlobalShortcuts("Delete", onDelete);
 
-  if (!district) return null;
+  if (!selectedDistrict) return null;
 
   return (
     <>
       <div className="flex flex-col gap-2 grow overflow-auto bg-slate-800 relative">
-        <div
-          className="grow p-2 flex flex-col"
-          onClick={() => dispatch(NodesActions.selectNode(null))}
-        >
-          {!removals.length && (
+        <div className="grow p-2 flex flex-col" onClick={onDeselect}>
+          {!deleteNodes.length && (
             <div className="grow flex items-center justify-center italic bg-slate-800">
-              Pick box using "Select" tool on the map
+              Pick block using "Select" tool on the map
             </div>
           )}
 
-          {removals.map((node) => (
+          {rootNodes.map((node) => (
             <Node key={node.id} node={node} />
           ))}
         </div>
 
         <div className="flex flex-row gap-2 sticky pr-1 bottom-0 justify-end border-t border-slate-900 bg-slate-800">
-          {selected.length > 0 && (
+          {selectedNodes.length > 0 && (
             <>
               <Tooltip
                 tooltip={
-                  selected.length > 1
+                  selectedNodes.length > 1
                     ? "Delete nodes"
-                    : selected[0].type === "instance"
-                      ? "Reset instance"
+                    : selectedNodes[0].type === "instance"
+                      ? "Discard block changes"
                       : "Delete node"
                 }
                 flow="top"
@@ -120,11 +72,11 @@ function RemoveNodes() {
           <Tooltip tooltip="Add group" flow="left">
             <Button
               className="border-none"
-              onClick={() => onAddGroup()}
+              onClick={onAddGroup}
               disabled={
-                selected.length > 1 ||
-                (selected[0]?.type === "group" &&
-                  cache[selected[0].id].level >= MAX_DEPTH - 1)
+                selectedNodes.length > 1 ||
+                (selectedNodes[0]?.type === "group" &&
+                  nodesIndex[selectedNodes[0].id].level >= MAX_DEPTH - 1)
               }
             >
               <FolderPlus />
@@ -134,11 +86,11 @@ function RemoveNodes() {
       </div>
 
       <div className="flex flex-col basis-[90px] shrink-0">
-        {selected.length > 0 ? (
-          <EditNode key={selected[0].id} mode="delete" />
+        {selectedNodes.length > 0 ? (
+          <EditNode key={selectedNodes[0].id} mode="delete" />
         ) : (
           <div className="grow flex items-center justify-center italic bg-slate-800">
-            Select node
+            Select a single node
           </div>
         )}
       </div>

@@ -252,27 +252,33 @@ const patchNode =
       }
     }
   };
-const deleteNodeDeep =
-  (id: MapNode["id"]): AppThunkAction =>
+const deleteNodesDeep =
+  (ids: MapNode["id"][]): AppThunkAction =>
   (dispatch, getState) => {
     const state = getState();
     const nodes = nodesSlice.selectors.getNodes(state);
     const cache = nodesSlice.selectors.getChildNodesCache(state);
-    const node = nodes.find((node) => node.id === id);
+    const idsFull: string[] = [];
 
-    if (!node) return;
+    for (const id of ids) {
+      const node = nodes.find((node) => node.id === id);
 
-    if (node.type === "instance") {
-      dispatch(nodesSlice.actions.deleteNodes([id]));
-    } else {
-      dispatch(nodesSlice.actions.deleteNodes([id, ...cache[id].nodes]));
+      if (!node) continue;
+
+      if (node.type === "instance") {
+        idsFull.push(id);
+      } else {
+        idsFull.push(id, ...cache[id].nodes);
+      }
     }
+
+    dispatch(nodesSlice.actions.deleteNodes(idsFull));
   };
 
 export const NodesActions = {
   ...nodesSlice.actions,
   patchNode,
-  deleteNodeDeep,
+  deleteNodesDeep,
 };
 export const NodesSelectors = nodesSlice.selectors;
 export default nodesSlice;

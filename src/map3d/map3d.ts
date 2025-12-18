@@ -550,12 +550,12 @@ export class Map3D extends Map3DBase {
   getCenter = () => {
     const terrain = this.scene.getObjectByName("terrain_mesh");
 
-    if (!terrain) return;
+    if (!terrain) throw new Error("Terrain mesh not found");
 
     this.#raycaster.setFromCamera(new THREE.Vector2(0, 0), this.camera);
     const intersection = this.#raycaster.intersectObject(terrain);
 
-    if (!intersection.length) return;
+    if (!intersection.length) throw new Error("No terrain intersection");
 
     const [{ point }] = intersection;
 
