@@ -9,6 +9,7 @@ import ModalContainer from "./modals/@ModalContainer.tsx";
 import store from "./store/store.ts";
 
 void initProject();
+void navigator.serviceWorker.register("/sw.js", { scope: "/" });
 
 createRoot(document.getElementById("root")!).render(
   <Provider store={store}>
