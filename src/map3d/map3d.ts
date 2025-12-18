@@ -383,11 +383,15 @@ export class Map3D extends Map3DBase {
       node.position[2],
       -node.position[1],
     );
-    this.#helper.scale.set(
-      node.scale[0] / 50,
-      node.scale[2] / 50,
-      node.scale[1] / 50,
-    );
+    if (node.type === "group") {
+      this.#helper.scale.set(1.5, 1.5, 1.5);
+    } else {
+      this.#helper.scale.set(
+        node.scale[0] / 50,
+        node.scale[2] / 50,
+        node.scale[1] / 50,
+      );
+    }
     if (relative) {
       this.#helper.rotation.fromArray([
         node.rotation[0],

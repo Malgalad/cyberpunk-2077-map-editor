@@ -155,8 +155,9 @@ function ImportExportNodesModal(props: ModalProps) {
   const importExport = async () => {
     if (tab === "export") {
       const selectedNodes = nodes
-        .filter((node) => selected.has(node.id))
-        .filter((node) => districtNames.has(node.parent))
+        .filter(
+          (node) => selected.has(node.id) && districtNames.has(node.parent),
+        )
         .flatMap((node) => cloneNode(nodes, node, ""))
         .map((node) => ({ ...node, errors: undefined }));
       const json = JSON.stringify(selectedNodes, null, 2);

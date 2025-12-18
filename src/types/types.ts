@@ -45,7 +45,6 @@ export type TransformParsed = {
 
 type PatternProperties = {
   count: number;
-  enabled: boolean;
 };
 type NodeProperties<T extends Transform | TransformParsed> = T & {
   id: string;

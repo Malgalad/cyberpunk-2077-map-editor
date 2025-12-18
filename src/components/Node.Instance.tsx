@@ -43,7 +43,7 @@ function Instance({ lookAtNode, node }: InstanceProps) {
         {node.label}
         <div className="flex flex-row gap-1">
           {node.hidden && <EyeOff />}
-          {node.pattern?.enabled && (
+          {node.pattern && (
             <Tooltip tooltip="Has pattern" flow="left">
               <Button
                 className="border-none p-0!"

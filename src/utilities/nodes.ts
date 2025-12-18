@@ -67,19 +67,23 @@ export const cloneNode = <T extends MapNode | MapNodeParsed>(
   nodes: T[],
   node: T,
   parentId: string,
+  virtual = false,
 ): T[] => {
   const clone = structuredClone(unwrapDraft(node));
   const childClones: T[] = [];
 
   clone.id = nanoid(8);
   clone.parent = parentId;
-  clone.originId = node.originId ?? node.id;
+  if (virtual) {
+    clone.virtual = true;
+    clone.originId = node.originId ?? node.id;
+  }
 
   if (clone.type === "group") {
     const children = nodes.filter((child) => child.parent === node.id);
 
     for (const child of children) {
-      childClones.push(...cloneNode(nodes, child, clone.id));
+      childClones.push(...cloneNode(nodes, child, clone.id, virtual));
     }
   }
 
@@ -144,7 +148,7 @@ export function validateNode(
   if (validateScale(nodeParsed.scale)) {
     errors.push("Node is larger than district cube size or less than 0");
   }
-  if (nodeParsed.pattern?.enabled && nodeParsed.pattern.count > 0) {
+  if (nodeParsed.pattern && nodeParsed.pattern.count > 0) {
     for (let i = 0; i < nodeParsed.pattern.count; i++) {
       const clone = { ...nodeParsed };
 

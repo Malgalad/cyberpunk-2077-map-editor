@@ -84,13 +84,12 @@ export function projectNodesToDistrict(
     const node = nodesParsed[i];
 
     if (node.hidden) node.scale = [0, 0, 0];
-    if (!node.pattern?.enabled || node.virtual) continue;
+    if (!node.pattern || node.virtual) continue;
 
     for (let i = 0; i < node.pattern.count; i++) {
-      const clones = cloneNode(nodesParsed, node, node.parent);
+      const clones = cloneNode(nodesParsed, node, node.parent, true);
 
       for (const clone of clones) {
-        clone.virtual = true;
         nodesMap.set(clone.id, clone);
       }
 

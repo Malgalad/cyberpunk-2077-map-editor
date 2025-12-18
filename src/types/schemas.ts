@@ -61,13 +61,13 @@ export const NodeSchema = z.object({
   tag: z.union([z.literal("create"), z.literal("update"), z.literal("delete")]),
   parent: z.string(),
   virtual: z.boolean().optional(),
+  // originId is not serializable
   hidden: z.boolean().optional(),
   position: z.tuple([z.string(), z.string(), z.string()]),
   rotation: z.tuple([z.string(), z.string(), z.string()]),
   scale: z.tuple([z.string(), z.string(), z.string()]),
   pattern: z
     .object({
-      enabled: z.boolean(),
       count: z.number(),
       position: z.tuple([z.string(), z.string(), z.string()]),
       rotation: z.tuple([z.string(), z.string(), z.string()]),

@@ -80,7 +80,7 @@ export default function DraggableInput(
       <input
         {...props}
         ref={inputRef}
-        type="text"
+        type="number"
         onMouseDown={handleMouseDown}
         className={clsx(
           "cursor-ns-resize border p-1.5",
