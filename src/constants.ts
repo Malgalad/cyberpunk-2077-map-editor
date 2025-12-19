@@ -21,8 +21,11 @@ export const DISTRICT_LABELS: Record<DefaultDistrictNames, string> = {
 
 export const DEFAULT_DISTRICT_DATA: DistrictProperties[] = Object.entries(
   mapData.soup,
-).map(([key, value]) => ({
-  ...value,
-  isCustom: false,
-  name: key,
-}));
+).map(
+  ([key, value]) =>
+    ({
+      ...value,
+      isCustom: false,
+      name: key,
+    }) as DistrictProperties,
+);

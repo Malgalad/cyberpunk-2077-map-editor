@@ -1,6 +1,7 @@
 import { produce } from "immer";
 import { HelpCircle, LockKeyhole } from "lucide-react";
 import * as React from "react";
+import type * as THREE from "three";
 
 import Button from "../../components/common/Button.tsx";
 import DraggableInput from "../../components/common/DraggableInput.tsx";
@@ -69,10 +70,10 @@ function EditDistrictModal(props: ModalProps) {
     const districtProperties: DistrictProperties = {
       name,
       isCustom: true,
-      position: data.pos.map(toNumber),
-      orientation: [0, 0, 0, 1],
-      transMin: [...data.min.map(toNumber), 0],
-      transMax: [...data.max.map(toNumber), 1],
+      position: data.pos.map(toNumber) as THREE.Vector3Tuple,
+      orientation: [0, 0, 0, 1] as THREE.QuaternionTuple,
+      transMin: [...data.min.map(toNumber), 0] as THREE.Vector4Tuple,
+      transMax: [...data.max.map(toNumber), 1] as THREE.Vector4Tuple,
       cubeSize: toNumber(data.cubeSize),
     };
     const computedProperties = computeDistrictProperties(districtProperties);

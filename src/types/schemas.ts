@@ -32,10 +32,10 @@ export const OptionsStateSchema = z.object({
 const DistrictPropertiesSchema = z.intersection(
   z.object({
     name: z.string(),
-    position: z.array(z.number()),
-    orientation: z.array(z.number()),
-    transMin: z.array(z.number()),
-    transMax: z.array(z.number()),
+    position: z.tuple([z.number(), z.number(), z.number()]),
+    orientation: z.tuple([z.number(), z.number(), z.number(), z.number()]),
+    transMin: z.tuple([z.number(), z.number(), z.number(), z.number()]),
+    transMax: z.tuple([z.number(), z.number(), z.number(), z.number()]),
     cubeSize: z.number(),
   }),
   z.discriminatedUnion("isCustom", [
