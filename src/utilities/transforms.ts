@@ -15,6 +15,10 @@ import type {
 import { cloneNode, nodeToTransform, parseNode } from "./nodes.ts";
 import { invariant, toNumber, toString } from "./utilities.ts";
 
+const toQuaternion = (rotation: THREE.Vector3Tuple | THREE.EulerTuple) =>
+  new THREE.Quaternion().setFromEuler(new THREE.Euler().fromArray(rotation));
+const fromEuler = (rotation: THREE.Euler) =>
+  rotation.toArray().slice(0, 3) as THREE.Vector3Tuple;
 const hadamardProduct = (a: number[], b: number[]) =>
   a.map((x, i) => x * (b[i] ?? 0));
 const addTuples = (a: number[], b: number[]) =>
@@ -27,9 +31,7 @@ export function applyParentTransform<Node extends TransformParsed>(
   parent: TransformParsed,
 ): Node {
   const parentPosition = new THREE.Vector3().fromArray(parent.position);
-  const parentRotation = new THREE.Quaternion().setFromEuler(
-    new THREE.Euler().fromArray(parent.rotation),
-  );
+  const parentRotation = toQuaternion(parent.rotation);
 
   const object = new THREE.Object3D();
 
@@ -48,7 +50,7 @@ export function applyParentTransform<Node extends TransformParsed>(
   return {
     ...node,
     position: object.position.toArray(),
-    rotation: object.rotation.toArray().slice(0, 3),
+    rotation: fromEuler(object.rotation),
     scale,
   };
 }
@@ -176,17 +178,16 @@ export function transformToNode(
     transform.position.y * minMax.y + origin.y,
     transform.position.z * minMax.z + origin.z,
   ].map(toString) as MapNode["position"];
-  const rotation = new THREE.Euler()
-    .setFromQuaternion(
+  const rotation = fromEuler(
+    new THREE.Euler().setFromQuaternion(
       new THREE.Quaternion(
         transform.orientation.x,
         transform.orientation.y,
         transform.orientation.z,
         transform.orientation.w,
       ),
-    )
-    .toArray()
-    .slice(0, 3)
+    ),
+  )
     .map((angle) => THREE.MathUtils.radToDeg(angle as number))
     .map(toString) as MapNode["rotation"];
   const scale = [

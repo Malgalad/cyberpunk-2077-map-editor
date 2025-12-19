@@ -19,6 +19,10 @@ import {
 } from "./transforms.ts";
 import { unwrapDraft } from "./utilities.ts";
 
+const toQuaternion = (rotation: THREE.Vector3Tuple | THREE.EulerTuple) =>
+  new THREE.Quaternion().setFromEuler(new THREE.Euler().fromArray(rotation));
+const fromEuler = (rotation: THREE.Euler) =>
+  rotation.toArray().slice(0, 3) as THREE.Vector3Tuple;
 const addTuples = (a: number[], b: number[]) =>
   a.map((x, i) => x + (b[i] ?? 0));
 const scalePattern = (i: number) => (value: number) => value * (i + 1);
@@ -262,33 +266,45 @@ export const createGroupNodesCache = (nodes: MapNodeUri[]): GroupNodeCache => {
 
 export function transplantNode(
   nodesOrMap: MapNode[] | Map<string, MapNodeParsed>,
-  node: MapNode,
-  parent: string,
+  nodeId: string,
+  parentId: string,
 ): MapNode {
   const map =
     nodesOrMap instanceof Map
       ? nodesOrMap
       : new Map(nodesOrMap.map((node) => [node.id, parseNode(node)]));
-  const nodeTransforms = applyTransforms(parseNode(node), map);
+  const node = map.get(nodeId)!;
+  const nodeTransforms = applyTransforms(node, map);
 
-  if (!map.has(parent)) {
+  if (!map.has(parentId)) {
     return stringifyNode({
       ...nodeTransforms,
-      parent,
+      parent: parentId,
     });
   }
 
-  const parentTransforms = applyTransforms(map.get(parent)!, map);
-  // TODO assuming parent rotation is [0, 0, 0]
+  const parent = map.get(parentId)!;
+  const negateRotation = parent.rotation.map(
+    (n) => n * -1,
+  ) as THREE.Vector3Tuple;
+  const parentRotation = toQuaternion(negateRotation);
+  const parentTransforms = applyTransforms(parent, map);
   const position = [
     nodeTransforms.position[0] - parentTransforms.position[0],
     nodeTransforms.position[1] - parentTransforms.position[1],
     nodeTransforms.position[2] - parentTransforms.position[2],
   ] as THREE.Vector3Tuple;
+  const object = new THREE.Object3D();
+  object.rotation.setFromQuaternion(
+    toQuaternion(node.rotation).multiply(parentRotation),
+  );
+  object.position.fromArray(position);
+  object.position.applyQuaternion(parentRotation);
 
   return stringifyNode({
     ...nodeTransforms,
-    parent,
-    position,
+    parent: parentId,
+    position: object.position.toArray(),
+    rotation: fromEuler(object.rotation),
   });
 }

@@ -6,7 +6,7 @@ export function toNumber(value: string) {
 }
 
 export function toString(value: number) {
-  return value.toString();
+  return parseFloat(value.toFixed(7)).toString();
 }
 
 export function unwrapDraft<T>(value: T | WritableDraft<T>): T {
