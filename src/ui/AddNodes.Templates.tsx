@@ -126,12 +126,16 @@ function AddNodesTemplates() {
           ))}
       </Dropdown>
 
-      {selected.length === 1 && (
+      {selected.length > 0 && (
         <Tooltip
           tooltip="Create template from node"
           tooltip2="Template created!"
         >
-          <Button className="border-none" onClick={onCreate}>
+          <Button
+            className="border-none"
+            onClick={onCreate}
+            disabled={selected.length !== 1}
+          >
             <ClipboardPlus />
           </Button>
         </Tooltip>

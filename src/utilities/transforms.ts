@@ -73,7 +73,6 @@ export function applyTransforms(
 export function projectNodesToDistrict(
   nodes: MapNode[],
   district: District | undefined,
-  shiftZOrigin: boolean = false,
 ): InstancedMeshTransforms[] {
   if (!district) return noTransforms;
 
@@ -123,7 +122,7 @@ export function projectNodesToDistrict(
 
     const resolved = applyTransforms(node, nodesMap);
     // set node Z transform origin to bottom instead of center
-    if (shiftZOrigin) resolved.position[2] += resolved.scale[2] / 2;
+    if (node.tag === "create") resolved.position[2] += resolved.scale[2] / 2;
     transforms.push(nodeToTransform(resolved, district));
   }
 

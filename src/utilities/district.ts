@@ -60,13 +60,11 @@ export function getFinalDistrictTransformsFromNodes(
     }
   }
 
-  const additionTransforms = projectNodesToDistrict(
-    additions,
-    district,
-    true,
-  ).filter((transform) => !isHidden(transform));
+  const additionTransforms = projectNodesToDistrict(additions, district).filter(
+    (transform) => !isHidden(transform),
+  );
   const updateTransforms = new Map(
-    projectNodesToDistrict(updates, district, false).map((transform) => [
+    projectNodesToDistrict(updates, district).map((transform) => [
       transform.id,
       transform,
     ]),

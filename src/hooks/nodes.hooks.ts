@@ -4,7 +4,8 @@ import { useMap3D } from "../map3d/map3d.context.ts";
 import { DistrictSelectors } from "../store/district.ts";
 import { ModalsActions } from "../store/modals.ts";
 import { NodesActions, NodesSelectors } from "../store/nodes.ts";
-import type { DistrictProperties, MapNode } from "../types/types.ts";
+import { ProjectActions } from "../store/project.ts";
+import type { DistrictProperties, MapNode, Modes } from "../types/types.ts";
 import { toString } from "../utilities/utilities.ts";
 import { useAppDispatch, useAppSelector } from "./hooks.ts";
 
@@ -34,19 +35,42 @@ export function useDeselectNode() {
   );
 }
 
-export function useCloneNode() {
+export function useCloneNode(node?: MapNode) {
   const dispatch = useAppDispatch();
-  const selectedNodes = useAppSelector(NodesSelectors.getSelectedNodes);
 
-  return React.useCallback(() => {
-    if (selectedNodes.length !== 1) return;
-    dispatch(NodesActions.cloneNode({ id: selectedNodes[0].id }));
-  }, [dispatch, selectedNodes]);
+  return React.useCallback(
+    (updates?: Partial<MapNode>) => {
+      if (!node) return;
+      dispatch(
+        NodesActions.cloneNode({
+          id: node.id,
+          updates,
+        }),
+      );
+    },
+    [dispatch, node],
+  );
 }
 
-export function useDeleteNode() {
+export function useTransferNode(node?: MapNode) {
   const dispatch = useAppDispatch();
-  const selectedNodes = useAppSelector(NodesSelectors.getSelectedNodes);
+
+  return React.useCallback(
+    (tag: MapNode["tag"], mode: Modes = tag) => {
+      if (!node) return;
+      dispatch(
+        NodesActions.patchNode(node.id, (draft) => {
+          draft.tag = tag;
+        }),
+      );
+      dispatch(ProjectActions.setMode(mode));
+    },
+    [dispatch, node],
+  );
+}
+
+export function useDeleteNode(selectedNodes: MapNode[]) {
+  const dispatch = useAppDispatch();
 
   return React.useCallback(async () => {
     if (selectedNodes.length === 0) return;

@@ -91,16 +91,16 @@ export const getDeletions = createSelector([getDistrictNodes], (nodes) =>
 );
 
 export const getAdditionsTransforms = createSelector(
-  [getAdditions, districtSlice.selectors.getDistrict, () => true],
+  [getAdditions, districtSlice.selectors.getDistrict],
   projectNodesToDistrict,
 );
 
 export const getUpdatesTransforms = createSelector(
-  [getUpdates, districtSlice.selectors.getDistrict, () => false],
+  [getUpdates, districtSlice.selectors.getDistrict],
   projectNodesToDistrict,
 );
 
 export const getDeletionsTransforms = createSelector(
-  [getDeletions, districtSlice.selectors.getDistrict, () => false],
+  [getDeletions, districtSlice.selectors.getDistrict],
   projectNodesToDistrict,
 );

@@ -1,4 +1,9 @@
-import { FolderPlus, Trash2 } from "lucide-react";
+import {
+  ArrowLeftToLine,
+  ArrowRightToLine,
+  FolderPlus,
+  Trash2,
+} from "lucide-react";
 
 import Button from "../components/common/Button.tsx";
 import Tooltip from "../components/common/Tooltip.tsx";
@@ -8,12 +13,16 @@ import { MAX_DEPTH } from "../constants.ts";
 import { useAppSelector, useGlobalShortcuts } from "../hooks/hooks.ts";
 import {
   useAddNode,
+  useCloneNode,
   useDeleteNode,
   useDeselectNode,
+  useTransferNode,
 } from "../hooks/nodes.hooks.ts";
 import { getUpdates } from "../store/@selectors.ts";
 import { DistrictSelectors } from "../store/district.ts";
 import { NodesSelectors } from "../store/nodes.ts";
+import type { MapNode } from "../types/types.ts";
+import { toNumber, toString } from "../utilities/utilities.ts";
 
 function UpdateNodes() {
   const updateNodes = useAppSelector(getUpdates);
@@ -25,8 +34,19 @@ function UpdateNodes() {
   );
 
   const onDeselect = useDeselectNode();
-  const onDelete = useDeleteNode();
+  const onDelete = useDeleteNode(selectedNodes);
+  const onClone = useCloneNode(selectedNodes[0]);
   const onAddGroup = useAddNode("group", "update");
+  const onTransfer = useTransferNode(selectedNodes[0]);
+
+  const onEditAsNew = () => {
+    if (selectedNodes.length !== 1) return;
+
+    const position = offsetPosition(selectedNodes[0]);
+
+    onTransfer("delete", "create");
+    onClone({ tag: "create", position });
+  };
 
   useGlobalShortcuts("Delete", onDelete);
 
@@ -50,6 +70,26 @@ function UpdateNodes() {
         <div className="flex flex-row gap-2 sticky pr-1 bottom-0 justify-end border-t border-slate-900 bg-slate-800">
           {selectedNodes.length > 0 && (
             <>
+              <Tooltip tooltip={"Delete updates and edit as new node"}>
+                <Button
+                  className="border-none"
+                  onClick={onEditAsNew}
+                  disabled={selectedNodes.length !== 1}
+                >
+                  <ArrowLeftToLine />
+                </Button>
+              </Tooltip>
+
+              <Tooltip tooltip="Delete node update and delete from district">
+                <Button
+                  className="border-none"
+                  onClick={() => onTransfer("delete")}
+                  disabled={selectedNodes.length !== 1}
+                >
+                  <ArrowRightToLine />
+                </Button>
+              </Tooltip>
+
               <Tooltip
                 tooltip={
                   selectedNodes.length > 1
@@ -97,5 +137,13 @@ function UpdateNodes() {
     </>
   );
 }
+
+const offsetPosition = (node: MapNode) => {
+  return [
+    node.position[0],
+    node.position[1],
+    toString(toNumber(node.position[2]) - toNumber(node.scale[2]) / 2),
+  ] as MapNode["position"];
+};
 
 export default UpdateNodes;

@@ -25,8 +25,8 @@ function AddNodes() {
   const rootNodes = nodes.filter((node) => node.parent === district?.name);
 
   const onDeselect = useDeselectNode();
-  const onDelete = useDeleteNode();
-  const onClone = useCloneNode();
+  const onDelete = useDeleteNode(selected);
+  const onClone = useCloneNode(selected[0]);
   const onAddInstance = useAddNode("instance", "create");
   const onAddGroup = useAddNode("group", "create");
 
@@ -58,15 +58,17 @@ function AddNodes() {
           {selected.length > 0 && (
             <>
               <div className="border border-slate-600 w-[1px]" />
+
               <Tooltip tooltip="Clone node" tooltip2="Cloned!">
                 <Button
                   className="border-none"
-                  onClick={onClone}
+                  onClick={() => void onClone()}
                   disabled={selected.length !== 1}
                 >
                   <CopyPlus />
                 </Button>
               </Tooltip>
+
               <Tooltip
                 tooltip={
                   selected.length > 1 ? "[Delete] nodes" : "[Delete] node"
@@ -76,6 +78,7 @@ function AddNodes() {
                   <Trash2 />
                 </Button>
               </Tooltip>
+
               <div className="border border-slate-600 w-[1px]" />
             </>
           )}

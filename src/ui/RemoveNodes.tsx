@@ -1,4 +1,4 @@
-import { FolderPlus, Trash2 } from "lucide-react";
+import { ArrowLeftToLine, FolderPlus, Trash2 } from "lucide-react";
 
 import Button from "../components/common/Button.tsx";
 import Tooltip from "../components/common/Tooltip.tsx";
@@ -10,6 +10,7 @@ import {
   useAddNode,
   useDeleteNode,
   useDeselectNode,
+  useTransferNode,
 } from "../hooks/nodes.hooks.ts";
 import { getDeletions } from "../store/@selectors.ts";
 import { DistrictSelectors } from "../store/district.ts";
@@ -25,8 +26,9 @@ function RemoveNodes() {
   );
 
   const onDeselect = useDeselectNode();
-  const onDelete = useDeleteNode();
+  const onDelete = useDeleteNode(selectedNodes);
   const onAddGroup = useAddNode("group", "delete");
+  const onTransfer = useTransferNode(selectedNodes[0]);
 
   useGlobalShortcuts("Delete", onDelete);
 
@@ -50,12 +52,22 @@ function RemoveNodes() {
         <div className="flex flex-row gap-2 sticky pr-1 bottom-0 justify-end border-t border-slate-900 bg-slate-800">
           {selectedNodes.length > 0 && (
             <>
+              <Tooltip tooltip={"Discard block removal and edit instead"}>
+                <Button
+                  className="border-none"
+                  onClick={() => onTransfer("update")}
+                  disabled={selectedNodes.length !== 1}
+                >
+                  <ArrowLeftToLine />
+                </Button>
+              </Tooltip>
+
               <Tooltip
                 tooltip={
                   selectedNodes.length > 1
                     ? "Delete nodes"
                     : selectedNodes[0].type === "instance"
-                      ? "Discard block changes"
+                      ? "Discard block removal"
                       : "Delete node"
                 }
                 flow="top"

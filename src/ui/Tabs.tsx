@@ -1,5 +1,3 @@
-import * as React from "react";
-
 import Button from "../components/common/Button.tsx";
 import Tooltip from "../components/common/Tooltip.tsx";
 import {
@@ -11,6 +9,7 @@ import { getDistrictCache } from "../store/@selectors.ts";
 import { DistrictSelectors } from "../store/district.ts";
 import { NodesActions } from "../store/nodes.ts";
 import { ProjectActions, ProjectSelectors } from "../store/project.ts";
+import type { Modes } from "../types/types.ts";
 import { clsx } from "../utilities/utilities.ts";
 import AddNodes from "./AddNodes.tsx";
 import RemoveNodes from "./RemoveNodes.tsx";
@@ -33,9 +32,10 @@ function Tabs() {
 
   useGlobalShortcuts("Escape", () => dispatch(NodesActions.selectNode(null)));
 
-  React.useEffect(() => {
+  const changeMode = (mode: Modes) => () => {
+    dispatch(ProjectActions.setMode(mode));
     dispatch(NodesActions.selectNode(null));
-  }, [mode, dispatch]);
+  };
 
   return (
     <div className="w-[450px] h-full flex flex-col p-2 shrink-0">
@@ -46,7 +46,7 @@ function Tabs() {
             mode === "create" && "border-b-slate-900",
             mode !== "create" && "border-transparent",
           )}
-          onClick={() => void dispatch(ProjectActions.setMode("create"))}
+          onClick={changeMode("create")}
           disabled={!district}
           shortcut="KeyA"
         >
@@ -68,7 +68,7 @@ function Tabs() {
             mode === "update" && "border-b-slate-900",
             mode !== "update" && "border-transparent",
           )}
-          onClick={() => void dispatch(ProjectActions.setMode("update"))}
+          onClick={changeMode("update")}
           disabled={!district || district.isCustom}
           shortcut="KeyE"
         >
@@ -90,7 +90,7 @@ function Tabs() {
             mode === "delete" && "border-b-slate-900",
             mode !== "delete" && "border-transparent",
           )}
-          onClick={() => void dispatch(ProjectActions.setMode("delete"))}
+          onClick={changeMode("delete")}
           disabled={!district || district.isCustom}
           shortcut="KeyD"
         >
