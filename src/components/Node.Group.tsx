@@ -8,6 +8,7 @@ import {
 import * as React from "react";
 
 import { useAppDispatch, useAppSelector } from "../hooks/hooks.ts";
+import { useFocusNode } from "../hooks/nodes.hooks.ts";
 import { NodesActions, NodesSelectors } from "../store/nodes.ts";
 import type { MapNode } from "../types/types.ts";
 import { clsx } from "../utilities/utilities.ts";
@@ -31,6 +32,7 @@ function Group({ lookAtNode, node }: GroupProps) {
     () => nodes.filter((child) => child.parent === node.id),
     [nodes, node.id],
   );
+  const ref = useFocusNode(node);
   const nodeChildren = cache[node.id];
 
   React.useEffect(() => {
@@ -53,8 +55,9 @@ function Group({ lookAtNode, node }: GroupProps) {
     >
       <div
         className="flex flex-row items-center gap-2 cursor-pointer"
-        tabIndex={-1}
+        ref={ref}
         role="button"
+        tabIndex={-1}
         onClick={(event) => {
           event.stopPropagation();
           const modifier = event.getModifierState("Control")

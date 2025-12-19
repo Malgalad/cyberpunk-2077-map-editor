@@ -1,6 +1,7 @@
 import { EyeOff, SquareStack, TriangleAlert } from "lucide-react";
 
 import { useAppDispatch, useAppSelector } from "../hooks/hooks.ts";
+import { useFocusNode } from "../hooks/nodes.hooks.ts";
 import { NodesActions, NodesSelectors } from "../store/nodes.ts";
 import type { MapNode } from "../types/types.ts";
 import { clsx } from "../utilities/utilities.ts";
@@ -15,6 +16,7 @@ interface InstanceProps {
 function Instance({ lookAtNode, node }: InstanceProps) {
   const dispatch = useAppDispatch();
   const selected = useAppSelector(NodesSelectors.getSelectedNodeIds);
+  const ref = useFocusNode(node);
 
   return (
     <div
@@ -23,8 +25,9 @@ function Instance({ lookAtNode, node }: InstanceProps) {
         "border-dotted border-transparent cursor-pointer",
         selected.includes(node.id) && "border-slate-100!",
       )}
-      tabIndex={-1}
+      ref={ref}
       role="button"
+      tabIndex={-1}
       onClick={(event) => {
         event.stopPropagation();
         const modifier = event.getModifierState("Control")

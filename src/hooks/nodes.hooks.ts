@@ -12,6 +12,19 @@ export function getParent(district: DistrictProperties, node?: MapNode) {
   return node ? (node.type === "group" ? node.id : node.parent) : district.name;
 }
 
+export function useFocusNode(node: MapNode) {
+  const selected = useAppSelector(NodesSelectors.getSelectedNodeIds);
+  const ref = React.useRef<HTMLDivElement | null>(null);
+
+  React.useEffect(() => {
+    if (selected[0] === node.id) {
+      ref.current?.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [selected, node]);
+
+  return ref;
+}
+
 export function useDeselectNode() {
   const dispatch = useAppDispatch();
 

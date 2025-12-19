@@ -256,6 +256,11 @@ export function useMap3DEvents(map3d: Map3D | null) {
 
       const parent = getParent(district, selected[0]);
       const id = toString(index);
+
+      // If the user clicks twice without moving mouse, the highlighted block
+      // will stay the same and trigger event twice
+      if (nodes.find((node) => node.id === id)) return;
+
       const node = transformToNode(transform, district, {
         label: `Block #${index}`,
         parent: district.name,
