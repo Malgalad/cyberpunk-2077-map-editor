@@ -1,6 +1,7 @@
 import * as React from "react";
 
 import { useAppDispatch, useAppSelector, useAppStore } from "./hooks/hooks.ts";
+import { getParent } from "./hooks/nodes.hooks.ts";
 import { Map3D } from "./map3d/map3d.ts";
 import {
   getAdditionsTransforms,
@@ -14,9 +15,13 @@ import { DistrictSelectors } from "./store/district.ts";
 import { NodesActions, NodesSelectors } from "./store/nodes.ts";
 import { OptionsSelectors } from "./store/options.ts";
 import { ProjectSelectors } from "./store/project.ts";
-import type { District, DistrictWithTransforms } from "./types/types.ts";
+import type {
+  District,
+  DistrictWithTransforms,
+  MapNode,
+} from "./types/types.ts";
 import { getFinalDistrictTransformsFromNodes } from "./utilities/district.ts";
-import { parseNode } from "./utilities/nodes.ts";
+import { parseNode, transplantNode } from "./utilities/nodes.ts";
 import { applyTransforms, transformToNode } from "./utilities/transforms.ts";
 import { invariant, toNumber, toString } from "./utilities/utilities.ts";
 
@@ -236,10 +241,33 @@ export function useDrawSelection(map3d: Map3D | null) {
 
 export function useMap3DEvents(map3d: Map3D | null) {
   const dispatch = useAppDispatch();
+  const selected = useAppSelector(NodesSelectors.getSelectedNodes);
+  const nodes = useAppSelector(NodesSelectors.getNodes);
   const mode = useAppSelector(ProjectSelectors.getMode);
   const district = useAppSelector(DistrictSelectors.getDistrict);
   const additions = useAppSelector(getAdditionsTransforms);
   const updates = useAppSelector(getUpdates);
+
+  const addNode = React.useCallback(
+    (index: number, tag: MapNode["tag"]) => {
+      invariant(district, "Unexpected error: District is not defined");
+      const transform = district.transforms[index];
+      invariant(transform, "Transform is not defined");
+
+      const parent = getParent(district, selected[0]);
+      const id = toString(index);
+      const node = transformToNode(transform, district, {
+        label: `Block #${index}`,
+        parent: district.name,
+        tag,
+        id,
+      });
+      const nodeWithCorrectParent = transplantNode(nodes, node, parent);
+      dispatch(NodesActions.addNode(nodeWithCorrectParent));
+      dispatch(NodesActions.selectNode({ id }));
+    },
+    [district, selected, nodes, dispatch],
+  );
 
   React.useEffect(() => {
     if (!map3d) return;
@@ -265,36 +293,13 @@ export function useMap3DEvents(map3d: Map3D | null) {
       }
     }) as EventListener;
     const onRemove = ((event: CustomEvent<{ index: number }>) => {
-      if (event.detail) {
-        const { index } = event.detail;
-
-        invariant(district, "District is not defined");
-        const node = transformToNode(district.transforms[index], district, {
-          label: `Box #${index}`,
-          parent: district.name,
-          tag: "delete",
-          id: toString(index),
-        });
-        dispatch(NodesActions.addNode(node));
-        dispatch(NodesActions.selectNode({ id: toString(index) }));
+      if (event.detail?.index != null) {
+        addNode(event.detail.index, "delete");
       }
     }) as EventListener;
     const onUpdate = ((event: CustomEvent<{ index: number }>) => {
-      if (event.detail) {
-        const { index } = event.detail;
-
-        invariant(district, "District is not defined");
-        const id = toString(index);
-        if (!updates.some((nodes) => nodes.id === id)) {
-          const node = transformToNode(district.transforms[index], district, {
-            label: `Box #${index}`,
-            parent: district.name,
-            tag: "update",
-            id,
-          });
-          dispatch(NodesActions.addNode(node));
-        }
-        dispatch(NodesActions.selectNode({ id }));
+      if (event.detail?.index != null) {
+        addNode(event.detail.index, "update");
       }
     }) as EventListener;
 
@@ -307,5 +312,5 @@ export function useMap3DEvents(map3d: Map3D | null) {
       window.removeEventListener("remove-node", onRemove);
       window.removeEventListener("update-node", onUpdate);
     };
-  }, [map3d, dispatch, additions, updates, district, mode]);
+  }, [addNode, additions, mode, updates, dispatch, map3d]);
 }

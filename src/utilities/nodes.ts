@@ -12,16 +12,27 @@ import type {
   MapNodeParsed,
   MapNodeUri,
 } from "../types/types.ts";
-import { applyTransforms, parseTransform } from "./transforms.ts";
+import {
+  applyTransforms,
+  parseTransform,
+  stringifyTransform,
+} from "./transforms.ts";
 import { unwrapDraft } from "./utilities.ts";
 
-const addTuples = (a: number[], b: number[]) => a.map((x, i) => x + b[i]);
+const addTuples = (a: number[], b: number[]) =>
+  a.map((x, i) => x + (b[i] ?? 0));
 const scalePattern = (i: number) => (value: number) => value * (i + 1);
 
 export function parseNode(node: MapNode): MapNodeParsed {
   return {
     ...parseTransform(node),
     pattern: node.pattern ? parseTransform(node.pattern) : undefined,
+  };
+}
+export function stringifyNode(node: MapNodeParsed): MapNode {
+  return {
+    ...stringifyTransform(node),
+    pattern: node.pattern ? stringifyTransform(node.pattern) : undefined,
   };
 }
 
@@ -127,14 +138,14 @@ export function validateNode(
 
   const errors: string[] = [];
   const nodeParsed = applyTransforms(parseNode(node), map);
-  const validatePosition = (position: number[]) =>
+  const validatePosition = (position: THREE.Vector3Tuple) =>
     position[0] < district.position[0] + district.transMin[0] ||
     position[0] > district.position[0] + district.transMax[0] ||
     position[1] < district.position[1] + district.transMin[1] ||
     position[1] > district.position[1] + district.transMax[1] ||
     position[2] < district.position[2] + district.transMin[2] ||
     position[2] > district.position[2] + district.transMax[2];
-  const validateScale = (scale: number[]) =>
+  const validateScale = (scale: THREE.Vector3Tuple) =>
     scale[0] > district.cubeSize * 2 ||
     scale[1] > district.cubeSize * 2 ||
     scale[2] > district.cubeSize * 2 ||
@@ -248,3 +259,36 @@ export const createGroupNodesCache = (nodes: MapNodeUri[]): GroupNodeCache => {
 
   return cache as GroupNodeCache;
 };
+
+export function transplantNode(
+  nodesOrMap: MapNode[] | Map<string, MapNodeParsed>,
+  node: MapNode,
+  parent: string,
+): MapNode {
+  const map =
+    nodesOrMap instanceof Map
+      ? nodesOrMap
+      : new Map(nodesOrMap.map((node) => [node.id, parseNode(node)]));
+  const nodeTransforms = applyTransforms(parseNode(node), map);
+
+  if (!map.has(parent)) {
+    return stringifyNode({
+      ...nodeTransforms,
+      parent,
+    });
+  }
+
+  const parentTransforms = applyTransforms(map.get(parent)!, map);
+  // TODO assuming parent rotation is [0, 0, 0]
+  const position = [
+    nodeTransforms.position[0] - parentTransforms.position[0],
+    nodeTransforms.position[1] - parentTransforms.position[1],
+    nodeTransforms.position[2] - parentTransforms.position[2],
+  ] as THREE.Vector3Tuple;
+
+  return stringifyNode({
+    ...nodeTransforms,
+    parent,
+    position,
+  });
+}

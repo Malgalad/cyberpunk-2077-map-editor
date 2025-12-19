@@ -9,10 +9,10 @@ type NestedArray<T> = T | NestedArray<T>[];
 export type DefaultDistrictNames = keyof (typeof mapData)["soup"];
 export type DistrictProperties = {
   name: string;
-  position: number[];
-  orientation: number[];
-  transMin: number[];
-  transMax: number[];
+  position: THREE.Vector3Tuple;
+  orientation: THREE.QuaternionTuple;
+  transMin: THREE.Vector4Tuple;
+  transMax: THREE.Vector4Tuple;
   cubeSize: number;
 } & (
   | {
@@ -97,9 +97,9 @@ export type InstancedMeshTransforms = {
   id: string;
   virtual?: boolean;
   originId?: string;
-  position: { x: number; y: number; z: number; w: number };
-  orientation: { x: number; y: number; z: number; w: number };
-  scale: { x: number; y: number; z: number; w: number };
+  position: THREE.Vector4Like;
+  orientation: THREE.Vector4Like;
+  scale: THREE.Vector4Like;
 };
 
 export type DistrictWithTransforms = {

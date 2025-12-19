@@ -13,10 +13,12 @@ import type {
   TransformParsed,
 } from "../types/types.ts";
 import { cloneNode, nodeToTransform, parseNode } from "./nodes.ts";
-import { toNumber, toString } from "./utilities.ts";
+import { invariant, toNumber, toString } from "./utilities.ts";
 
-const hadamardProduct = (a: number[], b: number[]) => a.map((x, i) => x * b[i]);
-const addTuples = (a: number[], b: number[]) => a.map((x, i) => x + b[i]);
+const hadamardProduct = (a: number[], b: number[]) =>
+  a.map((x, i) => x * (b[i] ?? 0));
+const addTuples = (a: number[], b: number[]) =>
+  a.map((x, i) => x + (b[i] ?? 0));
 const scalePattern = (i: number) => (value: number) => value * (i + 1);
 const noTransforms: InstancedMeshTransforms[] = [];
 
@@ -46,7 +48,7 @@ export function applyParentTransform<Node extends TransformParsed>(
   return {
     ...node,
     position: object.position.toArray(),
-    rotation: object.rotation.toArray(),
+    rotation: object.rotation.toArray().slice(0, 3),
     scale,
   };
 }
@@ -83,6 +85,8 @@ export function projectNodesToDistrict(
   for (let i = nodesParsed.length - 1; i >= 0; i--) {
     const node = nodesParsed[i];
 
+    invariant(node, "Unexpected error: node is undefined");
+
     if (node.hidden) node.scale = [0, 0, 0];
     if (!node.pattern || node.virtual) continue;
 
@@ -92,6 +96,8 @@ export function projectNodesToDistrict(
       for (const clone of clones) {
         nodesMap.set(clone.id, clone);
       }
+
+      invariant(clones[0], "Unexpected error: clones[0] is undefined");
 
       clones[0].position = addTuples(
         clones[0].position,
@@ -147,6 +153,19 @@ export function parseTransform<K>(
   };
 }
 
+export function stringifyTransform<K>(
+  transform: TransformParsed & K,
+): Transform & K {
+  return {
+    ...transform,
+    position: transform.position.map(toString) as Transform["position"],
+    rotation: transform.rotation
+      .map(THREE.MathUtils.radToDeg)
+      .map(toString) as Transform["rotation"],
+    scale: transform.scale.map(toString) as Transform["scale"],
+  };
+}
+
 export function transformToNode(
   transform: InstancedMeshTransforms,
   district: District,
@@ -157,7 +176,7 @@ export function transformToNode(
     transform.position.x * minMax.x + origin.x,
     transform.position.y * minMax.y + origin.y,
     transform.position.z * minMax.z + origin.z,
-  ].map(toString) as [string, string, string];
+  ].map(toString) as MapNode["position"];
   const rotation = new THREE.Euler()
     .setFromQuaternion(
       new THREE.Quaternion(
@@ -170,12 +189,12 @@ export function transformToNode(
     .toArray()
     .slice(0, 3)
     .map((angle) => THREE.MathUtils.radToDeg(angle as number))
-    .map(toString) as [string, string, string];
+    .map(toString) as MapNode["rotation"];
   const scale = [
     transform.scale.x * 2 * cubeSize,
     transform.scale.y * 2 * cubeSize,
     transform.scale.z * 2 * cubeSize,
-  ].map(toString) as [string, string, string];
+  ].map(toString) as MapNode["scale"];
 
   return {
     ...properties,

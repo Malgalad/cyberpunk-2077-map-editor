@@ -4,9 +4,13 @@ import { useMap3D } from "../map3d/map3d.context.ts";
 import { DistrictSelectors } from "../store/district.ts";
 import { ModalsActions } from "../store/modals.ts";
 import { NodesActions, NodesSelectors } from "../store/nodes.ts";
-import type { MapNode } from "../types/types.ts";
+import type { DistrictProperties, MapNode } from "../types/types.ts";
 import { toString } from "../utilities/utilities.ts";
 import { useAppDispatch, useAppSelector } from "./hooks.ts";
+
+export function getParent(district: DistrictProperties, node?: MapNode) {
+  return node ? (node.type === "group" ? node.id : node.parent) : district.name;
+}
 
 export function useDeselectNode() {
   const dispatch = useAppDispatch();
@@ -59,11 +63,7 @@ export function useAddNode(type: MapNode["type"], tag: MapNode["tag"]) {
   return React.useCallback(() => {
     if (selectedNodes.length > 1 || !selectedDistrict || !map3d) return;
 
-    const parent = selectedNodes[0]
-      ? selectedNodes[0].type === "group"
-        ? selectedNodes[0].id
-        : selectedNodes[0].parent
-      : selectedDistrict.name;
+    const parent = getParent(selectedDistrict, selectedNodes[0]);
     const center = map3d.getCenter();
     const position = center.map(toString) as MapNode["position"];
 
@@ -80,5 +80,5 @@ export function useAddNode(type: MapNode["type"], tag: MapNode["tag"]) {
         id: action.payload.id,
       }),
     );
-  }, [dispatch, selectedNodes, selectedDistrict, map3d, tag]);
+  }, [dispatch, selectedNodes, selectedDistrict, map3d, tag, type]);
 }

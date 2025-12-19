@@ -21,9 +21,9 @@ import type {
 } from "../types/types.ts";
 import type { SelectItem } from "../types/ui.types.ts";
 import { getDistrictName } from "../utilities/district.ts";
-import { parseNode } from "../utilities/nodes.ts";
-import { applyTransforms, parseTransform } from "../utilities/transforms.ts";
-import { clsx, toNumber, toString } from "../utilities/utilities.ts";
+import { parseNode, transplantNode } from "../utilities/nodes.ts";
+import { parseTransform } from "../utilities/transforms.ts";
+import { clsx } from "../utilities/utilities.ts";
 import Button from "./common/Button.tsx";
 import DraggableInput from "./common/DraggableInput.tsx";
 import Input from "./common/Input.tsx";
@@ -100,36 +100,19 @@ function EditNodeProperties({ selected, mode }: EditNodePropertiesProps) {
           }
           items={parents}
           onChange={(event) => {
-            const parentId = event.target.value;
+            const parent = event.target.value;
             const map = new Map(
               nodes.map((node) => [node.id, parseNode(node)]),
             );
             for (const node of selected) {
-              // FIXME include rotation into calculations
-              const { position: oldPosition } = applyTransforms(
-                parseNode(node),
-                map,
-              );
-              const { position: newPosition } = applyTransforms(
-                parseNode({
-                  ...node,
-                  parent: parentId,
-                }),
-                map,
-              );
-              const difference = [
-                newPosition[0] - oldPosition[0],
-                newPosition[1] - oldPosition[1],
-                newPosition[2] - oldPosition[2],
-              ] as THREE.Vector3Tuple;
+              const twig = transplantNode(map, node, parent);
+
               dispatch(
                 NodesActions.patchNode(node.id, (draft) => {
-                  draft.parent = parentId;
-                  draft.position = [
-                    toString(toNumber(draft.position[0]) - difference[0]),
-                    toString(toNumber(draft.position[1]) - difference[1]),
-                    toString(toNumber(draft.position[2]) - difference[2]),
-                  ];
+                  draft.parent = twig.parent;
+                  draft.position = twig.position;
+                  draft.rotation = twig.rotation;
+                  draft.scale = twig.scale;
                 }),
               );
             }

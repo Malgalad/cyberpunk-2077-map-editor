@@ -16,6 +16,7 @@ import {
   validateNode,
 } from "../utilities/nodes.ts";
 import { structuralSharing } from "../utilities/structuralSharing.ts";
+import { invariant } from "../utilities/utilities.ts";
 import { hydrateState } from "./@actions.ts";
 import { DistrictActions, DistrictSelectors } from "./district.ts";
 
@@ -77,6 +78,7 @@ const nodesSlice = createSlice({
       const node = state.nodes.find((node) => node.id === id);
       if (!node) return;
       const clones = cloneNode(state.nodes, node, node.parent);
+      invariant(clones[0], "Unexpected error: clones[0] is undefined");
       Object.assign(clones[0], updates);
       state.nodes.push(...clones);
       if (selectAfterClone) state.editingId = clones[0].id;
@@ -87,6 +89,8 @@ const nodesSlice = createSlice({
         const next = action.payload;
         const index = state.nodes.findIndex((node) => node.id === next.id);
         const previous = state.nodes[index];
+
+        invariant(previous, "Unexpected error: could not find node by id");
 
         state.nodes.splice(index, 1, next);
 
@@ -240,7 +244,9 @@ const patchNode =
     dispatch(nodesSlice.actions.editNode(validated));
 
     if (selectedNode.type === "group") {
-      const children = cache[selectedNode.id].nodes;
+      const groupIndex = cache[selectedNode.id];
+      invariant(groupIndex, "Unexpected error: groupIndex is undefined");
+      const children = groupIndex.nodes;
 
       for (const childId of children) {
         const child = nodes.find((node) => node.id === childId);
@@ -268,7 +274,9 @@ const deleteNodesDeep =
       if (node.type === "instance") {
         idsFull.push(id);
       } else {
-        idsFull.push(id, ...cache[id].nodes);
+        const groupIndex = cache[id];
+        invariant(groupIndex, "Unexpected error: groupIndex is undefined");
+        idsFull.push(id, ...groupIndex.nodes);
       }
     }
 
