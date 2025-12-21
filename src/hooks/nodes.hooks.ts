@@ -102,7 +102,9 @@ export function useAddNode(type: MapNode["type"], tag: MapNode["tag"]) {
 
     const parent = getParent(selectedDistrict, selectedNodes[0]);
     const center = map3d.getCenter();
-    const position = center.map(toString) as MapNode["position"];
+    const position = (
+      selectedNodes[0] ? ["0", "0", "0"] : center.map(toString)
+    ) as MapNode["position"];
 
     const action = dispatch(
       NodesActions.addNode({

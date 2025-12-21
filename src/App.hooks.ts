@@ -267,7 +267,7 @@ export function useMap3DEvents(map3d: Map3D | null) {
         tag,
         id,
       });
-      const nodeWithCorrectParent = transplantNode(nodes, node.id, parent);
+      const nodeWithCorrectParent = transplantNode(nodes, node, parent);
       dispatch(NodesActions.addNode(nodeWithCorrectParent));
       dispatch(NodesActions.selectNode({ id }));
     },

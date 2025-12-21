@@ -105,7 +105,7 @@ function EditNodeProperties({ selected, mode }: EditNodePropertiesProps) {
               nodes.map((node) => [node.id, parseNode(node)]),
             );
             for (const node of selected) {
-              const twig = transplantNode(map, node.id, parent);
+              const twig = transplantNode(map, node, parent);
 
               dispatch(
                 NodesActions.patchNode(node.id, (draft) => {

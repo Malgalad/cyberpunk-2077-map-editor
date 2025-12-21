@@ -266,15 +266,15 @@ export const createGroupNodesCache = (nodes: MapNodeUri[]): GroupNodeCache => {
 
 export function transplantNode(
   nodesOrMap: MapNode[] | Map<string, MapNodeParsed>,
-  nodeId: string,
+  node: MapNode,
   parentId: string,
 ): MapNode {
   const map =
     nodesOrMap instanceof Map
       ? nodesOrMap
       : new Map(nodesOrMap.map((node) => [node.id, parseNode(node)]));
-  const node = map.get(nodeId)!;
-  const nodeTransforms = applyTransforms(node, map);
+  const nodeParsed = parseNode(node);
+  const nodeTransforms = applyTransforms(nodeParsed, map);
 
   if (!map.has(parentId)) {
     return stringifyNode({
@@ -296,7 +296,7 @@ export function transplantNode(
   ] as THREE.Vector3Tuple;
   const object = new THREE.Object3D();
   object.rotation.setFromQuaternion(
-    toQuaternion(node.rotation).multiply(parentRotation),
+    toQuaternion(nodeParsed.rotation).multiply(parentRotation),
   );
   object.position.fromArray(position);
   object.position.applyQuaternion(parentRotation);
