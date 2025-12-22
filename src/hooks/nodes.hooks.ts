@@ -122,31 +122,37 @@ export function useAddNode(type: MapNode["type"], tag: MapNode["tag"]) {
   }, [dispatch, selectedNodes, selectedDistrict, map3d, tag, type]);
 }
 
+const applyChanges = (node: MapNode, plane: "XY" | "XZ" | "YZ") => {
+  return NodesActions.patchNode(node.id, (draft) => {
+    const axii = plane === "XY" ? 2 : plane === "XZ" ? 1 : 0;
+    draft.position[axii] = toString(toNumber(draft.position[axii]) * -1);
+    draft.rotation = draft.rotation
+      .map(toNumber)
+      .map((angle, index) => (index === axii ? angle : angle * -1))
+      .map(toString) as [string, string, string];
+  });
+};
 export function useMirrorNode(node?: MapNode) {
   const dispatch = useAppDispatch();
-  const nodes = useAppSelector(NodesSelectors.getNodeUris);
 
   return React.useCallback(
     (plane: "XY" | "XZ" | "YZ") => {
       if (!node) return;
-      const nodeIds = new Set(nodes.map((node) => node.id));
-      dispatch(
-        NodesActions.patchNode(node.id, (draft) => {
-          const axii = plane === "XY" ? 2 : plane === "XZ" ? 1 : 0;
-          if (nodeIds.has(node.parent)) {
-            draft.position[axii] = toString(
-              toNumber(draft.position[axii]) * -1,
-            );
+
+      dispatch((_, getState) => {
+        const nodes = NodesSelectors.getNodes(getState());
+
+        if (node.type === "instance") {
+          dispatch(applyChanges(node, plane));
+        } else {
+          for (const child of nodes) {
+            if (child.parent === node.id) {
+              dispatch(applyChanges(child, plane));
+            }
           }
-          draft.rotation = draft.rotation
-            .map(toNumber)
-            .map((angle, index) =>
-              index === axii ? angle * -1 : (angle + 180) % 360,
-            )
-            .map(toString) as [string, string, string];
-        }),
-      );
+        }
+      });
     },
-    [dispatch, node, nodes],
+    [dispatch, node],
   );
 }
