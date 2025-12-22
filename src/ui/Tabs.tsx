@@ -50,7 +50,7 @@ function Tabs() {
           disabled={!district}
           shortcut="KeyA"
         >
-          <div className="flex flex-row gap-1.5 items-baseline">
+          <div className="flex flex-row gap-1.5 items-baseline whitespace-nowrap">
             <span>
               Cre<span className="underline">a</span>te nodes
             </span>
@@ -72,7 +72,7 @@ function Tabs() {
           disabled={!district || district.isCustom}
           shortcut="KeyE"
         >
-          <div className="flex flex-row gap-1.5 items-baseline">
+          <div className="flex flex-row gap-1.5 items-baseline whitespace-nowrap">
             <span>
               Updat<span className="underline">e</span> nodes
             </span>
@@ -94,7 +94,7 @@ function Tabs() {
           disabled={!district || district.isCustom}
           shortcut="KeyD"
         >
-          <div className="flex flex-row gap-1.5 items-baseline">
+          <div className="flex flex-row gap-1.5 items-baseline whitespace-nowrap">
             <span>
               <span className="underline">D</span>elete nodes
             </span>

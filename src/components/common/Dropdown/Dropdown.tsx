@@ -9,7 +9,7 @@ import {
 } from "./dropdown.context.ts";
 
 type DropdownProps = {
-  align?: "left" | "right" | "top" | "bottom";
+  align?: "left" | "right" | "top" | "bottom" | "center";
   children: React.ReactNode;
   className?: string;
   containerClassName?: string;
@@ -36,12 +36,16 @@ function Dropdown({
   const positionClass = {
     "bottom left": "top-full left-0",
     "bottom right": "top-full right-0",
+    "bottom center": "top-full left-1/2 transform -translate-x-1/2",
     "top left": "bottom-full left-0",
     "top right": "bottom-full right-0",
+    "top center": "bottom-full left-1/2 transform -translate-x-1/2",
     "left top": "top-0 right-full",
     "left bottom": "bottom-0 right-full",
+    "left center": "top-1/2 right-full transform -translate-y-1/2",
     "right top": "top-0 left-full",
     "right bottom": "bottom-0 left-full",
+    "right center": "top-1/2 left-full transform -translate-y-1/2",
   }[direction + " " + align];
 
   useGlobalShortcuts(shortcut, () => setIsOpen(!isOpen), disabled);

@@ -6,7 +6,7 @@ import { ModalsActions } from "../store/modals.ts";
 import { NodesActions, NodesSelectors } from "../store/nodes.ts";
 import { ProjectActions } from "../store/project.ts";
 import type { DistrictProperties, MapNode, Modes } from "../types/types.ts";
-import { toString } from "../utilities/utilities.ts";
+import { toNumber, toString } from "../utilities/utilities.ts";
 import { useAppDispatch, useAppSelector } from "./hooks.ts";
 
 export function getParent(district: DistrictProperties, node?: MapNode) {
@@ -120,4 +120,33 @@ export function useAddNode(type: MapNode["type"], tag: MapNode["tag"]) {
       }),
     );
   }, [dispatch, selectedNodes, selectedDistrict, map3d, tag, type]);
+}
+
+export function useMirrorNode(node?: MapNode) {
+  const dispatch = useAppDispatch();
+  const nodes = useAppSelector(NodesSelectors.getNodeUris);
+
+  return React.useCallback(
+    (plane: "XY" | "XZ" | "YZ") => {
+      if (!node) return;
+      const nodeIds = new Set(nodes.map((node) => node.id));
+      dispatch(
+        NodesActions.patchNode(node.id, (draft) => {
+          const axii = plane === "XY" ? 2 : plane === "XZ" ? 1 : 0;
+          if (nodeIds.has(node.parent)) {
+            draft.position[axii] = toString(
+              toNumber(draft.position[axii]) * -1,
+            );
+          }
+          draft.rotation = draft.rotation
+            .map(toNumber)
+            .map((angle, index) =>
+              index === axii ? angle * -1 : (angle + 180) % 360,
+            )
+            .map(toString) as [string, string, string];
+        }),
+      );
+    },
+    [dispatch, node, nodes],
+  );
 }

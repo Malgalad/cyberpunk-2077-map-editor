@@ -1,6 +1,14 @@
-import { CopyPlus, FilePlus, FolderPlus, Trash2 } from "lucide-react";
+import {
+  CopyPlus,
+  FilePlus,
+  FlipHorizontal2,
+  FolderPlus,
+  Trash2,
+} from "lucide-react";
 
 import Button from "../components/common/Button.tsx";
+import DropdownItem from "../components/common/Dropdown/Dropdown.Item.tsx";
+import Dropdown from "../components/common/Dropdown/Dropdown.tsx";
 import Tooltip from "../components/common/Tooltip.tsx";
 import EditNode from "../components/EditNode.tsx";
 import Node from "../components/Node.tsx";
@@ -11,6 +19,7 @@ import {
   useCloneNode,
   useDeleteNode,
   useDeselectNode,
+  useMirrorNode,
 } from "../hooks/nodes.hooks.ts";
 import { getAdditions } from "../store/@selectors.ts";
 import { DistrictSelectors } from "../store/district.ts";
@@ -29,6 +38,7 @@ function AddNodes() {
   const onClone = useCloneNode(selected[0]);
   const onAddInstance = useAddNode("instance", "create");
   const onAddGroup = useAddNode("group", "create");
+  const onMirror = useMirrorNode(selected[0]);
 
   useGlobalShortcuts("Delete", onDelete);
 
@@ -58,6 +68,34 @@ function AddNodes() {
           {selected.length > 0 && (
             <>
               <div className="border border-slate-600 w-[1px]" />
+
+              <Dropdown
+                className="min-w-auto!"
+                trigger={
+                  <Button
+                    className="border-none"
+                    disabled={selected.length !== 1}
+                  >
+                    <FlipHorizontal2 />
+                  </Button>
+                }
+                direction="top"
+                align="center"
+                indent={false}
+              >
+                <DropdownItem onClick={() => onMirror("XY")}>
+                  <span className="text-red-500">X</span>
+                  <span className="text-green-500">Y</span>
+                </DropdownItem>
+                <DropdownItem onClick={() => onMirror("XZ")}>
+                  <span className="text-red-500">X</span>
+                  <span className="text-blue-500">Z</span>
+                </DropdownItem>
+                <DropdownItem onClick={() => onMirror("YZ")}>
+                  <span className="text-green-500">Y</span>
+                  <span className="text-blue-500">Z</span>
+                </DropdownItem>
+              </Dropdown>
 
               <Tooltip tooltip="Clone node" tooltip2="Cloned!">
                 <Button
@@ -92,6 +130,7 @@ function AddNodes() {
               <FilePlus />
             </Button>
           </Tooltip>
+
           <Tooltip tooltip="Add group" flow="left">
             <Button
               className="border-none"
