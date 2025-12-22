@@ -27,10 +27,7 @@ export type ComputedDistrictProperties = {
   minMax: THREE.Vector3Like;
   origin: THREE.Vector3Like;
 };
-export type District = DistrictProperties &
-  ComputedDistrictProperties & {
-    transforms: InstancedMeshTransforms[];
-  };
+export type District = DistrictProperties & ComputedDistrictProperties;
 
 export type Transform = {
   position: [string, string, string];

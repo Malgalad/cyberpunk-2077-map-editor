@@ -20,7 +20,10 @@ import type {
   DistrictWithTransforms,
   MapNode,
 } from "./types/types.ts";
-import { getFinalDistrictTransformsFromNodes } from "./utilities/district.ts";
+import {
+  getFinalDistrictTransformsFromNodes,
+  immutableDistrictTransforms,
+} from "./utilities/district.ts";
 import { parseNode, transplantNode } from "./utilities/nodes.ts";
 import { applyTransforms, transformToNode } from "./utilities/transforms.ts";
 import { invariant, toNumber, toString } from "./utilities/utilities.ts";
@@ -114,7 +117,9 @@ export function useDrawCurrentDistrict(map3d: Map3D | null) {
   React.useEffect(() => {
     if (!map3d || !district) return;
 
-    const transforms = district.transforms.map((instance) => {
+    const transforms = (
+      immutableDistrictTransforms.get(district.name) ?? []
+    ).map((instance) => {
       if (updateIds.has(instance.id) || deletionIds.has(instance.id)) {
         return { ...instance, scale: { x: 0, y: 0, z: 0, w: 0 } };
       }
@@ -251,7 +256,7 @@ export function useMap3DEvents(map3d: Map3D | null) {
   const addNode = React.useCallback(
     (index: number, tag: MapNode["tag"]) => {
       invariant(district, "Unexpected error: District is not defined");
-      const transform = district.transforms[index];
+      const transform = immutableDistrictTransforms.get(district.name)?.[index];
       invariant(transform, "Transform is not defined");
 
       const parent = getParent(district, selected[0]);

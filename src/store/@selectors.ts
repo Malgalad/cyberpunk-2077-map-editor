@@ -45,7 +45,7 @@ export const getPersistentState = createSelector(
       district: {
         current: district.current,
         districts: district.districts.map((district) => {
-          const { transforms, minMax, origin, ...rest } = district;
+          const { minMax, origin, ...rest } = district;
 
           return rest satisfies DistrictProperties;
         }),

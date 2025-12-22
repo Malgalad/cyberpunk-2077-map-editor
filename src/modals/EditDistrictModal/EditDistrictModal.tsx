@@ -11,13 +11,11 @@ import { useAppDispatch, useAppSelector } from "../../hooks/hooks.ts";
 import { DistrictActions, DistrictSelectors } from "../../store/district.ts";
 import { ModalsActions } from "../../store/modals.ts";
 import type { ModalProps } from "../../types/modals.ts";
-import type {
-  DistrictProperties,
-  InstancedMeshTransforms,
-} from "../../types/types.ts";
+import type { DistrictProperties } from "../../types/types.ts";
 import {
   computeDistrictProperties,
   getDistrictName,
+  immutableDistrictTransforms,
 } from "../../utilities/district.ts";
 import { invariant, toNumber } from "../../utilities/utilities.ts";
 import EditDistrictModalClipboard from "./EditDistrictModal.Clipboard.tsx";
@@ -77,9 +75,6 @@ function EditDistrictModal(props: ModalProps) {
       cubeSize: toNumber(data.cubeSize),
     };
     const computedProperties = computeDistrictProperties(districtProperties);
-    const transforms: InstancedMeshTransforms[] = isEdit
-      ? district!.transforms
-      : [];
 
     dispatch(ModalsActions.closeModal());
     if (isEdit) {
@@ -89,16 +84,15 @@ function EditDistrictModal(props: ModalProps) {
           district: {
             ...districtProperties,
             ...computedProperties,
-            transforms,
           },
         }),
       );
     } else {
+      immutableDistrictTransforms.set(name, []);
       dispatch(
         DistrictActions.addDistrict({
           ...districtProperties,
           ...computedProperties,
-          transforms,
         }),
       );
       dispatch(DistrictActions.selectDistrict(name));

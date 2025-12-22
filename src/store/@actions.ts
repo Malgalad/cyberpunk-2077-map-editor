@@ -8,7 +8,10 @@ import type {
   PersistentAppState,
   RevivedAppState,
 } from "../types/types.ts";
-import { computeDistrictProperties } from "../utilities/district.ts";
+import {
+  computeDistrictProperties,
+  immutableDistrictTransforms,
+} from "../utilities/district.ts";
 import { normalizeNodes, parseNode, validateNode } from "../utilities/nodes.ts";
 import { getDistrictTransforms } from "../utilities/transforms.ts";
 import { invariant } from "../utilities/utilities.ts";
@@ -20,11 +23,14 @@ export const hydrateState = createAsyncThunk(
     const { nodes } = persistentState.nodes;
     const resolvedDistricts: District[] = await Promise.all(
       districts.map((district) =>
-        getDistrictTransforms(district).then((transforms) => ({
-          ...district,
-          ...computeDistrictProperties(district),
-          transforms,
-        })),
+        getDistrictTransforms(district).then((transforms) => {
+          immutableDistrictTransforms.set(district.name, transforms);
+
+          return {
+            ...district,
+            ...computeDistrictProperties(district),
+          };
+        }),
       ),
     );
     const map = new Map<string, MapNodeParsed>(

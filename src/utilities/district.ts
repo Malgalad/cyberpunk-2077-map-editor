@@ -35,6 +35,25 @@ export const computeDistrictProperties = (
   };
 };
 
+export const immutableDistrictTransforms = new Map<
+  string,
+  InstancedMeshTransforms[]
+>();
+
+const not =
+  <T>(fn: (value: T) => boolean) =>
+  (value: T) =>
+    !fn(value);
+const valid = (n: number) => n >= 0 && n <= 1;
+const validOrientation = (n: number) => n >= -1 && n <= 1;
+const validate = (transform: InstancedMeshTransforms) => {
+  if (
+    Object.values(transform.position).some(not(valid)) ||
+    Object.values(transform.orientation).some(not(validOrientation)) ||
+    Object.values(transform.scale).some(not(valid))
+  )
+    throw new Error(`Invalid transform: ${JSON.stringify(transform)}`);
+};
 const isHidden = (transform: InstancedMeshTransforms) =>
   Object.values(transform.scale).every((number) => number === 0);
 export function getFinalDistrictTransformsFromNodes(
@@ -42,7 +61,9 @@ export function getFinalDistrictTransformsFromNodes(
   district: District,
   cache: GroupNodeCache[string] | undefined,
 ): InstancedMeshTransforms[] {
-  if (!cache) return district.transforms;
+  const transforms = immutableDistrictTransforms.get(district.name) ?? [];
+
+  if (!cache) return transforms;
 
   const districtNodeIds = new Set(cache.nodes);
   const additions: MapNode[] = [];
@@ -64,14 +85,15 @@ export function getFinalDistrictTransformsFromNodes(
     (transform) => !isHidden(transform),
   );
   const updateTransforms = new Map(
-    projectNodesToDistrict(updates, district).map((transform) => [
-      transform.id,
-      transform,
-    ]),
+    projectNodesToDistrict(updates, district)
+      .filter((transform) => !isHidden(transform))
+      .map((transform) => [transform.id, transform]),
   );
   const districtTransforms: InstancedMeshTransforms[] = [];
 
-  for (const transform of district.transforms) {
+  for (const transform of transforms) {
+    validate(transform);
+
     if (deletions.has(transform.id)) continue;
     if (updateTransforms.has(transform.id)) {
       districtTransforms.push(updateTransforms.get(transform.id)!);

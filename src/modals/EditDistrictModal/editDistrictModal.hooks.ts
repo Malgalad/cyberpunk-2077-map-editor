@@ -1,11 +1,9 @@
 import * as React from "react";
 
 import { useAppSelector } from "../../hooks/hooks.ts";
-import {
-  getAdditionsTransforms,
-  getDeletions,
-} from "../../store/@selectors.ts";
+import { NodesSelectors } from "../../store/nodes.ts";
 import type { District } from "../../types/types.ts";
+import { getFinalDistrictTransformsFromNodes } from "../../utilities/district.ts";
 import { toNumber, toString } from "../../utilities/utilities.ts";
 import { mapSize } from "./editDistrictModal.constants.ts";
 import type { EditDistrictData } from "./editDistrictModal.types.ts";
@@ -163,27 +161,16 @@ export function useDrawOnCanvas(
 }
 
 export function useDistrictTextureHeight(district?: District) {
-  const deletions = useAppSelector(getDeletions);
-  const additions = useAppSelector(getAdditionsTransforms);
+  const nodes = useAppSelector(NodesSelectors.getNodes);
+  const cache = useAppSelector(NodesSelectors.getChildNodesCache);
 
-  const removals = React.useMemo(
-    () => deletions.map((node) => toNumber(node.id)),
-    [deletions],
+  if (!district) return 0;
+
+  const transforms = getFinalDistrictTransformsFromNodes(
+    nodes,
+    district,
+    cache[district.name],
   );
-  const [height, setHeight] = React.useState<number>(0);
 
-  React.useEffect(() => {
-    if (!district) return;
-
-    const height = Math.ceil(
-      Math.sqrt(
-        district.transforms.filter((_, index) => !removals.includes(index))
-          .length + additions.length,
-      ),
-    );
-
-    setHeight(height);
-  }, [district, removals, additions]);
-
-  return height;
+  return Math.ceil(Math.sqrt(transforms.length));
 }
