@@ -70,7 +70,7 @@ function UpdateNodes() {
         <div className="flex flex-row gap-2 sticky pr-1 bottom-0 justify-end border-t border-slate-900 bg-slate-800">
           {selectedNodes.length > 0 && (
             <>
-              <Tooltip tooltip={"Delete updates and edit as new node"}>
+              <Tooltip tooltip="Create node & delete block">
                 <Button
                   className="border-none"
                   onClick={onEditAsNew}
@@ -80,7 +80,7 @@ function UpdateNodes() {
                 </Button>
               </Tooltip>
 
-              <Tooltip tooltip="Delete node update and delete from district">
+              <Tooltip tooltip="Delete block">
                 <Button
                   className="border-none"
                   onClick={() => onTransfer("delete")}
@@ -92,11 +92,7 @@ function UpdateNodes() {
 
               <Tooltip
                 tooltip={
-                  selectedNodes.length > 1
-                    ? "Delete nodes"
-                    : selectedNodes[0].type === "instance"
-                      ? "Discard block deletion"
-                      : "Delete node"
+                  selectedNodes.length > 1 ? "Delete nodes" : "Delete node"
                 }
                 flow="top"
               >

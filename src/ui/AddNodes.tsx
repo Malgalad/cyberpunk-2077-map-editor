@@ -72,16 +72,16 @@ function AddNodes() {
               <Dropdown
                 className="min-w-auto!"
                 trigger={
-                  <Button
-                    className="border-none"
-                    disabled={selected.length !== 1}
-                  >
-                    <FlipHorizontal2 />
-                  </Button>
+                  <Tooltip tooltip="Mirror node" flow="bottom">
+                    <Button className="border-none">
+                      <FlipHorizontal2 />
+                    </Button>
+                  </Tooltip>
                 }
                 direction="top"
                 align="center"
                 indent={false}
+                disabled={selected.length !== 1}
               >
                 <DropdownItem onClick={() => onMirror("XY")}>
                   <span className="text-red-500">X</span>

@@ -94,7 +94,7 @@ function SelectDistrict() {
             key={item.name}
             trigger={element}
             direction="left"
-            align="top"
+            align="center"
           >
             <DropdownItem
               className={disableDelete ? "tooltip" : ""}

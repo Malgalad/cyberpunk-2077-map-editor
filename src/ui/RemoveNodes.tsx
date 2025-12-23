@@ -52,7 +52,7 @@ function RemoveNodes() {
         <div className="flex flex-row gap-2 sticky pr-1 bottom-0 justify-end border-t border-slate-900 bg-slate-800">
           {selectedNodes.length > 0 && (
             <>
-              <Tooltip tooltip={"Discard block removal and edit instead"}>
+              <Tooltip tooltip="Update block">
                 <Button
                   className="border-none"
                   onClick={() => onTransfer("update")}
@@ -64,11 +64,7 @@ function RemoveNodes() {
 
               <Tooltip
                 tooltip={
-                  selectedNodes.length > 1
-                    ? "Delete nodes"
-                    : selectedNodes[0].type === "instance"
-                      ? "Discard block removal"
-                      : "Delete node"
+                  selectedNodes.length > 1 ? "Delete nodes" : "Delete node"
                 }
                 flow="top"
               >
