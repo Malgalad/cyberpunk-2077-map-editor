@@ -88,6 +88,25 @@ function EditNodeProperties({ selected, mode }: EditNodePropertiesProps) {
 
   useGlobalShortcuts("KeyH", onHide);
 
+  const labelSelector = (
+    <>
+      <div>Label:</div>
+      <div>
+        <Input
+          type="text"
+          className="w-[248px]"
+          value={node.label}
+          onChange={(event) => {
+            dispatch(
+              NodesActions.patchNode(node.id, (draft) => {
+                draft.label = event.target.value;
+              }),
+            );
+          }}
+        />
+      </div>
+    </>
+  );
   const parentSelector = (
     <>
       <div>Parent:</div>
@@ -133,7 +152,19 @@ function EditNodeProperties({ selected, mode }: EditNodePropertiesProps) {
     </>
   );
 
-  if (mode === "delete" || isMultiple) {
+  if (mode === "delete") {
+    return (
+      <div className="grow bg-slate-800">
+        <div className="grid grid-cols-[120px_auto] items-center gap-2 p-2">
+          {node.type === "group" && labelSelector}
+          {parentSelector}
+          {hiddenSelector}
+        </div>
+      </div>
+    );
+  }
+
+  if (isMultiple) {
     return (
       <div className="grow bg-slate-800">
         <div className="grid grid-cols-[120px_auto] items-center gap-2 p-2">
@@ -147,22 +178,7 @@ function EditNodeProperties({ selected, mode }: EditNodePropertiesProps) {
   return (
     <div className="grow bg-slate-800">
       <div className="grid grid-cols-[120px_auto] items-center gap-2 p-2">
-        <div>Label:</div>
-        <div>
-          <Input
-            type="text"
-            className="w-[248px]"
-            value={node.label}
-            onChange={(event) => {
-              dispatch(
-                NodesActions.patchNode(node.id, (draft) => {
-                  draft.label = event.target.value;
-                }),
-              );
-            }}
-          />
-        </div>
-
+        {labelSelector}
         {parentSelector}
 
         <div>

@@ -7,10 +7,10 @@ const extendedHeaderLength = 5;
 const dataOffset = (headerLength + 1) * 2 + extendedHeaderLength * 2;
 // DDS extended headers in Uint16
 const magic = [
-  17476, 8275, 124, 0, 4111, 2, 205, 0, 615, 0, 4920, 0, 1, 0, 1, 0, 0, 0, 0, 0,
-  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 32, 0, 4, 0, 22596,
-  12337, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4096, 0, 0, 0, 0, 0, 0, 0, 0, 0, 11, 0,
-  3, 0, 0, 0, 1, 0, 0, 0,
+  17476, 8275, 124, 0, 4111, 2, -1, 0, -1, 0, -1, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0,
+  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 32, 0, 4, 0, 22596, 12337,
+  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4096, 0, 0, 0, 0, 0, 0, 0, 0, 0, 11, 0, 3, 0, 0,
+  0, 1, 0, 0, 0,
 ];
 const uint16 = 2 ** 16 - 1; // 65535
 
@@ -80,8 +80,9 @@ export function encodeImageData(
   }
 
   // Set header values
-  result[8] = width;
   result[6] = height;
+  result[8] = width;
+  result[10] = width * 8;
 
   for (let i = 0; i < data.length; i++) {
     const instance = data[i];

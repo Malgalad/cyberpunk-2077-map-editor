@@ -18,8 +18,8 @@ export function useFocusNode(node: MapNode) {
   const ref = React.useRef<HTMLDivElement | null>(null);
 
   React.useEffect(() => {
-    if (selected[0] === node.id) {
-      ref.current?.scrollIntoView({ behavior: "smooth" });
+    if (selected.at(-1) === node.id) {
+      ref.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
     }
   }, [selected, node]);
 

@@ -93,7 +93,7 @@ function RemoveNodes() {
         </div>
       </div>
 
-      <div className="flex flex-col basis-[90px] shrink-0">
+      <div className="flex flex-col basis-[132px] shrink-0">
         {selectedNodes.length > 0 ? (
           <EditNode key={selectedNodes[0].id} mode="delete" />
         ) : (
