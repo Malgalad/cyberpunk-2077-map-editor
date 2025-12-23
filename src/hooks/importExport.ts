@@ -1,7 +1,8 @@
 import * as React from "react";
 
 import { loadFile, saveBlobToFile } from "../helpers.ts";
-import { encodeImageData } from "../map3d/processDDS.ts";
+import { useMap3D } from "../map3d/map3d.context.ts";
+import { decodeImageData, encodeImageData } from "../map3d/processDDS.ts";
 import { getDistrictCache, getPersistentState } from "../store/@selectors.ts";
 import { DistrictSelectors } from "../store/district.ts";
 import { ModalsActions } from "../store/modals.ts";
@@ -65,4 +66,25 @@ export function useExportDDS() {
       console.error(error);
     }
   }, [district, nodes, cache, dispatch]);
+}
+
+export function useImportDDS() {
+  const district = useAppSelector(DistrictSelectors.getDistrict);
+  const map3d = useMap3D();
+
+  return React.useCallback(async () => {
+    if (!map3d || !district) return;
+
+    const file = await loadFile(".dds");
+    const arrayBuffer = await file.arrayBuffer();
+    const transforms = decodeImageData(new Uint16Array(arrayBuffer));
+
+    map3d.reset();
+    map3d.setVisibleDistricts([
+      {
+        district,
+        transforms,
+      },
+    ]);
+  }, [map3d, district]);
 }

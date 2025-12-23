@@ -6,6 +6,7 @@ import {
   HardDriveDownload,
   HardDriveUpload,
   ImageDown,
+  PackageCheck,
   Redo,
   Settings2,
   Undo,
@@ -16,7 +17,11 @@ import DropdownItem from "../components/common/Dropdown/Dropdown.Item.tsx";
 import DropdownSeparator from "../components/common/Dropdown/Dropdown.Separator.tsx";
 import Dropdown from "../components/common/Dropdown/Dropdown.tsx";
 import { useAppDispatch, useAppSelector } from "../hooks/hooks.ts";
-import { useExportDDS, useSaveProject } from "../hooks/importExport.ts";
+import {
+  useExportDDS,
+  useImportDDS,
+  useSaveProject,
+} from "../hooks/importExport.ts";
 import { getDistrictCache } from "../store/@selectors.ts";
 import { DistrictSelectors } from "../store/district.ts";
 import { ModalsActions } from "../store/modals.ts";
@@ -35,6 +40,7 @@ function Menu() {
   const visibleDistricts = useAppSelector(OptionsSelectors.getVisibleDistricts);
   const cache = useAppSelector(getDistrictCache);
   const exportDDS = useExportDDS();
+  const importDDS = useImportDDS();
   const saveProject = useSaveProject();
 
   return (
@@ -105,6 +111,14 @@ function Menu() {
               icon={<FileDown />}
             >
               Export nodes
+            </DropdownItem>
+            <DropdownSeparator />
+            <DropdownItem
+              onClick={() => void importDDS()}
+              disabled={!(projectName && district)}
+              icon={<PackageCheck />}
+            >
+              Verify DDS with current district
             </DropdownItem>
           </Dropdown>
         </Dropdown>
