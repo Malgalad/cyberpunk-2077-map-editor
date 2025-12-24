@@ -5,6 +5,9 @@ import type { InstancedMeshTransforms } from "../types/types.ts";
 const headerLength = 31;
 const extendedHeaderLength = 5;
 const dataOffset = (headerLength + 1) * 2 + extendedHeaderLength * 2;
+const heightBit = 6;
+const widthBit = 8;
+const linearSizeBit = 10;
 // DDS extended headers in Uint16
 const magic = [
   17476, 8275, 124, 0, 4111, 2, -1, 0, -1, 0, -1, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0,
@@ -26,8 +29,8 @@ const uint16 = 2 ** 16 - 1; // 65535
 
 export function decodeImageData(data: Uint16Array): InstancedMeshTransforms[] {
   const instances: InstancedMeshTransforms[] = [];
-  const width = data[8];
-  const height = data[6];
+  const width = data[widthBit];
+  const height = data[heightBit];
 
   for (let i = dataOffset; i < data.length; i += 4) {
     const x = ((i - dataOffset) / 4) % width;
@@ -80,9 +83,9 @@ export function encodeImageData(
   }
 
   // Set header values
-  result[6] = height;
-  result[8] = width;
-  result[10] = width * 8;
+  result[heightBit] = height;
+  result[widthBit] = width;
+  result[linearSizeBit] = width * 8;
 
   for (let i = 0; i < data.length; i++) {
     const instance = data[i];

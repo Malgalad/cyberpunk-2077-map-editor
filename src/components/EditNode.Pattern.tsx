@@ -79,7 +79,7 @@ function EditNodePattern({ node }: EditNodePatternProps) {
                     className="w-20"
                     step={0.25}
                     value={node.pattern!.position[i]}
-                    onChange={changeProperty("position", 0)}
+                    onChange={changeProperty("position", i)}
                   />
                 ))}
               </div>
