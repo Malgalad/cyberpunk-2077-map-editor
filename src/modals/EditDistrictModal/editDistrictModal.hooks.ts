@@ -175,5 +175,5 @@ export function useDistrictTextureHeight(district?: District) {
     cache[district.name],
   );
 
-  return calculateHeight(transforms.length);
+  return calculateHeight(transforms.length, district.isCustom);
 }

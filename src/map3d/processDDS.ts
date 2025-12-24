@@ -34,6 +34,13 @@ const paddingTransform: InstancedMeshTransforms = {
  * Transform data from 0..65536 range to 0..1 (rotation to -1..1)
  *   to later transform scale according to district-specific bounding box
  */
+/**
+ * !IMPORTANT!
+ *
+ *  Cyberpunk skips rendering the first column of the texture
+ *  this is accounted for with default districts (or at least it's expected),
+ *  but custom districts need to pad the first column with mock data.
+ */
 
 export function decodeImageData(data: Uint16Array): InstancedMeshTransforms[] {
   const instances: InstancedMeshTransforms[] = [];
@@ -47,6 +54,10 @@ export function decodeImageData(data: Uint16Array): InstancedMeshTransforms[] {
     const index = x * height + y;
 
     if (x >= height) continue;
+    if (index < height) {
+      instances[index] = paddingTransform;
+      continue;
+    }
 
     const position = {
       x: data[i] / uint16,
@@ -80,8 +91,9 @@ export function decodeImageData(data: Uint16Array): InstancedMeshTransforms[] {
 
 export function encodeImageData(
   data: InstancedMeshTransforms[],
+  padFirstColumn: boolean,
 ): Uint16Array<ArrayBuffer> {
-  const height = calculateHeight(data.length);
+  const height = calculateHeight(data.length, padFirstColumn);
   const width = height * 3;
   const totalSize = dataOffset + width * height * 4;
   const result = new Uint16Array(totalSize);
@@ -95,7 +107,7 @@ export function encodeImageData(
   result[widthBit] = width;
   result[linearSizeBit] = width * 8;
 
-  data.unshift(...Array(height).fill(paddingTransform));
+  if (padFirstColumn) data.unshift(...Array(height).fill(paddingTransform));
 
   for (let i = 0; i < data.length; i++) {
     const instance = data[i];

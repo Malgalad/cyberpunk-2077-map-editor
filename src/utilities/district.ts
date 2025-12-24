@@ -105,8 +105,12 @@ export function getFinalDistrictTransformsFromNodes(
   return [...districtTransforms, ...additionTransforms];
 }
 
-export function calculateHeight(length: number): number {
+export function calculateHeight(
+  length: number,
+  padFirstColumn: boolean,
+): number {
   const height = Math.ceil(Math.sqrt(length));
-  if (Math.ceil(Math.sqrt(length + height)) === height) return height;
-  return calculateHeight(length + height);
+  if (!padFirstColumn || Math.ceil(Math.sqrt(length + height)) === height)
+    return height;
+  return calculateHeight(length + height, padFirstColumn);
 }
