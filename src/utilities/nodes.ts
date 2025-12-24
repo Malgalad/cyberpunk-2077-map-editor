@@ -52,9 +52,7 @@ export function nodeToTransform(
     z: (node.position[2] - origin.z) / minMax.z,
     w: 1,
   };
-  const quaternion = new THREE.Quaternion().setFromEuler(
-    new THREE.Euler().fromArray(node.rotation),
-  );
+  const quaternion = toQuaternion(node.rotation);
   const orientation = {
     x: quaternion.x,
     y: quaternion.y,
@@ -65,7 +63,7 @@ export function nodeToTransform(
     x: node.scale[0] / cubeSize / 2,
     y: node.scale[1] / cubeSize / 2,
     z: node.scale[2] / cubeSize / 2,
-    w: node.scale.every((n) => n === 1) ? 0 : 1,
+    w: 1,
   };
 
   return {

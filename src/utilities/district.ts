@@ -54,8 +54,8 @@ const validate = (transform: InstancedMeshTransforms) => {
   )
     throw new Error(`Invalid transform: ${JSON.stringify(transform)}`);
 };
-const isHidden = (transform: InstancedMeshTransforms) =>
-  Object.values(transform.scale).every((number) => number === 0);
+const isHidden = ({ scale: { x, y, z } }: InstancedMeshTransforms) =>
+  x === 0 && y === 0 && z === 0;
 export function getFinalDistrictTransformsFromNodes(
   nodes: MapNode[],
   district: District,
