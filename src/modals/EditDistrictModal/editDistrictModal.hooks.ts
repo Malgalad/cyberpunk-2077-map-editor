@@ -3,7 +3,10 @@ import * as React from "react";
 import { useAppSelector } from "../../hooks/hooks.ts";
 import { NodesSelectors } from "../../store/nodes.ts";
 import type { District } from "../../types/types.ts";
-import { getFinalDistrictTransformsFromNodes } from "../../utilities/district.ts";
+import {
+  calculateHeight,
+  getFinalDistrictTransformsFromNodes,
+} from "../../utilities/district.ts";
 import { toNumber, toString } from "../../utilities/utilities.ts";
 import { mapSize } from "./editDistrictModal.constants.ts";
 import type { EditDistrictData } from "./editDistrictModal.types.ts";
@@ -172,5 +175,5 @@ export function useDistrictTextureHeight(district?: District) {
     cache[district.name],
   );
 
-  return Math.ceil(Math.sqrt(transforms.length));
+  return calculateHeight(transforms.length);
 }

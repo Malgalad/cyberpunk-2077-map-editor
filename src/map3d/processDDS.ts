@@ -1,4 +1,5 @@
 import type { InstancedMeshTransforms } from "../types/types.ts";
+import { calculateHeight } from "../utilities/district.ts";
 
 // https://github.com/toji/webgl-texture-utils/blob/master/texture-util/dds.js
 /** @prop {import('three/examples/jsm/loaders/DDSLoader.js')} **/
@@ -16,6 +17,13 @@ const magic = [
   0, 1, 0, 0, 0,
 ];
 const uint16 = 2 ** 16 - 1; // 65535
+
+const paddingTransform: InstancedMeshTransforms = {
+  id: "-1",
+  position: { x: 0, y: 0, z: 0, w: 1 },
+  orientation: { x: 0, y: 0, z: 0, w: 0 },
+  scale: { x: 0, y: 0, z: 0, w: 1 },
+};
 
 /**
  * XYZW data is encoded in 16-bit texture as RGBA channels
@@ -73,7 +81,7 @@ export function decodeImageData(data: Uint16Array): InstancedMeshTransforms[] {
 export function encodeImageData(
   data: InstancedMeshTransforms[],
 ): Uint16Array<ArrayBuffer> {
-  const height = Math.ceil(Math.sqrt(data.length));
+  const height = calculateHeight(data.length);
   const width = height * 3;
   const totalSize = dataOffset + width * height * 4;
   const result = new Uint16Array(totalSize);
@@ -86,6 +94,8 @@ export function encodeImageData(
   result[heightBit] = height;
   result[widthBit] = width;
   result[linearSizeBit] = width * 8;
+
+  data.unshift(...Array(height).fill(paddingTransform));
 
   for (let i = 0; i < data.length; i++) {
     const instance = data[i];
