@@ -47,6 +47,7 @@ function AddNodesTemplates() {
         id: template.id,
         updates: {
           parent,
+          district: district.name,
           label,
           position,
         },
@@ -75,6 +76,7 @@ function AddNodesTemplates() {
         updates: {
           label: `TEMPLATE <${selected[0].label}>`,
           parent: TEMPLATE_ID,
+          district: TEMPLATE_ID,
           position: ["0", "0", "0"],
           errors: undefined,
         },
