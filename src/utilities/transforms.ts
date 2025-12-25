@@ -21,8 +21,8 @@ const fromEuler = (rotation: THREE.Euler) =>
   rotation.toArray().slice(0, 3) as THREE.Vector3Tuple;
 const hadamardProduct = (a: number[], b: number[]) =>
   a.map((x, i) => x * (b[i] ?? 0));
-const addTuples = (a: number[], b: number[]) =>
-  a.map((x, i) => x + (b[i] ?? 0));
+const addTuples = (a: THREE.Vector3Tuple, b: number[]) =>
+  a.forEach((_, i) => (a[i] += b[i] ?? 0));
 const scalePattern = (i: number) => (value: number) => value * (i + 1);
 const noTransforms: InstancedMeshTransforms[] = [];
 
@@ -91,29 +91,16 @@ export function projectNodesToDistrict(
     if (node.hidden) node.scale = [0, 0, 0];
     if (!node.pattern || node.virtual) continue;
 
-    for (let i = 0; i < node.pattern.count; i++) {
+    for (let k = 0; k < node.pattern.count; k++) {
       const clones = cloneNode(nodesParsed, node, node.parent, true);
 
       for (const clone of clones) {
         nodesMap.set(clone.id, clone);
       }
 
-      invariant(clones[0], "Unexpected error: clones[0] is undefined");
-
-      clones[0].position = addTuples(
-        clones[0].position,
-        node.pattern.position.map(scalePattern(i)),
-      ) as THREE.Vector3Tuple;
-
-      clones[0].rotation = addTuples(
-        clones[0].rotation,
-        node.pattern.rotation.map(scalePattern(i)),
-      ) as THREE.Vector3Tuple;
-
-      clones[0].scale = addTuples(
-        clones[0].scale,
-        node.pattern.scale.map(scalePattern(i)),
-      ) as THREE.Vector3Tuple;
+      addTuples(clones[0].position, node.pattern.position.map(scalePattern(k)));
+      addTuples(clones[0].rotation, node.pattern.rotation.map(scalePattern(k)));
+      addTuples(clones[0].scale, node.pattern.scale.map(scalePattern(k)));
 
       nodesParsed.push(...clones);
     }

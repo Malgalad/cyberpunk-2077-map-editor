@@ -81,11 +81,11 @@ export const cloneNode = <T extends MapNode | MapNodeParsed>(
   node: T,
   parentId: string,
   virtual = false,
-): T[] => {
+): [T, ...T[]] => {
   const clone = structuredClone(unwrapDraft(node));
   const childClones: T[] = [];
 
-  clone.id = nanoid(8);
+  clone.id = nanoid();
   clone.parent = parentId;
   if (virtual) {
     clone.virtual = true;

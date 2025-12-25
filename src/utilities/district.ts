@@ -9,6 +9,13 @@ import type {
 } from "../types/types.ts";
 import { projectNodesToDistrict } from "./transforms.ts";
 
+const paddingTransform: InstancedMeshTransforms = {
+  id: "-1",
+  position: { x: 0, y: 0, z: 0, w: 1 },
+  orientation: { x: 0, y: 0, z: 0, w: 0 },
+  scale: { x: 0, y: 0, z: 0, w: 1 },
+};
+
 export const getDistrictName = (district: DistrictProperties) =>
   district.isCustom
     ? district.name
@@ -60,6 +67,7 @@ export function getFinalDistrictTransformsFromNodes(
   district: District,
 ): InstancedMeshTransforms[] {
   const transforms = immutableDistrictTransforms.get(district.name) ?? [];
+  const initialHeight = calculateHeight(transforms.length, false);
   const additions: MapNode[] = [];
   const updates: MapNode[] = [];
   const deletions = new Set<string>();
@@ -96,7 +104,17 @@ export function getFinalDistrictTransformsFromNodes(
     districtTransforms.push(transform);
   }
 
-  return [...districtTransforms, ...additionTransforms];
+  const result = [...districtTransforms, ...additionTransforms];
+  const resultHeight = calculateHeight(result.length - initialHeight, true);
+  if (resultHeight > initialHeight) {
+    const padding: InstancedMeshTransforms[] = Array(
+      resultHeight - initialHeight,
+    ).fill(paddingTransform);
+    result.unshift(...padding);
+  } else if (resultHeight < initialHeight) {
+    // decoded data is empty transforms
+  }
+  return result;
 }
 
 export function calculateHeight(

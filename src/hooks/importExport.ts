@@ -54,7 +54,7 @@ export function useExportDDS() {
 
     try {
       const data = getFinalDistrictTransformsFromNodes(nodes, district);
-      const imageData = encodeImageData(data, district.isCustom);
+      const imageData = encodeImageData(data);
       const blob = new Blob([imageData.buffer], { type: "image/dds" });
 
       saveBlobToFile(blob, `${district.name}.dds`);

@@ -48,8 +48,6 @@ staticMaterial.onBeforeCompile = (shader) => {
 };
 
 export const statuesMaterial = staticMaterial.clone();
-statuesMaterial.opacity = 0.5;
-statuesMaterial.transparent = true;
 
 export const additionsMaterial = new THREE.MeshToonMaterial({
   color: 0xffffff,
@@ -78,6 +76,13 @@ export const roadsMaterial = new THREE.MeshBasicMaterial({
   opacity: 0.5,
   transparent: true,
 });
+export const roadsMaterial2 = new THREE.MeshBasicMaterial({
+  color: 0x09b3f9,
+  opacity: 0.2,
+  transparent: true,
+});
+roadsMaterial2.depthTest = false;
+roadsMaterial2.depthWrite = false;
 
 export const roadsBordersMaterial = new THREE.MeshBasicMaterial({
   color: 0x09b3f9,

@@ -34,6 +34,7 @@ export function setupTerrain(addMesh: (promise: Promise<THREE.Mesh>) => void) {
   addMesh(importMesh("3dmap_cliffs", materials.terrainMaterial));
 
   addMesh(importMesh("3dmap_roads", materials.roadsMaterial));
+  addMesh(importMesh("3dmap_roads", materials.roadsMaterial2));
   addMesh(importMesh("3dmap_roads_borders", materials.roadsBordersMaterial));
 
   addMesh(importMesh("3dmap_metro", materials.metroMaterial));

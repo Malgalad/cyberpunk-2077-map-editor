@@ -94,9 +94,8 @@ export function decodeImageData(data: Uint16Array): InstancedMeshTransforms[] {
 // for original height
 export function encodeImageData(
   data: InstancedMeshTransforms[],
-  padFirstColumn: boolean,
 ): Uint16Array<ArrayBuffer> {
-  const height = calculateHeight(data.length, padFirstColumn);
+  const height = calculateHeight(data.length, false);
   const width = height * 3;
   const totalSize = dataOffset + width * height * 4;
   const result = new Uint16Array(totalSize);
@@ -109,8 +108,6 @@ export function encodeImageData(
   result[heightBit] = height;
   result[widthBit] = width;
   result[linearSizeBit] = width * 8;
-
-  if (padFirstColumn) data.unshift(...Array(height).fill(paddingTransform));
 
   for (let i = 0; i < data.length; i++) {
     const instance = data[i];
