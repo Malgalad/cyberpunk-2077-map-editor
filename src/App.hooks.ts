@@ -263,6 +263,7 @@ export function useMap3DEvents(map3d: Map3D | null) {
       const node = transformToNode(transform, district, {
         label: `Block #${index}`,
         parent: district.name,
+        district: district.name,
         tag,
         id,
       });

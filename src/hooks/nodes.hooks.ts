@@ -111,6 +111,7 @@ export function useAddNode(type: MapNode["type"], tag: MapNode["tag"]) {
         type,
         tag,
         parent,
+        district: selectedDistrict.name,
         position,
       }),
     );

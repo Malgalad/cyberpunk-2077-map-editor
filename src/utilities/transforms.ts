@@ -170,7 +170,7 @@ export function stringifyTransform<K>(
 export function transformToNode(
   transform: InstancedMeshTransforms,
   district: District,
-  properties: Pick<MapNode, "label" | "parent" | "tag" | "id">,
+  properties: Pick<MapNode, "label" | "parent" | "district" | "tag" | "id">,
 ): MapNode {
   const { cubeSize, origin, minMax } = district;
   const position = [
