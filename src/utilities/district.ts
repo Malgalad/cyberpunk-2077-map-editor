@@ -4,7 +4,6 @@ import type {
   DefaultDistrictNames,
   District,
   DistrictProperties,
-  GroupNodeCache,
   InstancedMeshTransforms,
   MapNode,
 } from "../types/types.ts";
@@ -54,24 +53,19 @@ const validate = (transform: InstancedMeshTransforms) => {
   )
     throw new Error(`Invalid transform: ${JSON.stringify(transform)}`);
 };
-const isHidden = ({ scale: { x, y, z } }: InstancedMeshTransforms) =>
-  x === 0 && y === 0 && z === 0;
+const isHidden = ({ scale: { x, y, z, w } }: InstancedMeshTransforms) =>
+  (x === 0 && y === 0 && z === 0) || w === 0;
 export function getFinalDistrictTransformsFromNodes(
   nodes: MapNode[],
   district: District,
-  cache: GroupNodeCache[string] | undefined,
 ): InstancedMeshTransforms[] {
   const transforms = immutableDistrictTransforms.get(district.name) ?? [];
-
-  if (!cache) return transforms;
-
-  const districtNodeIds = new Set(cache.nodes);
   const additions: MapNode[] = [];
   const updates: MapNode[] = [];
   const deletions = new Set<string>();
 
   for (const node of nodes) {
-    if (!districtNodeIds.has(node.id)) continue;
+    if (node.district !== district.name) continue;
     if (node.tag === "create") {
       additions.push(node);
     } else if (node.tag === "update") {

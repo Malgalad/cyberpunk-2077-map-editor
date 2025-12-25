@@ -60,6 +60,7 @@ export const NodeSchema = z.object({
   type: z.union([z.literal("group"), z.literal("instance")]),
   tag: z.union([z.literal("create"), z.literal("update"), z.literal("delete")]),
   parent: z.string(),
+  district: z.string().optional(),
   virtual: z.boolean().optional(),
   // originId is not serializable
   hidden: z.boolean().optional(),

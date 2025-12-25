@@ -49,6 +49,7 @@ type NodeProperties<T extends Transform | TransformParsed> = T & {
   type: "group" | "instance";
   tag: "create" | "update" | "delete";
   parent: string;
+  district?: string;
   virtual?: boolean;
   originId?: string;
   hidden?: boolean;

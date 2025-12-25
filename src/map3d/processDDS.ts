@@ -89,6 +89,9 @@ export function decodeImageData(data: Uint16Array): InstancedMeshTransforms[] {
   return instances;
 }
 
+// FIXME handle case if default district has blocks added and it causes
+// the height to change, and we need to add new padding while preserving padding
+// for original height
 export function encodeImageData(
   data: InstancedMeshTransforms[],
   padFirstColumn: boolean,

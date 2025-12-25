@@ -3,7 +3,7 @@ import * as React from "react";
 import { loadFile, saveBlobToFile } from "../helpers.ts";
 import { useMap3D } from "../map3d/map3d.context.ts";
 import { decodeImageData, encodeImageData } from "../map3d/processDDS.ts";
-import { getDistrictCache, getPersistentState } from "../store/@selectors.ts";
+import { getPersistentState } from "../store/@selectors.ts";
 import { DistrictSelectors } from "../store/district.ts";
 import { ModalsActions } from "../store/modals.ts";
 import { NodesSelectors } from "../store/nodes.ts";
@@ -48,13 +48,12 @@ export function useExportDDS() {
   const dispatch = useAppDispatch();
   const district = useAppSelector(DistrictSelectors.getDistrict);
   const nodes = useAppSelector(NodesSelectors.getNodes);
-  const cache = useAppSelector(getDistrictCache);
 
   return React.useCallback(() => {
     if (!district) return;
 
     try {
-      const data = getFinalDistrictTransformsFromNodes(nodes, district, cache);
+      const data = getFinalDistrictTransformsFromNodes(nodes, district);
       const imageData = encodeImageData(data, district.isCustom);
       const blob = new Blob([imageData.buffer], { type: "image/dds" });
 
@@ -65,7 +64,7 @@ export function useExportDDS() {
       }
       console.error(error);
     }
-  }, [district, nodes, cache, dispatch]);
+  }, [district, nodes, dispatch]);
 }
 
 export function useImportDDS() {

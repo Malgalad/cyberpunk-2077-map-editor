@@ -165,15 +165,10 @@ export function useDrawOnCanvas(
 
 export function useDistrictTextureHeight(district?: District) {
   const nodes = useAppSelector(NodesSelectors.getNodes);
-  const cache = useAppSelector(NodesSelectors.getChildNodesCache);
 
   if (!district) return 0;
 
-  const transforms = getFinalDistrictTransformsFromNodes(
-    nodes,
-    district,
-    cache[district.name],
-  );
+  const transforms = getFinalDistrictTransformsFromNodes(nodes, district);
 
   return calculateHeight(transforms.length, district.isCustom);
 }

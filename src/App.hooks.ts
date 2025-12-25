@@ -80,15 +80,9 @@ export function useDrawAllDistricts(map3d: Map3D | null) {
     const districtsWithTransforms: DistrictWithTransforms[] = [];
     const state = store.getState();
     const nodes = NodesSelectors.getNodes(state);
-    const cache = NodesSelectors.getChildNodesCache(state);
 
     for (const district of nonCurrentDistricts) {
-      const districtCache = cache[district.name];
-      const transforms = getFinalDistrictTransformsFromNodes(
-        nodes,
-        district,
-        districtCache,
-      );
+      const transforms = getFinalDistrictTransformsFromNodes(nodes, district);
 
       districtsWithTransforms.push({
         district,

@@ -26,11 +26,15 @@ export function invariant(
   }
 }
 
-export function partition<T>(array: T[], predicate: (item: T) => boolean) {
-  const pass: T[] = [];
-  const fail: T[] = [];
+export function partition<Type, Condition>(
+  array: Type[],
+  predicate: (item: Type) => Condition,
+): Map<Condition, Type[]> {
+  const map = new Map<Condition, Type[]>();
   for (const item of array) {
-    (predicate(item) ? pass : fail).push(item);
+    const condition = predicate(item);
+    const list = map.get(condition) ?? [];
+    map.set(condition, [...list, item]);
   }
-  return [pass, fail];
+  return map;
 }

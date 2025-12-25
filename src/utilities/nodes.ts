@@ -63,7 +63,7 @@ export function nodeToTransform(
     x: node.scale[0] / cubeSize / 2,
     y: node.scale[1] / cubeSize / 2,
     z: node.scale[2] / cubeSize / 2,
-    w: 1,
+    w: node.scale.every((n) => n === 1) ? 0 : 1,
   };
 
   return {

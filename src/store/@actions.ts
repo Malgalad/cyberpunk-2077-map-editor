@@ -42,6 +42,8 @@ export const hydrateState = createAsyncThunk(
         parent = map.get(parent)!.parent;
       }
 
+      if (!node.district) node.district = parent;
+
       if (parent === TEMPLATE_ID) return node;
 
       const district = resolvedDistricts.find(

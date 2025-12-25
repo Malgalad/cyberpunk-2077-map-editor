@@ -66,16 +66,12 @@ export const getDistrictCache = createSelector(
 );
 
 export const getDistrictNodes = createSelector(
-  [nodesSlice.selectors.getNodes, getDistrictCache],
-  structuralSharing(
-    (nodes: MapNode[], cache: GroupNodeCache[string] | undefined) => {
-      if (!cache) return emptyArray;
+  [nodesSlice.selectors.getNodes, districtSlice.selectors.getDistrict],
+  structuralSharing((nodes: MapNode[], district: District | undefined) => {
+    if (!district) return emptyArray;
 
-      const districtNodeIds = new Set(cache.nodes);
-
-      return nodes.filter((node) => districtNodeIds.has(node.id));
-    },
-  ),
+    return nodes.filter((node) => node.district === district.name);
+  }),
 );
 
 export const getAdditions = createSelector([getDistrictNodes], (nodes) =>

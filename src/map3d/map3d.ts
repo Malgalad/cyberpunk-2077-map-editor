@@ -29,8 +29,7 @@ const virtualEditsMaterial: Record<PatternView, THREE.Material> = {
   wireframe: wireframeMaterial,
   solid: patternMaterial,
 };
-const isMarker = ({ scale: { x, y, z } }: InstancedMeshTransforms) =>
-  x === 1 && y === 1 && z === 1;
+const isMarker = ({ scale: { w } }: InstancedMeshTransforms) => w === 0;
 
 export class Map3D extends Map3DBase {
   readonly #raycaster: THREE.Raycaster;
@@ -412,7 +411,9 @@ export class Map3D extends Map3DBase {
     this.#remove(this.#additionsVirtual);
 
     this.#markers = transforms.filter(isMarker).map(({ id }) => id);
-    const [real, virtual] = partition(transforms, (item) => !item.virtual);
+    const map = partition(transforms, (item) => !!item.virtual);
+    const virtual = map.get(true) ?? [];
+    const real = map.get(false) ?? [];
 
     this.#additions = this.#add(
       createDistrictMesh(district, real, additionsMaterial, ADDITIONS.default),
