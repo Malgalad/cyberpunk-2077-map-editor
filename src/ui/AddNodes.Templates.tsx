@@ -12,6 +12,7 @@ import Dropdown from "../components/common/Dropdown/Dropdown.tsx";
 import Tooltip from "../components/common/Tooltip.tsx";
 import { TEMPLATE_ID } from "../constants.ts";
 import { useAppDispatch, useAppSelector } from "../hooks/hooks.ts";
+import { getParent } from "../hooks/nodes.hooks.ts";
 import { useMap3D } from "../map3d/map3d.context.ts";
 import { DistrictSelectors } from "../store/district.ts";
 import { ModalsActions } from "../store/modals.ts";
@@ -32,11 +33,7 @@ function AddNodesTemplates() {
     if (!map3d) return;
     const center = map3d.getCenter();
     if (!center) return;
-    const parent = selected[0]
-      ? selected[0].type === "group"
-        ? selected[0].id
-        : selected[0].parent
-      : district.name;
+    const parent = getParent(district, selected[0]);
     const position = (
       selected[0] ? ["0", "0", "0"] : center.map(toString)
     ) as MapNode["position"];
@@ -47,9 +44,11 @@ function AddNodesTemplates() {
         id: template.id,
         updates: {
           parent,
-          district: district.name,
           label,
           position,
+        },
+        globalUpdates: {
+          district: district.name,
         },
       }),
     );
@@ -76,9 +75,11 @@ function AddNodesTemplates() {
         updates: {
           label: `TEMPLATE <${selected[0].label}>`,
           parent: TEMPLATE_ID,
-          district: TEMPLATE_ID,
           position: ["0", "0", "0"],
           errors: undefined,
+        },
+        globalUpdates: {
+          district: TEMPLATE_ID,
         },
         selectAfterClone: false,
       }),

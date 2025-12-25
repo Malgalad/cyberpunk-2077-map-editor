@@ -75,13 +75,21 @@ const nodesSlice = createSlice({
       id: MapNode["id"];
       selectAfterClone?: boolean;
       updates?: Partial<MapNode>;
+      globalUpdates?: Partial<MapNode>;
     }>((state, action) => {
-      const { id, selectAfterClone = true, updates } = action.payload;
+      const {
+        id,
+        selectAfterClone = true,
+        updates,
+        globalUpdates,
+      } = action.payload;
       const node = state.nodes.find((node) => node.id === id);
       if (!node) return;
       const clones = cloneNode(state.nodes, node, node.parent);
       invariant(clones[0], "Unexpected error: clones[0] is undefined");
       Object.assign(clones[0], updates);
+      if (globalUpdates)
+        clones.forEach((clone) => Object.assign(clone, globalUpdates));
       state.nodes.push(...clones);
       if (selectAfterClone) state.editingId = clones[0].id;
     }),
