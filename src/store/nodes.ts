@@ -178,6 +178,9 @@ const nodesSlice = createSlice({
           if (node.parent === name) {
             node.parent = district.name;
           }
+          if (node.district === name) {
+            node.district = district.name;
+          }
         }
       }),
   selectors: {
