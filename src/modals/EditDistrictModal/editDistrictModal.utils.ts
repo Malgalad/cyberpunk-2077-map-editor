@@ -27,7 +27,7 @@ export const fromData = (
   data: EditDistrictData,
 ): Pick<District, "position" | "cubeSize" | "transMin" | "transMax"> => ({
   position: data.pos.map((n) => toNumber(n)).slice(0, 3) as THREE.Vector3Tuple,
-  transMin: data.min.map((n) => toNumber(n)).slice(0, 3) as THREE.Vector4Tuple,
-  transMax: data.max.map((n) => toNumber(n)).slice(0, 3) as THREE.Vector4Tuple,
+  transMin: data.min.map((n) => toNumber(n)).slice(0, 4) as THREE.Vector4Tuple,
+  transMax: data.max.map((n) => toNumber(n)).slice(0, 4) as THREE.Vector4Tuple,
   cubeSize: toNumber(data.cubeSize),
 });
