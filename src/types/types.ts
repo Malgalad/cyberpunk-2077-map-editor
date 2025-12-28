@@ -26,6 +26,7 @@ export type DistrictProperties = {
 export type ComputedDistrictProperties = {
   minMax: THREE.Vector3Like;
   origin: THREE.Vector3Like;
+  height: number;
 };
 export type District = DistrictProperties & ComputedDistrictProperties;
 

@@ -23,6 +23,7 @@ export const getDistrictName = (district: DistrictProperties) =>
 
 export const computeDistrictProperties = (
   district: DistrictProperties,
+  count: number,
 ): ComputedDistrictProperties => {
   const minMax = {
     x: district.transMax[0] - district.transMin[0],
@@ -38,6 +39,7 @@ export const computeDistrictProperties = (
   return {
     minMax,
     origin,
+    height: calculateHeight(count),
   };
 };
 
@@ -67,7 +69,6 @@ export function getFinalDistrictTransformsFromNodes(
   district: District,
 ): InstancedMeshTransforms[] {
   const transforms = immutableDistrictTransforms.get(district.name) ?? [];
-  const initialHeight = calculateHeight(transforms.length, false);
   const additions: MapNode[] = [];
   const updates: MapNode[] = [];
   const deletions = new Set<string>();
@@ -105,24 +106,29 @@ export function getFinalDistrictTransformsFromNodes(
   }
 
   const result = [...districtTransforms, ...additionTransforms];
-  const resultHeight = calculateHeight(result.length - initialHeight, true);
-  if (resultHeight > initialHeight) {
-    const padding: InstancedMeshTransforms[] = Array(
-      resultHeight - initialHeight,
-    ).fill(paddingTransform);
+  const difference = result.length - transforms.length;
+  if (district.isCustom) {
+    const height = padHeight(result.length, calculateHeight(result.length));
+    // Pad custom district with empty transforms so that all blocks are rendered
+    const padding: InstancedMeshTransforms[] =
+      Array(height).fill(paddingTransform);
     result.unshift(...padding);
-  } else if (resultHeight < initialHeight) {
-    // decoded data is empty transforms
+  }
+  if (difference < 0) {
+    // Maintain the same transforms length so that height does not change
+    const padding: InstancedMeshTransforms[] = Array(Math.abs(difference)).fill(
+      paddingTransform,
+    );
+    result.unshift(...padding);
   }
   return result;
 }
 
-export function calculateHeight(
-  length: number,
-  padFirstColumn: boolean,
-): number {
-  const height = Math.ceil(Math.sqrt(length));
-  if (!padFirstColumn || Math.ceil(Math.sqrt(length + height)) === height)
-    return height;
-  return calculateHeight(length + height, padFirstColumn);
+export function calculateHeight(length: number): number {
+  return Math.ceil(Math.sqrt(length));
+}
+
+export function padHeight(length: number, height: number) {
+  if (calculateHeight(length + height) === height) return height;
+  return padHeight(length + height, calculateHeight(length + height));
 }

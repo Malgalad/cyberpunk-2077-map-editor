@@ -170,5 +170,5 @@ export function useDistrictTextureHeight(district?: District) {
 
   const transforms = getFinalDistrictTransformsFromNodes(nodes, district);
 
-  return calculateHeight(transforms.length, district.isCustom);
+  return calculateHeight(transforms.length);
 }

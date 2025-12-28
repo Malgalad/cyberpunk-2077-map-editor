@@ -262,6 +262,24 @@ export const createGroupNodesCache = (nodes: MapNodeUri[]): GroupNodeCache => {
   return cache as GroupNodeCache;
 };
 
+export function getNodeDistrict(
+  nodesOrMap: MapNode[] | Map<string, MapNodeParsed>,
+  node: MapNode | MapNodeParsed,
+) {
+  const map =
+    nodesOrMap instanceof Map
+      ? nodesOrMap
+      : new Map(nodesOrMap.map((node) => [node.id, parseNode(node)]));
+
+  let current = node.parent;
+
+  while (map.has(current)) {
+    current = map.get(current)!.parent;
+  }
+
+  return current;
+}
+
 export function transplantNode(
   nodesOrMap: MapNode[] | Map<string, MapNodeParsed>,
   node: MapNode,
@@ -278,10 +296,12 @@ export function transplantNode(
     return stringifyNode({
       ...nodeTransforms,
       parent: parentId,
+      district: parentId,
     });
   }
 
   const parent = map.get(parentId)!;
+  const district = getNodeDistrict(nodesOrMap, parent);
   const negateRotation = parent.rotation.map(
     (n) => n * -1,
   ) as THREE.Vector3Tuple;
@@ -302,6 +322,7 @@ export function transplantNode(
   return stringifyNode({
     ...nodeTransforms,
     parent: parentId,
+    district,
     position: object.position.toArray(),
     rotation: fromEuler(object.rotation),
   });

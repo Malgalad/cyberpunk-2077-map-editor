@@ -55,6 +55,7 @@ export function decodeImageData(data: Uint16Array): InstancedMeshTransforms[] {
 
     if (x >= height) continue;
     if (index < height) {
+      // Game ignores the first column, so replace it with empty transforms
       instances[index] = paddingTransform;
       continue;
     }
@@ -95,7 +96,7 @@ export function decodeImageData(data: Uint16Array): InstancedMeshTransforms[] {
 export function encodeImageData(
   data: InstancedMeshTransforms[],
 ): Uint16Array<ArrayBuffer> {
-  const height = calculateHeight(data.length, false);
+  const height = calculateHeight(data.length);
   const width = height * 3;
   const totalSize = dataOffset + width * height * 4;
   const result = new Uint16Array(totalSize);

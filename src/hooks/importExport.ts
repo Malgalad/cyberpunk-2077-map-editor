@@ -10,7 +10,10 @@ import { NodesSelectors } from "../store/nodes.ts";
 import { PersistentStateSchema } from "../types/schemas.ts";
 import type { PersistentAppState } from "../types/types.ts";
 import { unzip, zip } from "../utilities/compression.ts";
-import { getFinalDistrictTransformsFromNodes } from "../utilities/district.ts";
+import {
+  calculateHeight,
+  getFinalDistrictTransformsFromNodes,
+} from "../utilities/district.ts";
 import { useAppDispatch, useAppSelector } from "./hooks.ts";
 
 export function useSaveProject() {
@@ -54,6 +57,10 @@ export function useExportDDS() {
 
     try {
       const data = getFinalDistrictTransformsFromNodes(nodes, district);
+      if (!district.isCustom && calculateHeight(data.length) > district.height)
+        throw new Error(
+          "Transforms list is bigger than original. For compatibility reasons the list should have the same length.",
+        );
       const imageData = encodeImageData(data);
       const blob = new Blob([imageData.buffer], { type: "image/dds" });
 

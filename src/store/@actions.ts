@@ -12,7 +12,12 @@ import {
   computeDistrictProperties,
   immutableDistrictTransforms,
 } from "../utilities/district.ts";
-import { normalizeNodes, parseNode, validateNode } from "../utilities/nodes.ts";
+import {
+  getNodeDistrict,
+  normalizeNodes,
+  parseNode,
+  validateNode,
+} from "../utilities/nodes.ts";
 import { getDistrictTransforms } from "../utilities/transforms.ts";
 import { invariant } from "../utilities/utilities.ts";
 
@@ -28,7 +33,7 @@ export const hydrateState = createAsyncThunk(
 
           return {
             ...district,
-            ...computeDistrictProperties(district),
+            ...computeDistrictProperties(district, transforms.length),
           };
         }),
       ),
@@ -36,25 +41,29 @@ export const hydrateState = createAsyncThunk(
     const map = new Map<string, MapNodeParsed>(
       nodes.map((node) => [node.id, parseNode(node)]),
     );
-    const validatedNodes: MapNode[] = normalizeNodes(nodes).map((node) => {
-      let parent = node.parent;
-      while (map.has(parent)) {
-        parent = map.get(parent)!.parent;
-      }
+    const validatedNodes: MapNode[] = normalizeNodes(nodes)
+      .map((node) => {
+        if (node.district) return node;
 
-      if (!node.district) node.district = parent;
+        const district = getNodeDistrict(map, node);
 
-      if (parent === TEMPLATE_ID) return node;
+        return {
+          ...node,
+          district,
+        };
+      })
+      .map((node) => {
+        if (node.district === TEMPLATE_ID) return node;
 
-      const district = resolvedDistricts.find(
-        (district) => district.name === parent,
-      );
-      invariant(
-        district,
-        `Cannot find district "${parent} for node ${node.label} [${node.id}]"`,
-      );
-      return validateNode(node, map, district);
-    });
+        const district = resolvedDistricts.find(
+          (district) => district.name === node.district,
+        );
+        invariant(
+          district,
+          `Cannot find district "${parent} for node ${node.label} [${node.id}]"`,
+        );
+        return validateNode(node, map, district);
+      });
 
     return {
       district: {

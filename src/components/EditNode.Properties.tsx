@@ -129,11 +129,23 @@ function EditNodeProperties({ selected, mode }: EditNodePropertiesProps) {
               dispatch(
                 NodesActions.patchNode(node.id, (draft) => {
                   draft.parent = twig.parent;
+                  draft.district = twig.district;
                   draft.position = twig.position;
                   draft.rotation = twig.rotation;
                   draft.scale = twig.scale;
                 }),
               );
+              if (node.type === "group") {
+                const children = cache[node.id]?.nodes ?? [];
+
+                for (const childId of children) {
+                  dispatch(
+                    NodesActions.patchNode(childId, (draft) => {
+                      draft.district = twig.district;
+                    }),
+                  );
+                }
+              }
             }
           }}
           value={node.parent}

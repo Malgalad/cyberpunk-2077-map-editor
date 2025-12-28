@@ -43,7 +43,15 @@ function Instance({ lookAtNode, node }: InstanceProps) {
       }}
     >
       <div className="grow flex flex-row justify-between items-center select-none">
-        {node.label}
+        <span>
+          {node.label}
+          {node.pattern && (
+            <>
+              {" "}
+              <span className="text-gray-400">(×{node.pattern.count})</span>
+            </>
+          )}
+        </span>
         <div className="flex flex-row gap-1">
           {node.hidden && <EyeOff />}
           {node.pattern && (

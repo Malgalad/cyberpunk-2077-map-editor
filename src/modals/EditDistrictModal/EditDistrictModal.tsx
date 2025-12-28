@@ -1,5 +1,5 @@
 import { produce } from "immer";
-import { HelpCircle, LockKeyhole } from "lucide-react";
+import { AlertTriangle, LockKeyhole } from "lucide-react";
 import * as React from "react";
 import type * as THREE from "three";
 
@@ -7,6 +7,7 @@ import Button from "../../components/common/Button.tsx";
 import DraggableInput from "../../components/common/DraggableInput.tsx";
 import Input from "../../components/common/Input.tsx";
 import Modal from "../../components/common/Modal.tsx";
+import Tooltip from "../../components/common/Tooltip.tsx";
 import { useAppDispatch, useAppSelector } from "../../hooks/hooks.ts";
 import { DistrictActions, DistrictSelectors } from "../../store/district.ts";
 import { ModalsActions } from "../../store/modals.ts";
@@ -80,7 +81,12 @@ function EditDistrictModal(props: ModalProps) {
       ] as THREE.Vector4Tuple,
       cubeSize: toNumber(data.cubeSize),
     };
-    const computedProperties = computeDistrictProperties(districtProperties);
+    const computedProperties = computeDistrictProperties(
+      districtProperties,
+      district
+        ? (immutableDistrictTransforms.get(district.name)?.length ?? 0)
+        : 0,
+    );
 
     dispatch(ModalsActions.closeModal());
     if (isEdit) {
@@ -239,18 +245,22 @@ function EditDistrictModal(props: ModalProps) {
 
           {isEdit && (
             <>
+              <div>Texture Height:</div>
               <div className="flex flex-row gap-2 items-center">
-                Texture Height:
-                <span
-                  className="tooltip"
-                  data-tooltip="Projected dimensions of the texture required to encode all nodes"
-                  data-flow="top"
-                >
-                  <HelpCircle />
-                </span>
-              </div>
-              <div>
                 <Input className="w-20" value={height} readOnly />
+                {` / ${district?.height ?? 0}`}
+                {district &&
+                  !district.isCustom &&
+                  height > (district.height ?? 0) && (
+                    <Tooltip
+                      tooltip="District texture height is greater than the original height"
+                      flow="top"
+                    >
+                      <div>
+                        <AlertTriangle className="text-red-500" />
+                      </div>
+                    </Tooltip>
+                  )}
               </div>
             </>
           )}
