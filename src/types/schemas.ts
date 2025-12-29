@@ -63,6 +63,7 @@ export const NodeSchema = z.object({
   district: z.string().optional(),
   virtual: z.boolean().optional(),
   // originId is not serializable
+  index: z.number().optional(),
   hidden: z.boolean().optional(),
   position: z.tuple([z.string(), z.string(), z.string()]),
   rotation: z.tuple([z.string(), z.string(), z.string()]),

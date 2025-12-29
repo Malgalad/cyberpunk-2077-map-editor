@@ -71,7 +71,7 @@ export function getFinalDistrictTransformsFromNodes(
   const transforms = immutableDistrictTransforms.get(district.name) ?? [];
   const additions: MapNode[] = [];
   const updates: MapNode[] = [];
-  const deletions = new Set<string>();
+  const deletions = new Set<number>();
 
   for (const node of nodes) {
     if (node.district !== district.name) continue;
@@ -79,8 +79,8 @@ export function getFinalDistrictTransformsFromNodes(
       additions.push(node);
     } else if (node.tag === "update") {
       updates.push(node);
-    } else if (node.tag === "delete") {
-      deletions.add(node.id);
+    } else if (node.tag === "delete" && node.type === "instance") {
+      deletions.add(node.index ?? -1);
     }
   }
 
@@ -90,16 +90,17 @@ export function getFinalDistrictTransformsFromNodes(
   const updateTransforms = new Map(
     projectNodesToDistrict(updates, district)
       .filter((transform) => !isHidden(transform))
-      .map((transform) => [transform.id, transform]),
+      .map((transform) => [transform.index, transform]),
   );
   const districtTransforms: InstancedMeshTransforms[] = [];
 
-  for (const transform of transforms) {
+  for (let index = 0; index < transforms.length; index++) {
+    const transform = transforms[index];
     validate(transform);
 
-    if (deletions.has(transform.id)) continue;
-    if (updateTransforms.has(transform.id)) {
-      districtTransforms.push(updateTransforms.get(transform.id)!);
+    if (deletions.has(index)) continue;
+    if (updateTransforms.has(index)) {
+      districtTransforms.push(updateTransforms.get(index)!);
       continue;
     }
     districtTransforms.push(transform);

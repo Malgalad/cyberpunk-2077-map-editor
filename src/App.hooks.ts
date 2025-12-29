@@ -1,3 +1,4 @@
+import { nanoid } from "nanoid";
 import * as React from "react";
 
 import { useAppDispatch, useAppSelector, useAppStore } from "./hooks/hooks.ts";
@@ -26,7 +27,7 @@ import {
 } from "./utilities/district.ts";
 import { parseNode, transplantNode } from "./utilities/nodes.ts";
 import { applyTransforms, transformToNode } from "./utilities/transforms.ts";
-import { invariant, toNumber, toString } from "./utilities/utilities.ts";
+import { invariant } from "./utilities/utilities.ts";
 
 const emptyArray: District[] = [];
 
@@ -99,12 +100,12 @@ export function useDrawCurrentDistrict(map3d: Map3D | null) {
   const district = useAppSelector(DistrictSelectors.getDistrict);
   const updates = useAppSelector(getUpdates);
   const deletions = useAppSelector(getDeletions);
-  const updateIds = React.useMemo(
-    () => new Set(updates.map((node) => node.id)),
+  const updateIndexes = React.useMemo(
+    () => new Set(updates.map((node) => node.index)),
     [updates],
   );
-  const deletionIds = React.useMemo(
-    () => new Set(deletions.map((node) => node.id)),
+  const deletionIndexes = React.useMemo(
+    () => new Set(deletions.map((node) => node.index)),
     [deletions],
   );
 
@@ -113,8 +114,8 @@ export function useDrawCurrentDistrict(map3d: Map3D | null) {
 
     const transforms = (
       immutableDistrictTransforms.get(district.name) ?? []
-    ).map((instance) => {
-      if (updateIds.has(instance.id) || deletionIds.has(instance.id)) {
+    ).map((instance, index) => {
+      if (updateIndexes.has(index) || deletionIndexes.has(index)) {
         return { ...instance, scale: { x: 0, y: 0, z: 0, w: 0 } };
       }
 
@@ -122,7 +123,7 @@ export function useDrawCurrentDistrict(map3d: Map3D | null) {
     });
 
     map3d.setCurrentDistrict({ district, transforms });
-  }, [map3d, district, updateIds, deletionIds]);
+  }, [map3d, district, updateIndexes, deletionIndexes]);
 
   React.useEffect(() => {
     if (!map3d || !district) return;
@@ -209,13 +210,13 @@ export function useDrawSelection(map3d: Map3D | null) {
     } else if (mode === "delete") {
       for (const transform of deletions) {
         if (selectedIds.has(transform.id)) {
-          indexes.push(toNumber(transform.id));
+          indexes.push(transform.index ?? -1);
         }
       }
     } else if (mode === "update") {
       for (const transform of updates) {
         if (selectedIds.has(transform.id)) {
-          indexes.push(toNumber(transform.id));
+          indexes.push(transform.index ?? -1);
         }
       }
     }
@@ -254,11 +255,19 @@ export function useMap3DEvents(map3d: Map3D | null) {
       invariant(transform, "Transform is not defined");
 
       const parent = getParent(district, selected[0]);
-      const id = toString(index);
+      const id = nanoid();
 
       // If the user clicks twice without moving mouse, the highlighted block
       // will stay the same and trigger event twice
-      if (nodes.find((node) => node.id === id)) return;
+      if (
+        nodes.find(
+          (node) =>
+            node.district === district.name &&
+            node.tag === tag &&
+            node.index === index,
+        )
+      )
+        return;
 
       const node = transformToNode(transform, district, {
         label: `Block #${index}`,
@@ -266,6 +275,7 @@ export function useMap3DEvents(map3d: Map3D | null) {
         district: district.name,
         tag,
         id,
+        index,
       });
       const nodeWithCorrectParent = transplantNode(nodes, node, parent);
       dispatch(NodesActions.addNode(nodeWithCorrectParent));

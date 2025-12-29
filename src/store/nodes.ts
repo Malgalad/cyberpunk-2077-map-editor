@@ -37,7 +37,10 @@ const nodesSlice = createSlice({
     addNode: create.preparedReducer(
       (
         init: Partial<MapNode> &
-          Pick<MapNode, "type" | "tag" | "parent" | "district" | "position">,
+          Pick<
+            MapNode,
+            "type" | "tag" | "parent" | "district" | "position" | "index"
+          >,
       ) => {
         const {
           id = nanoid(8),
@@ -46,6 +49,7 @@ const nodesSlice = createSlice({
           tag,
           parent,
           district,
+          index,
           position,
           rotation = ["0", "0", "0"],
           scale = type === "instance" ? ["100", "100", "100"] : ["1", "1", "1"],
@@ -57,6 +61,7 @@ const nodesSlice = createSlice({
           tag,
           parent,
           district,
+          index,
           position,
           rotation,
           scale,

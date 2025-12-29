@@ -9,7 +9,7 @@ import type {
   MapNodeParsed,
   PatternView,
 } from "../types/types.ts";
-import { partition, toNumber } from "../utilities/utilities.ts";
+import { partition } from "../utilities/utilities.ts";
 import AxesHelper from "./axesHelper.ts";
 import { ADDITIONS, BUILDINGS, DELETIONS, UPDATES } from "./colors.ts";
 import { createDistrictMesh } from "./createDistrictMesh.ts";
@@ -275,7 +275,7 @@ export class Map3D extends Map3DBase {
       let needsUpdate = false;
 
       for (let i = 0; i < this.#updates.count; i++) {
-        const index = instances[i] != null ? toNumber(instances[i].id) : -1;
+        const index = instances[i] != null ? (instances[i].index ?? -1) : -1;
         const color =
           mode === "update" && this.#selectedIndexes.includes(index)
             ? UPDATES.selected
@@ -302,7 +302,7 @@ export class Map3D extends Map3DBase {
       let needsUpdate = false;
 
       for (let i = 0; i < this.#deletions.count; i++) {
-        const index = instances[i] != null ? toNumber(instances[i].id) : -1;
+        const index = instances[i] != null ? (instances[i].index ?? -1) : -1;
         const color =
           mode && this.#selectedIndexes.includes(index)
             ? DELETIONS.selected

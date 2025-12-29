@@ -1,4 +1,5 @@
 import { createAsyncThunk } from "@reduxjs/toolkit";
+import { nanoid } from "nanoid";
 
 import { TEMPLATE_ID } from "../constants.ts";
 import type {
@@ -19,7 +20,7 @@ import {
   validateNode,
 } from "../utilities/nodes.ts";
 import { getDistrictTransforms } from "../utilities/transforms.ts";
-import { invariant } from "../utilities/utilities.ts";
+import { invariant, toNumber } from "../utilities/utilities.ts";
 
 export const hydrateState = createAsyncThunk(
   "hydrateState",
@@ -38,10 +39,23 @@ export const hydrateState = createAsyncThunk(
         }),
       ),
     );
+    const updatedNodes = nodes.map((node) => {
+      if (node.tag === "create" || node.type === "group" || node.index != null)
+        return node;
+
+      const id = nanoid();
+      const index = toNumber(node.id);
+
+      return {
+        ...node,
+        id,
+        index,
+      };
+    });
     const map = new Map<string, MapNodeParsed>(
-      nodes.map((node) => [node.id, parseNode(node)]),
+      updatedNodes.map((node) => [node.id, parseNode(node)]),
     );
-    const validatedNodes: MapNode[] = normalizeNodes(nodes)
+    const validatedNodes: MapNode[] = normalizeNodes(updatedNodes)
       .map((node) => {
         if (node.district) return node;
 

@@ -53,6 +53,7 @@ type NodeProperties<T extends Transform | TransformParsed> = T & {
   district?: string;
   virtual?: boolean;
   originId?: string;
+  index?: number;
   hidden?: boolean;
   pattern?: T & PatternProperties;
   errors?: string[];
@@ -96,6 +97,7 @@ export type InstancedMeshTransforms = {
   id: string;
   virtual?: boolean;
   originId?: string;
+  index?: number;
   position: THREE.Vector4Like;
   orientation: THREE.Vector4Like;
   scale: THREE.Vector4Like;

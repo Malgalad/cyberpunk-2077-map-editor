@@ -70,6 +70,7 @@ export function nodeToTransform(
     id: node.id,
     virtual: node.virtual,
     originId: node.originId,
+    index: node.index,
     position,
     orientation,
     scale,

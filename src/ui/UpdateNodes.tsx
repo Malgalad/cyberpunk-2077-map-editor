@@ -45,7 +45,7 @@ function UpdateNodes() {
     const position = offsetPosition(selectedNodes[0]);
 
     onTransfer("delete", "create");
-    onClone({ tag: "create", position });
+    onClone({ tag: "create", position, index: undefined });
   };
 
   useGlobalShortcuts("Delete", onDelete);
