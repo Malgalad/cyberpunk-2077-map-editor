@@ -8,6 +8,7 @@ import DraggableInput from "../../components/common/DraggableInput.tsx";
 import Input from "../../components/common/Input.tsx";
 import Modal from "../../components/common/Modal.tsx";
 import Tooltip from "../../components/common/Tooltip.tsx";
+import { AXII, AXIS_LABELS } from "../../constants.ts";
 import { useAppDispatch, useAppSelector } from "../../hooks/hooks.ts";
 import { DistrictActions, DistrictSelectors } from "../../store/district.ts";
 import { ModalsActions } from "../../store/modals.ts";
@@ -28,9 +29,6 @@ import {
 import type { EditDistrictData } from "./editDistrictModal.types.ts";
 import { toData } from "./editDistrictModal.utils.ts";
 import { useGetErrors } from "./editDistrictModal.validation.ts";
-
-const axii = [0, 1, 2] as const;
-const axiiNames = ["X", "Y", "Z"] as const;
 
 function EditDistrictModal(props: ModalProps) {
   const isEdit = props.data as boolean;
@@ -160,17 +158,19 @@ function EditDistrictModal(props: ModalProps) {
 
           <div>Position:</div>
           <div className="flex flex-row gap-2">
-            {axii.map((i) => (
+            {AXII.map((axis) => (
               <DraggableInput
-                key={i}
-                aria-invalid={validationErrors.has(`pos${axiiNames[i]}`)}
-                aria-errormessage={validationErrors.get(`pos${axiiNames[i]}`)}
+                key={axis}
+                aria-invalid={validationErrors.has(`pos${AXIS_LABELS[axis]}`)}
+                aria-errormessage={validationErrors.get(
+                  `pos${AXIS_LABELS[axis]}`,
+                )}
                 className="w-20"
-                value={data.pos[i]}
+                value={data.pos[axis]}
                 onChange={(event) => {
                   setData(
                     produce((draft) => {
-                      draft.pos[i] = event.target.value;
+                      draft.pos[axis] = event.target.value;
                     }),
                   );
                 }}
@@ -183,17 +183,19 @@ function EditDistrictModal(props: ModalProps) {
 
           <div>TransMin:</div>
           <div className="flex flex-row gap-2">
-            {axii.map((i) => (
+            {AXII.map((axis) => (
               <DraggableInput
-                key={i}
-                aria-invalid={validationErrors.has(`min${axiiNames[i]}`)}
-                aria-errormessage={validationErrors.get(`min${axiiNames[i]}`)}
+                key={axis}
+                aria-invalid={validationErrors.has(`min${AXIS_LABELS[axis]}`)}
+                aria-errormessage={validationErrors.get(
+                  `min${AXIS_LABELS[axis]}`,
+                )}
                 className="w-20"
-                value={data.min[i]}
+                value={data.min[axis]}
                 onChange={(event) => {
                   setData(
                     produce((draft) => {
-                      draft.min[i] = event.target.value;
+                      draft.min[axis] = event.target.value;
                     }),
                   );
                 }}
@@ -204,17 +206,19 @@ function EditDistrictModal(props: ModalProps) {
 
           <div>TransMax:</div>
           <div className="flex flex-row gap-2">
-            {axii.map((i) => (
+            {AXII.map((axis) => (
               <DraggableInput
-                key={i}
-                aria-invalid={validationErrors.has(`max${axiiNames[i]}`)}
-                aria-errormessage={validationErrors.get(`max${axiiNames[i]}`)}
+                key={axis}
+                aria-invalid={validationErrors.has(`max${AXIS_LABELS[axis]}`)}
+                aria-errormessage={validationErrors.get(
+                  `max${AXIS_LABELS[axis]}`,
+                )}
                 className="w-20"
-                value={data.max[i]}
+                value={data.max[axis]}
                 onChange={(event) => {
                   setData(
                     produce((draft) => {
-                      draft.max[i] = event.target.value;
+                      draft.max[axis] = event.target.value;
                     }),
                   );
                 }}

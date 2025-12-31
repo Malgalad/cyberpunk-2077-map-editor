@@ -5,8 +5,14 @@ import { DistrictSelectors } from "../store/district.ts";
 import { ModalsActions } from "../store/modals.ts";
 import { NodesActions, NodesSelectors } from "../store/nodes.ts";
 import { ProjectActions } from "../store/project.ts";
-import type { DistrictProperties, MapNode, Modes } from "../types/types.ts";
-import { toNumber, toString } from "../utilities/utilities.ts";
+import type {
+  DistrictProperties,
+  MapNode,
+  Modes,
+  Plane,
+} from "../types/types.ts";
+import { mirrorNode } from "../utilities/nodes.ts";
+import { toString } from "../utilities/utilities.ts";
 import { useAppDispatch, useAppSelector } from "./hooks.ts";
 
 export function getParent(district: DistrictProperties, node?: MapNode) {
@@ -123,32 +129,22 @@ export function useAddNode(type: MapNode["type"], tag: MapNode["tag"]) {
   }, [dispatch, selectedNodes, selectedDistrict, map3d, tag, type]);
 }
 
-const applyChanges = (node: MapNode, plane: "XY" | "XZ" | "YZ") => {
-  return NodesActions.patchNode(node.id, (draft) => {
-    const axii = plane === "XY" ? 2 : plane === "XZ" ? 1 : 0;
-    draft.position[axii] = toString(toNumber(draft.position[axii]) * -1);
-    draft.rotation = draft.rotation
-      .map(toNumber)
-      .map((angle, index) => (index === axii ? angle : angle * -1))
-      .map(toString) as [string, string, string];
-  });
-};
 export function useMirrorNode(node?: MapNode) {
   const dispatch = useAppDispatch();
 
   return React.useCallback(
-    (plane: "XY" | "XZ" | "YZ") => {
+    (plane: Plane) => {
       if (!node) return;
 
       dispatch((_, getState) => {
         const nodes = NodesSelectors.getNodes(getState());
 
         if (node.type === "instance") {
-          dispatch(applyChanges(node, plane));
+          dispatch(NodesActions.patchNode(node.id, mirrorNode(plane)));
         } else {
           for (const child of nodes) {
             if (child.parent === node.id) {
-              dispatch(applyChanges(child, plane));
+              dispatch(NodesActions.patchNode(child.id, mirrorNode(plane)));
             }
           }
         }

@@ -71,6 +71,9 @@ export const NodeSchema = z.object({
   pattern: z
     .object({
       count: z.number(),
+      mirror: z
+        .union([z.literal("XY"), z.literal("XZ"), z.literal("YZ")])
+        .optional(),
       position: z.tuple([z.string(), z.string(), z.string()]),
       rotation: z.tuple([z.string(), z.string(), z.string()]),
       scale: z.tuple([z.string(), z.string(), z.string()]),

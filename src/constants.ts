@@ -2,11 +2,15 @@ import mapData from "./mapData.min.json";
 import type {
   DefaultDistrictNames,
   DistrictProperties,
+  Plane,
 } from "./types/types.ts";
 
 export const PROJECT_VERSION = 3 as const;
 export const MAX_DEPTH = 6 as const;
 export const TEMPLATE_ID = "@@TEMPLATE" as const;
+export const AXII = [0, 1, 2] as const;
+export const AXIS_LABELS = ["X", "Y", "Z"] as const;
+export const PLANES: [Plane, Plane, Plane] = ["XY", "XZ", "YZ"];
 
 export const DISTRICT_LABELS: Record<DefaultDistrictNames, string> = {
   watson_data: "Watson",

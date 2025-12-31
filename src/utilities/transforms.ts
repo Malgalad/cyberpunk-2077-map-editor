@@ -12,7 +12,7 @@ import type {
   Transform,
   TransformParsed,
 } from "../types/types.ts";
-import { cloneNode, nodeToTransform, parseNode } from "./nodes.ts";
+import { cloneNode, mirrorNode, nodeToTransform, parseNode } from "./nodes.ts";
 import { invariant, toNumber, toString } from "./utilities.ts";
 
 const toQuaternion = (rotation: THREE.Vector3Tuple | THREE.EulerTuple) =>
@@ -98,9 +98,23 @@ export function projectNodesToDistrict(
         nodesMap.set(clone.id, clone);
       }
 
-      addTuples(clones[0].position, node.pattern.position.map(scalePattern(k)));
-      addTuples(clones[0].rotation, node.pattern.rotation.map(scalePattern(k)));
-      addTuples(clones[0].scale, node.pattern.scale.map(scalePattern(k)));
+      const [self] = clones;
+
+      if (node.pattern.mirror) {
+        if (node.type === "instance") {
+          mirrorNode(node.pattern.mirror)(self);
+        } else {
+          const children = clones.filter((child) => child.parent === self.id);
+
+          for (const child of children) {
+            mirrorNode(node.pattern.mirror)(child);
+          }
+        }
+      } else {
+        addTuples(self.position, node.pattern.position.map(scalePattern(k)));
+        addTuples(self.rotation, node.pattern.rotation.map(scalePattern(k)));
+        addTuples(self.scale, node.pattern.scale.map(scalePattern(k)));
+      }
 
       nodesParsed.push(...clones);
     }

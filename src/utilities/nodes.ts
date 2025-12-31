@@ -11,13 +11,14 @@ import type {
   MapNode,
   MapNodeParsed,
   MapNodeUri,
+  Plane,
 } from "../types/types.ts";
 import {
   applyTransforms,
   parseTransform,
   stringifyTransform,
 } from "./transforms.ts";
-import { unwrapDraft } from "./utilities.ts";
+import { toNumber, toString, unwrapDraft } from "./utilities.ts";
 
 const toQuaternion = (rotation: THREE.Vector3Tuple | THREE.EulerTuple) =>
   new THREE.Quaternion().setFromEuler(new THREE.Euler().fromArray(rotation));
@@ -328,3 +329,21 @@ export function transplantNode(
     rotation: fromEuler(object.rotation),
   });
 }
+
+export const mirrorNode =
+  (plane: Plane) =>
+  <T extends MapNode | MapNodeParsed>(node: T) => {
+    const axis = plane === "XY" ? 2 : plane === "XZ" ? 1 : 0;
+    const mirrorPosition = (value: number) => value * -1;
+    const mirrorRotation = (angle: number, index: number) =>
+      index === axis ? angle : angle * -1;
+    const apply =
+      (fn: (v: number, k: number) => number) =>
+      (v: number | string, k: number) =>
+        typeof v === "string" ? toString(fn(toNumber(v), k)) : fn(v, k);
+
+    node.position[axis] = apply(mirrorPosition)(node.position[axis], -1);
+    node.rotation = node.rotation.map(
+      apply(mirrorRotation),
+    ) as THREE.Vector3Tuple;
+  };

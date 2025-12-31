@@ -6,6 +6,9 @@ import store from "../store/store.ts";
 
 type NestedArray<T> = T | NestedArray<T>[];
 
+export type Axis = "X" | "Y" | "Z";
+export type Plane = "XY" | "XZ" | "YZ";
+
 export type DefaultDistrictNames = keyof (typeof mapData)["soup"];
 export type DistrictProperties = {
   name: string;
@@ -43,6 +46,7 @@ export type TransformParsed = {
 
 type PatternProperties = {
   count: number;
+  mirror?: Plane;
 };
 type NodeProperties<T extends Transform | TransformParsed> = T & {
   id: string;

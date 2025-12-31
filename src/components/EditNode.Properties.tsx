@@ -2,6 +2,7 @@ import { Move3D } from "lucide-react";
 import * as React from "react";
 import * as THREE from "three";
 
+import { AXII } from "../constants.ts";
 import {
   useAppDispatch,
   useAppSelector,
@@ -36,7 +37,6 @@ interface EditNodePropertiesProps {
   mode: "create" | "update" | "delete";
 }
 
-const axii = [0, 1, 2] as const;
 const axiiColors = [
   "border-red-500!",
   "border-green-500!",
@@ -212,15 +212,15 @@ function EditNodeProperties({ selected, mode }: EditNodePropertiesProps) {
         </div>
 
         <div className="flex flex-row gap-1 items-center">
-          {axii.map((i) => (
+          {AXII.map((axis) => (
             <DraggableInput
-              key={i}
-              className={clsx("w-20", axiiColors[i])}
+              key={axis}
+              className={clsx("w-20", axiiColors[axis])}
               step={3 / (map3d?.camera.zoom ?? 1)}
-              value={useLocal ? local[i] : node.position[i]}
+              value={useLocal ? local[axis] : node.position[axis]}
               onChange={(event) => {
                 if (useLocal) {
-                  const newLocal = local.toSpliced(i, 1, event.target.value);
+                  const newLocal = local.toSpliced(axis, 1, event.target.value);
 
                   setLocal(newLocal);
 
@@ -258,7 +258,7 @@ function EditNodeProperties({ selected, mode }: EditNodePropertiesProps) {
                 } else {
                   dispatch(
                     NodesActions.patchNode(node.id, (draft) => {
-                      draft.position[i] = event.target.value;
+                      draft.position[axis] = event.target.value;
                     }),
                   );
                 }
@@ -269,16 +269,16 @@ function EditNodeProperties({ selected, mode }: EditNodePropertiesProps) {
 
         <div>Rotation:</div>
         <div className="flex flex-row gap-1">
-          {axii.map((i) => (
+          {AXII.map((axis) => (
             <DraggableInput
-              key={i}
-              className={clsx("w-20", axiiColors[i])}
+              key={axis}
+              className={clsx("w-20", axiiColors[axis])}
               step={5 / (map3d?.camera.zoom ?? 1)}
-              value={node.rotation[i]}
+              value={node.rotation[axis]}
               onChange={(event) => {
                 dispatch(
                   NodesActions.patchNode(node.id, (draft) => {
-                    draft.rotation[i] = event.target.value;
+                    draft.rotation[axis] = event.target.value;
                   }),
                 );
               }}
@@ -287,18 +287,18 @@ function EditNodeProperties({ selected, mode }: EditNodePropertiesProps) {
         </div>
         <div>{node.type === "group" ? "Scale:" : "Size:"}</div>
         <div className="flex flex-row gap-1 items-center">
-          {axii.map((i) => (
+          {AXII.map((axis) => (
             <DraggableInput
-              key={i}
-              className={clsx("w-20", axiiColors[i])}
+              key={axis}
+              className={clsx("w-20", axiiColors[axis])}
               step={
                 node.type === "instance" ? 50 / (map3d?.camera.zoom ?? 1) : 0.1
               }
-              value={node.scale[i]}
+              value={node.scale[axis]}
               onChange={(event) => {
                 dispatch(
                   NodesActions.patchNode(node.id, (draft) => {
-                    draft.scale[i] = event.target.value;
+                    draft.scale[axis] = event.target.value;
                   }),
                 );
               }}
