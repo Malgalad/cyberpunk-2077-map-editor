@@ -1,6 +1,6 @@
 import { createSlice } from "@reduxjs/toolkit";
 
-import type { District } from "../types/types.ts";
+import type { AppState, District } from "../types/types.ts";
 import { hydrateState } from "./@actions.ts";
 
 interface DistrictState {
@@ -52,15 +52,18 @@ const districtSlice = createSlice({
       hydrateState.fulfilled,
       (_, action) => action.payload.district,
     ),
-  selectors: {
-    getDistrict: (state) =>
-      state.current != null
-        ? state.districts.find((district) => district.name === state.current)
-        : undefined,
-    getAllDistricts: (state) => state.districts,
-  },
 });
 
+const getSlice = (state: AppState) => state.present[districtSlice.reducerPath];
 export const DistrictActions = districtSlice.actions;
-export const DistrictSelectors = districtSlice.selectors;
+export const DistrictSelectors = {
+  getDistrict: (state: AppState) => {
+    return getSlice(state).current != null
+      ? getSlice(state).districts.find(
+          (district) => district.name === getSlice(state).current,
+        )
+      : undefined;
+  },
+  getAllDistricts: (state: AppState) => getSlice(state).districts,
+};
 export default districtSlice;

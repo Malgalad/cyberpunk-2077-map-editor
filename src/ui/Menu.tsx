@@ -11,12 +11,17 @@ import {
   Settings2,
   Undo,
 } from "lucide-react";
+import { ActionCreators } from "redux-undo";
 
 import Button from "../components/common/Button.tsx";
 import DropdownItem from "../components/common/Dropdown/Dropdown.Item.tsx";
 import DropdownSeparator from "../components/common/Dropdown/Dropdown.Separator.tsx";
 import Dropdown from "../components/common/Dropdown/Dropdown.tsx";
-import { useAppDispatch, useAppSelector } from "../hooks/hooks.ts";
+import {
+  useAppDispatch,
+  useAppSelector,
+  useGlobalShortcuts,
+} from "../hooks/hooks.ts";
 import {
   useExportDDS,
   useImportDDS,
@@ -42,6 +47,19 @@ function Menu() {
   const exportDDS = useExportDDS();
   const importDDS = useImportDDS();
   const saveProject = useSaveProject();
+  const hasPast = useAppSelector((state) => state.past.length > 0);
+  const hasFuture = useAppSelector((state) => state.future.length > 0);
+
+  useGlobalShortcuts(
+    (event) => event.code === "KeyZ" && event.ctrlKey && !event.shiftKey,
+    () => dispatch(ActionCreators.undo()),
+    !hasPast,
+  );
+  useGlobalShortcuts(
+    (event) => event.code === "KeyZ" && event.ctrlKey && event.shiftKey,
+    () => dispatch(ActionCreators.redo()),
+    !hasFuture,
+  );
 
   return (
     <div className="flex flex-row justify-between px-2">
@@ -128,10 +146,18 @@ function Menu() {
             <Button className="border-none cursor-default!">Edit</Button>
           }
         >
-          <DropdownItem icon={<Undo />} disabled>
+          <DropdownItem
+            icon={<Undo />}
+            onClick={() => dispatch(ActionCreators.undo())}
+            disabled={!hasPast}
+          >
             Undo
           </DropdownItem>
-          <DropdownItem icon={<Redo />} disabled>
+          <DropdownItem
+            icon={<Redo />}
+            onClick={() => dispatch(ActionCreators.redo())}
+            disabled={!hasFuture}
+          >
             Redo
           </DropdownItem>
           <DropdownSeparator />

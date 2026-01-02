@@ -4,7 +4,11 @@ import type * as React from "react";
 import type { Tabs as ImportExportTabs } from "../modals/ImportExportNodesModal.tsx";
 import type { Tabs as ProjectTabs } from "../modals/ProjectModal.tsx";
 import type { Modal, ModalType } from "../types/modals.ts";
-import type { AppThunkAction, DistrictProperties } from "../types/types.ts";
+import type {
+  AppState,
+  AppThunkAction,
+  DistrictProperties,
+} from "../types/types.ts";
 
 interface ModalsState {
   modal: Modal | undefined;
@@ -24,9 +28,6 @@ const modalsSlice = createSlice({
       state.modal = action.payload;
     }),
   }),
-  selectors: {
-    getModal: (state) => state.modal,
-  },
 });
 
 function openModal(type: "alert", data: string): AppThunkAction<Promise<void>>;
@@ -60,7 +61,7 @@ function openModal<T>(
   data?: unknown,
 ): AppThunkAction<Promise<T>> {
   return (dispatch, getState) => {
-    const modal = modalsSlice.selectors.getModal(getState());
+    const modal = ModalsSelectors.getModal(getState());
 
     if (modal && deferred) {
       deferred.resolve(undefined);
@@ -94,5 +95,7 @@ export const ModalsActions = {
   openModal,
   closeModal,
 };
-export const ModalsSelectors = modalsSlice.selectors;
+export const ModalsSelectors = {
+  getModal: (state: AppState) => state.present[modalsSlice.reducerPath].modal,
+};
 export default modalsSlice;

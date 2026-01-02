@@ -1,5 +1,6 @@
 import "./index.css";
 
+import { enablePatches } from "immer";
 import { createRoot } from "react-dom/client";
 import { Provider } from "react-redux";
 
@@ -8,6 +9,7 @@ import initProject from "./initProject.ts";
 import ModalContainer from "./modals/@ModalContainer.tsx";
 import store from "./store/store.ts";
 
+void enablePatches();
 void initProject();
 
 createRoot(document.getElementById("root")!).render(

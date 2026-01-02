@@ -1,6 +1,6 @@
 import { createSlice } from "@reduxjs/toolkit";
 
-import type { DistrictView, PatternView } from "../types/types.ts";
+import type { AppState, DistrictView, PatternView } from "../types/types.ts";
 import { hydrateState } from "./@actions.ts";
 
 interface OptionsState {
@@ -39,13 +39,13 @@ const optionsSlice = createSlice({
       hydrateState.fulfilled,
       (_, action) => action.payload.options,
     ),
-  selectors: {
-    getDistrictView: (state) => state.districtView,
-    getPatternView: (state) => state.patternView,
-    getVisibleDistricts: (state) => state.visibleDistricts,
-  },
 });
 
+const getSlice = (state: AppState) => state.present[optionsSlice.reducerPath];
 export const OptionsActions = optionsSlice.actions;
-export const OptionsSelectors = optionsSlice.selectors;
+export const OptionsSelectors = {
+  getDistrictView: (state: AppState) => getSlice(state).districtView,
+  getPatternView: (state: AppState) => getSlice(state).patternView,
+  getVisibleDistricts: (state: AppState) => getSlice(state).visibleDistricts,
+};
 export default optionsSlice;

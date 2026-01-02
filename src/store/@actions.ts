@@ -22,8 +22,9 @@ import {
 import { getDistrictTransforms } from "../utilities/transforms.ts";
 import { invariant, toNumber } from "../utilities/utilities.ts";
 
+export const hydrateStateActionPrefix = "hydrateState";
 export const hydrateState = createAsyncThunk(
-  "hydrateState",
+  hydrateStateActionPrefix,
   async (persistentState: PersistentAppState) => {
     const { districts } = persistentState.district;
     const { nodes } = persistentState.nodes;

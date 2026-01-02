@@ -3,6 +3,7 @@ import type { Middleware, MiddlewareAPI } from "redux";
 import { saveJSON } from "../opfs.ts";
 import type { AppDispatch, AppState } from "../types/types.ts";
 import { getPersistentState } from "./@selectors.ts";
+import { ProjectSelectors } from "./project.ts";
 
 export const persistMiddleware: Middleware =
   (api: MiddlewareAPI<AppDispatch, AppState>) => (next) => (action) => {
@@ -11,8 +12,11 @@ export const persistMiddleware: Middleware =
     const afterState = api.getState();
     const persistentState = getPersistentState(afterState);
 
-    if (afterState.project.name) {
-      void saveJSON(`projects/${afterState.project.name}`, persistentState);
+    if (ProjectSelectors.getProjectName(afterState)) {
+      void saveJSON(
+        `projects/${ProjectSelectors.getProjectName(afterState)}`,
+        persistentState,
+      );
     }
 
     return response;

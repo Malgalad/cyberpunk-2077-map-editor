@@ -10,8 +10,8 @@ import type {
 } from "../types/types.ts";
 import { structuralSharing } from "../utilities/structuralSharing.ts";
 import { projectNodesToDistrict } from "../utilities/transforms.ts";
-import districtSlice from "./district.ts";
-import nodesSlice from "./nodes.ts";
+import districtSlice, { DistrictSelectors } from "./district.ts";
+import nodesSlice, { NodesSelectors } from "./nodes.ts";
 import optionsSlice from "./options.ts";
 import projectSlice from "./project.ts";
 
@@ -35,10 +35,10 @@ export const getInitialState = createSelector(
 
 export const getPersistentState = createSelector(
   [
-    (state: AppState) => state[districtSlice.reducerPath],
-    (state: AppState) => state[nodesSlice.reducerPath],
-    (state: AppState) => state[optionsSlice.reducerPath],
-    (state: AppState) => state[projectSlice.reducerPath],
+    (state: AppState) => state.present[districtSlice.reducerPath],
+    (state: AppState) => state.present[nodesSlice.reducerPath],
+    (state: AppState) => state.present[optionsSlice.reducerPath],
+    (state: AppState) => state.present[projectSlice.reducerPath],
   ],
   (district, nodes, options, project) =>
     ({
@@ -57,16 +57,13 @@ export const getPersistentState = createSelector(
 );
 
 export const getDistrictCache = createSelector(
-  [
-    districtSlice.selectors.getDistrict,
-    nodesSlice.selectors.getChildNodesCache,
-  ],
+  [DistrictSelectors.getDistrict, NodesSelectors.getChildNodesCache],
   (district: District | undefined, cache: GroupNodeCache) =>
     district && cache[district.name],
 );
 
 export const getDistrictNodes = createSelector(
-  [nodesSlice.selectors.getNodes, districtSlice.selectors.getDistrict],
+  [NodesSelectors.getNodes, DistrictSelectors.getDistrict],
   structuralSharing((nodes: MapNode[], district: District | undefined) => {
     if (!district) return emptyArray;
 
@@ -87,16 +84,16 @@ export const getDeletions = createSelector([getDistrictNodes], (nodes) =>
 );
 
 export const getAdditionsTransforms = createSelector(
-  [getAdditions, districtSlice.selectors.getDistrict],
+  [getAdditions, DistrictSelectors.getDistrict],
   projectNodesToDistrict,
 );
 
 export const getUpdatesTransforms = createSelector(
-  [getUpdates, districtSlice.selectors.getDistrict],
+  [getUpdates, DistrictSelectors.getDistrict],
   projectNodesToDistrict,
 );
 
 export const getDeletionsTransforms = createSelector(
-  [getDeletions, districtSlice.selectors.getDistrict],
+  [getDeletions, DistrictSelectors.getDistrict],
   projectNodesToDistrict,
 );

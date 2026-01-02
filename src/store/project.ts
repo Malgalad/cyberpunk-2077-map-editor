@@ -1,7 +1,7 @@
 import { createSlice } from "@reduxjs/toolkit";
 
 import { PROJECT_VERSION } from "../constants.ts";
-import type { Modes, Tool } from "../types/types.ts";
+import type { AppState, Modes, Tool } from "../types/types.ts";
 import { hydrateState } from "./@actions.ts";
 
 interface ProjectState {
@@ -34,13 +34,13 @@ const projectSlice = createSlice({
       hydrateState.fulfilled,
       (_, action) => action.payload.project,
     ),
-  selectors: {
-    getMode: (state) => state.mode,
-    getTool: (state) => state.tool,
-    getProjectName: (state) => state.name,
-  },
 });
 
+const getSlice = (state: AppState) => state.present[projectSlice.reducerPath];
 export const ProjectActions = projectSlice.actions;
-export const ProjectSelectors = projectSlice.selectors;
+export const ProjectSelectors = {
+  getMode: (state: AppState) => getSlice(state).mode,
+  getTool: (state: AppState) => getSlice(state).tool,
+  getProjectName: (state: AppState) => getSlice(state).name,
+};
 export default projectSlice;

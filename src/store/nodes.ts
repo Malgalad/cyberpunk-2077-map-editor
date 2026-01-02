@@ -3,11 +3,16 @@ import {
   createSlice,
   prepareAutoBatched,
 } from "@reduxjs/toolkit";
-import { produce, type WritableDraft } from "immer";
+import { type Patch, produceWithPatches, type WritableDraft } from "immer";
 import { nanoid } from "nanoid";
 
 import { TEMPLATE_ID } from "../constants.ts";
-import type { AppThunkAction, MapNode, MapNodeUri } from "../types/types.ts";
+import type {
+  AppState,
+  AppThunkAction,
+  MapNode,
+  MapNodeUri,
+} from "../types/types.ts";
 import {
   cloneNode,
   createGroupNodesCache,
@@ -99,9 +104,9 @@ const nodesSlice = createSlice({
       if (selectAfterClone) state.editingId = clones[0].id;
     }),
     editNode: create.preparedReducer(
-      prepareAutoBatched<MapNode>(),
+      prepareAutoBatched<{ node: MapNode; patches: Patch[] }>(),
       (state, action) => {
-        const next = action.payload;
+        const { node: next } = action.payload;
         const index = state.nodes.findIndex((node) => node.id === next.id);
         const previous = state.nodes[index];
 
@@ -188,57 +193,6 @@ const nodesSlice = createSlice({
           }
         }
       }),
-  selectors: {
-    getNodes: (state) => state.nodes,
-    getSelectedNodeIds: structuralSharing((state): string[] => {
-      const selected = state.editingId;
-      if (selected == null) return [];
-      if (Array.isArray(selected)) return selected;
-      return [selected];
-    }),
-    getNodeUris: createSelector(
-      [
-        (sliceState: NodesState): MapNode[] =>
-          nodesSlice.getSelectors().getNodes(sliceState),
-      ],
-      structuralSharing((nodes: MapNode[]): MapNodeUri[] =>
-        nodes.map(({ id, type, tag, parent, errors }) => ({
-          id,
-          type,
-          tag,
-          parent,
-          hasErrors: !!errors,
-        })),
-      ),
-    ),
-    getChildNodesCache: createSelector(
-      [
-        (sliceState: NodesState): MapNodeUri[] =>
-          nodesSlice.getSelectors().getNodeUris(sliceState),
-      ],
-      structuralSharing(createGroupNodesCache),
-    ),
-    getSelectedNodes: createSelector(
-      [
-        (sliceState: NodesState): string[] =>
-          nodesSlice.getSelectors().getSelectedNodeIds(sliceState),
-        (sliceState: NodesState): MapNode[] =>
-          nodesSlice.getSelectors().getNodes(sliceState),
-      ],
-      structuralSharing((selected: string[], nodes: MapNode[]): MapNode[] =>
-        nodes.filter((node) => selected.includes(node.id)),
-      ),
-    ),
-    getTemplateNodes: createSelector(
-      [
-        (sliceState: NodesState): MapNode[] =>
-          nodesSlice.getSelectors().getNodes(sliceState),
-      ],
-      structuralSharing((nodes: MapNode[]) =>
-        nodes.filter((node) => node.parent === TEMPLATE_ID),
-      ),
-    ),
-  },
 });
 
 const patchNode =
@@ -248,18 +202,18 @@ const patchNode =
   ): AppThunkAction =>
   (dispatch, getState) => {
     const state = getState();
-    const nodes = nodesSlice.selectors.getNodes(state);
+    const nodes = NodesSelectors.getNodes(state);
     const selectedNode = nodes.find((node) => node.id === id);
     const district = DistrictSelectors.getDistrict(state);
-    const cache = nodesSlice.selectors.getChildNodesCache(state);
+    const cache = NodesSelectors.getChildNodesCache(state);
     const map = new Map(nodes.map((node) => [node.id, parseNode(node)]));
 
     if (!selectedNode || !district) return;
 
-    const update = produce(selectedNode, callback);
+    const [update, patches] = produceWithPatches(selectedNode, callback);
     const validated = validateNode(update, map, district);
 
-    dispatch(nodesSlice.actions.editNode(validated));
+    dispatch(nodesSlice.actions.editNode({ node: validated, patches }));
 
     if (selectedNode.type === "group") {
       const groupIndex = cache[selectedNode.id];
@@ -271,7 +225,9 @@ const patchNode =
         const validated = validateNode(child!, map, district);
 
         if (validated !== child) {
-          dispatch(nodesSlice.actions.editNode(validated));
+          dispatch(
+            nodesSlice.actions.editNode({ node: validated, patches: [] }),
+          );
         }
       }
     }
@@ -280,8 +236,8 @@ const deleteNodesDeep =
   (ids: MapNode["id"][]): AppThunkAction =>
   (dispatch, getState) => {
     const state = getState();
-    const nodes = nodesSlice.selectors.getNodes(state);
-    const cache = nodesSlice.selectors.getChildNodesCache(state);
+    const nodes = NodesSelectors.getNodes(state);
+    const cache = NodesSelectors.getChildNodesCache(state);
     const idsFull: string[] = [];
 
     for (const id of ids) {
@@ -301,10 +257,50 @@ const deleteNodesDeep =
     dispatch(nodesSlice.actions.deleteNodes(idsFull));
   };
 
+const getSlice = (state: AppState) => state.present[nodesSlice.reducerPath];
 export const NodesActions = {
   ...nodesSlice.actions,
   patchNode,
   deleteNodesDeep,
 };
-export const NodesSelectors = nodesSlice.selectors;
+export const NodesSelectors = {
+  getNodes: (state: AppState) => getSlice(state).nodes,
+  getSelectedNodeIds: structuralSharing((state: AppState): string[] => {
+    const selected = getSlice(state).editingId;
+    if (selected == null) return [];
+    if (Array.isArray(selected)) return selected;
+    return [selected];
+  }),
+  getNodeUris: createSelector(
+    [(state: AppState): MapNode[] => NodesSelectors.getNodes(state)],
+    structuralSharing((nodes: MapNode[]): MapNodeUri[] =>
+      nodes.map(({ id, type, tag, parent, errors }) => ({
+        id,
+        type,
+        tag,
+        parent,
+        hasErrors: !!errors,
+      })),
+    ),
+  ),
+  getChildNodesCache: createSelector(
+    [(state: AppState): MapNodeUri[] => NodesSelectors.getNodeUris(state)],
+    structuralSharing(createGroupNodesCache),
+  ),
+  getSelectedNodes: createSelector(
+    [
+      (state: AppState): string[] => NodesSelectors.getSelectedNodeIds(state),
+      (state: AppState): MapNode[] => NodesSelectors.getNodes(state),
+    ],
+    structuralSharing((selected: string[], nodes: MapNode[]): MapNode[] =>
+      nodes.filter((node) => selected.includes(node.id)),
+    ),
+  ),
+  getTemplateNodes: createSelector(
+    [(state: AppState): MapNode[] => NodesSelectors.getNodes(state)],
+    structuralSharing((nodes: MapNode[]) =>
+      nodes.filter((node) => node.parent === TEMPLATE_ID),
+    ),
+  ),
+};
 export default nodesSlice;

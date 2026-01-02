@@ -132,13 +132,13 @@ export type PersistentAppState = {
     districts: DistrictProperties[];
     current: string | null;
   };
-  nodes: AppState["nodes"];
-  options: AppState["options"];
-  project: AppState["project"];
+  nodes: AppState["present"]["nodes"];
+  options: AppState["present"]["options"];
+  project: AppState["present"]["project"];
 };
 export type RevivedAppState = {
-  district: AppState["district"];
-  nodes: AppState["nodes"];
-  options: AppState["options"];
-  project: AppState["project"];
+  district: AppState["present"]["district"];
+  nodes: AppState["present"]["nodes"];
+  options: AppState["present"]["options"];
+  project: AppState["present"]["project"];
 };
