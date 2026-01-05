@@ -119,6 +119,12 @@ const nodesSlice = createSlice({
         }
       },
     ),
+    editNodes: create.reducer<MapNode[]>((state, action) => {
+      for (const node of action.payload) {
+        const index = state.nodes.findIndex((n) => n.id === node.id);
+        state.nodes.splice(index, 1, node);
+      }
+    }),
     deleteNodes: create.reducer<string[]>((state, action) => {
       state.nodes = state.nodes.filter(
         (node) => !action.payload.includes(node.id),

@@ -15,10 +15,11 @@ import type {
 import { cloneNode, mirrorNode, nodeToTransform, parseNode } from "./nodes.ts";
 import { invariant, toNumber, toString } from "./utilities.ts";
 
+type Tuple3<T> = [T, T, T];
+const toTuple3 = <T>(array: T[]) => array.slice(0, 3) as Tuple3<T>;
+
 const toQuaternion = (rotation: THREE.Vector3Tuple | THREE.EulerTuple) =>
   new THREE.Quaternion().setFromEuler(new THREE.Euler().fromArray(rotation));
-const fromEuler = (rotation: THREE.Euler) =>
-  rotation.toArray().slice(0, 3) as THREE.Vector3Tuple;
 const hadamardProduct = (a: number[], b: number[]) =>
   a.map((x, i) => x * (b[i] ?? 0));
 const addTuples = (a: THREE.Vector3Tuple, b: number[]) =>
@@ -36,22 +37,18 @@ export function applyParentTransform<Node extends TransformParsed>(
   const object = new THREE.Object3D();
 
   object.position.fromArray(hadamardProduct(node.position, parent.scale));
-  object.position.add(parentPosition);
   object.rotation.fromArray(node.rotation);
-  object.scale.fromArray(node.scale);
+  object.scale.fromArray(hadamardProduct(node.scale, parent.scale));
 
   object.applyQuaternion(parentRotation);
-  object.position.sub(parentPosition);
   object.position.applyQuaternion(parentRotation);
   object.position.add(parentPosition);
-
-  const scale = hadamardProduct(node.scale, parent.scale);
 
   return {
     ...node,
     position: object.position.toArray(),
-    rotation: fromEuler(object.rotation),
-    scale,
+    rotation: toTuple3(object.rotation.toArray()),
+    scale: object.scale.toArray(),
   };
 }
 
@@ -182,15 +179,17 @@ export function transformToNode(
     transform.position.y * minMax.y + origin.y,
     transform.position.z * minMax.z + origin.z,
   ].map(toString) as MapNode["position"];
-  const rotation = fromEuler(
-    new THREE.Euler().setFromQuaternion(
-      new THREE.Quaternion(
-        transform.orientation.x,
-        transform.orientation.y,
-        transform.orientation.z,
-        transform.orientation.w,
-      ),
-    ),
+  const rotation = toTuple3(
+    new THREE.Euler()
+      .setFromQuaternion(
+        new THREE.Quaternion(
+          transform.orientation.x,
+          transform.orientation.y,
+          transform.orientation.z,
+          transform.orientation.w,
+        ),
+      )
+      .toArray(),
   )
     .map((angle) => THREE.MathUtils.radToDeg(angle as number))
     .map(toString) as MapNode["rotation"];

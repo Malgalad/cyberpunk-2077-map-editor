@@ -77,13 +77,14 @@ function EditNodeProperties({ selected, mode }: EditNodePropertiesProps) {
 
   const onHide = () => {
     if (selected.length === 0) return;
+    const updates: MapNode[] = [];
     for (const node of selected) {
-      dispatch(
-        NodesActions.patchNode(node.id, (draft) => {
-          draft.hidden = !draft.hidden;
-        }),
-      );
+      updates.push({
+        ...node,
+        hidden: !node.hidden,
+      });
     }
+    dispatch(NodesActions.editNodes(updates));
   };
 
   useGlobalShortcuts("KeyH", onHide);
@@ -98,9 +99,7 @@ function EditNodeProperties({ selected, mode }: EditNodePropertiesProps) {
           value={node.label}
           onChange={(event) => {
             dispatch(
-              NodesActions.patchNode(node.id, (draft) => {
-                draft.label = event.target.value;
-              }),
+              NodesActions.editNodes([{ ...node, label: event.target.value }]),
             );
           }}
         />
@@ -123,30 +122,28 @@ function EditNodeProperties({ selected, mode }: EditNodePropertiesProps) {
             const map = new Map(
               nodes.map((node) => [node.id, parseNode(node)]),
             );
+            const updates: MapNode[] = [];
+
             for (const node of selected) {
               const twig = transplantNode(map, node, parent);
 
-              dispatch(
-                NodesActions.patchNode(node.id, (draft) => {
-                  draft.parent = twig.parent;
-                  draft.district = twig.district;
-                  draft.position = twig.position;
-                  draft.rotation = twig.rotation;
-                  draft.scale = twig.scale;
-                }),
-              );
-              if (node.type === "group") {
+              updates.push(twig);
+
+              if (node.type === "group" && node.district !== twig.district) {
                 const children = cache[node.id]?.nodes ?? [];
 
                 for (const childId of children) {
-                  dispatch(
-                    NodesActions.patchNode(childId, (draft) => {
-                      draft.district = twig.district;
-                    }),
-                  );
+                  const child = nodes.find((n) => n.id === childId)!;
+
+                  updates.push({
+                    ...child,
+                    district: twig.district,
+                  });
                 }
               }
             }
+
+            dispatch(NodesActions.editNodes(updates));
           }}
           value={node.parent}
         />
