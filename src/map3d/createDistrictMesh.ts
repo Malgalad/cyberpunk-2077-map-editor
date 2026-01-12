@@ -108,6 +108,7 @@ export function createDistrictMesh(
   );
 
   if (needsUpdate) mesh.instanceMatrix.needsUpdate = true;
+  if (needsUpdate) mesh.computeBoundingSphere();
   if (!color) mesh.setColorAt(0, new THREE.Color(0xffffff));
 
   return mesh;
