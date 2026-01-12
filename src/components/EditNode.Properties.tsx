@@ -7,10 +7,12 @@ import {
   useAppDispatch,
   useAppSelector,
   useForceUpdate,
-  useGlobalShortcuts,
   usePreviousValue,
 } from "../hooks/hooks.ts";
-import { useInvalidateTransformsCache } from "../hooks/nodes.hooks.ts";
+import {
+  useHideNode,
+  useInvalidateTransformsCache,
+} from "../hooks/nodes.hooks.ts";
 import { useMap3D } from "../map3d/map3d.context.ts";
 import { DistrictSelectors } from "../store/district.ts";
 import { ModalsActions } from "../store/modals.ts";
@@ -50,6 +52,8 @@ function EditNodeProperties({ selected, mode }: EditNodePropertiesProps) {
   const [copy, setCopy] = React.useState<MapNodeV2["position"]>([0, 0, 0]);
   const node = nodes[selected[0]];
 
+  const onHide = useHideNode(selected);
+
   React.useEffect(() => {
     if (useLocal && !wasLocal) {
       setCopy(node.position);
@@ -63,23 +67,6 @@ function EditNodeProperties({ selected, mode }: EditNodePropertiesProps) {
     // Force update so that input step update
     return map3d.onZoomChange(forceUpdate);
   }, [map3d, forceUpdate]);
-
-  const onHide = () => {
-    if (!selected.length) return;
-    const updates: MapNodeV2[] = [];
-    for (const id of selected) {
-      const node = nodes[id];
-
-      updates.push({
-        ...node,
-        hidden: !node.hidden,
-      });
-    }
-    invalidate(selected);
-    dispatch(NodesActions.editNodes(updates));
-  };
-
-  useGlobalShortcuts("KeyH", onHide);
 
   const labelSelector = (
     <>

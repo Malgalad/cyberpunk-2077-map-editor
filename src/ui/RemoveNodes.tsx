@@ -4,12 +4,12 @@ import Button from "../components/common/Button.tsx";
 import Tooltip from "../components/common/Tooltip.tsx";
 import EditNode from "../components/EditNode.tsx";
 import Node from "../components/Node.tsx";
-import { useAppSelector, useGlobalShortcuts } from "../hooks/hooks.ts";
+import { useAppSelector } from "../hooks/hooks.ts";
 import {
   useAddNode,
+  useChangeNodeTag,
   useDeleteNode,
   useDeselectNode,
-  useTransferNode,
 } from "../hooks/nodes.hooks.ts";
 import { DistrictSelectors } from "../store/district.ts";
 import { NodesSelectors } from "../store/nodesV2.ts";
@@ -25,9 +25,7 @@ function RemoveNodes() {
   const onDeselect = useDeselectNode();
   const onDelete = useDeleteNode(selected);
   const onAddGroup = useAddNode("group", "delete");
-  const onTransfer = useTransferNode(nodes[selected[0]]);
-
-  useGlobalShortcuts("Delete", onDelete);
+  const onTransfer = useChangeNodeTag(nodes[selected[0]]);
 
   if (!district) return null;
 

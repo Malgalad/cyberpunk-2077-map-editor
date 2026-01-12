@@ -10,6 +10,7 @@ import {
   useDrawUpdates,
   useInitMap3D,
   useMap3DEvents,
+  useShortcuts,
 } from "./App.hooks.ts";
 import Button from "./components/common/Button.tsx";
 import Tooltip from "./components/common/Tooltip.tsx";
@@ -26,6 +27,7 @@ function App() {
   const map3d = useInitMap3D(canvasRef);
   const tool = useAppSelector(ProjectSelectors.getTool);
 
+  useShortcuts(map3d);
   useDrawAllDistricts(map3d);
   useDrawCurrentDistrict(map3d);
   useDrawAdditions(map3d);
@@ -47,14 +49,12 @@ function App() {
             <Tooltip tooltip="Reset camera [R]" flow="right">
               <Button
                 className="absolute! bg-slate-800 left-4 top-4"
-                onClick={() => {
-                  map3d?.resetCamera();
-                }}
-                shortcut="KeyR"
+                onClick={() => map3d?.resetCamera()}
               >
                 <BoxIcon />
               </Button>
             </Tooltip>
+
             <ToolSelection />
           </div>
         </div>

@@ -21,7 +21,6 @@ function ToolSelection() {
         aria-selected={tool === "move"}
         className={clsx("tooltip")}
         onClick={() => void dispatch(ProjectActions.setTool("move"))}
-        shortcut="KeyW"
         data-tooltip="Move [W]"
         data-flow="top"
       >
@@ -31,7 +30,6 @@ function ToolSelection() {
         aria-selected={tool === "select"}
         className="tooltip"
         onClick={() => void dispatch(ProjectActions.setTool("select"))}
-        shortcut="KeyS"
         data-tooltip="Select [S]"
         data-flow="top"
       >

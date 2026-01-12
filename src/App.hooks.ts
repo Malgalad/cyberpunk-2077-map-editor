@@ -1,16 +1,25 @@
 import { nanoid } from "nanoid";
 import * as React from "react";
+import { ActionCreators } from "redux-undo";
 
-import { useAppDispatch, useAppSelector, useAppStore } from "./hooks/hooks.ts";
 import {
-  getParent,
+  useAppDispatch,
+  useAppSelector,
+  useAppStore,
+  useGlobalShortcuts,
+} from "./hooks/hooks.ts";
+import { useSaveProject } from "./hooks/importExport.ts";
+import {
+  useDeleteNode,
+  useDeselectNode,
+  useHideNode,
   useInvalidateTransformsCache,
 } from "./hooks/nodes.hooks.ts";
 import { Map3D } from "./map3d/map3d.ts";
 import { DistrictSelectors } from "./store/district.ts";
 import { NodesActions, NodesSelectors } from "./store/nodesV2.ts";
 import { OptionsSelectors } from "./store/options.ts";
-import { ProjectSelectors } from "./store/project.ts";
+import { ProjectActions, ProjectSelectors } from "./store/project.ts";
 import type {
   District,
   DistrictWithTransforms,
@@ -21,7 +30,7 @@ import {
   getFinalDistrictTransformsFromNodes,
   immutableDistrictTransforms,
 } from "./utilities/district.ts";
-import { transplantNode } from "./utilities/nodes.ts";
+import { getParent, transplantNode } from "./utilities/nodes.ts";
 import {
   applyTransforms,
   projectNodesToDistrict,
@@ -49,6 +58,63 @@ export function useInitMap3D(ref: React.RefObject<HTMLCanvasElement | null>) {
   }, [ref, store]);
 
   return map3d;
+}
+
+export function useShortcuts(map3d: Map3D | null) {
+  const dispatch = useAppDispatch();
+  const projectName = useAppSelector(ProjectSelectors.getProjectName);
+  const district = useAppSelector(DistrictSelectors.getDistrict);
+  const selected = useAppSelector(NodesSelectors.getSelectedNodes);
+  const hasPast = useAppSelector((state) => state.past.length > 0);
+  const hasFuture = useAppSelector((state) => state.future.length > 0);
+
+  const deselectNode = useDeselectNode();
+  const hideNode = useHideNode(selected);
+  const deleteNode = useDeleteNode(selected);
+  const saveProject = useSaveProject();
+
+  useGlobalShortcuts("KeyW", () => dispatch(ProjectActions.setTool("move")));
+  useGlobalShortcuts("KeyS", () => dispatch(ProjectActions.setTool("select")));
+
+  useGlobalShortcuts("KeyA", () => {
+    dispatch(ProjectActions.setMode("create"));
+    deselectNode();
+  });
+  useGlobalShortcuts(
+    "KeyE",
+    () => {
+      dispatch(ProjectActions.setMode("update"));
+      deselectNode();
+    },
+    district?.isCustom,
+  );
+  useGlobalShortcuts(
+    "KeyD",
+    () => {
+      dispatch(ProjectActions.setMode("delete"));
+      deselectNode();
+    },
+    district?.isCustom,
+  );
+
+  useGlobalShortcuts("KeyR", () => map3d?.resetCamera());
+  useGlobalShortcuts("Shift+KeyR", () => map3d?.lookAtCurrentDistrict());
+
+  useGlobalShortcuts("Escape", () => deselectNode(), !selected.length);
+  useGlobalShortcuts("KeyH", () => hideNode(), !selected.length);
+  useGlobalShortcuts("Delete", () => deleteNode(), !selected.length);
+
+  useGlobalShortcuts(
+    "Control+KeyZ",
+    () => dispatch(ActionCreators.undo()),
+    !hasPast,
+  );
+  useGlobalShortcuts(
+    "Control+Shift+KeyZ",
+    () => dispatch(ActionCreators.redo()),
+    !hasFuture,
+  );
+  useGlobalShortcuts("Control+Shift+KeyS", () => saveProject(), !projectName);
 }
 
 export function useDrawAllDistricts(map3d: Map3D | null) {
@@ -138,12 +204,6 @@ export function useDrawCurrentDistrict(map3d: Map3D | null) {
       map3d.setCurrentDistrict({ district, transforms: baseTransforms });
     }
   }, [map3d, district, store, root]);
-
-  React.useEffect(() => {
-    if (!map3d || !district) return;
-
-    map3d.lookAtCurrentDistrict();
-  }, [map3d, district]);
 
   React.useEffect(() => {
     if (!map3d || project) return;

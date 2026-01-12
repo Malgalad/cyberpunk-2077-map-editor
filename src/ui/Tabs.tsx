@@ -1,10 +1,5 @@
 import Button from "../components/common/Button.tsx";
-// import Tooltip from "../components/common/Tooltip.tsx";
-import {
-  useAppDispatch,
-  useAppSelector,
-  useGlobalShortcuts,
-} from "../hooks/hooks.ts";
+import { useAppDispatch, useAppSelector } from "../hooks/hooks.ts";
 import { DistrictSelectors } from "../store/district.ts";
 import { NodesActions } from "../store/nodesV2.ts";
 import { ProjectActions, ProjectSelectors } from "../store/project.ts";
@@ -14,21 +9,10 @@ import AddNodes from "./AddNodes.tsx";
 import RemoveNodes from "./RemoveNodes.tsx";
 import UpdateNodes from "./UpdateNodes.tsx";
 
-// const formatLength = (length: number) =>
-//   length > 100 ? (
-//     <Tooltip tooltip={`${length}`} flow="bottom">
-//       <span>99+</span>
-//     </Tooltip>
-//   ) : (
-//     length
-//   );
-
 function Tabs() {
   const mode = useAppSelector(ProjectSelectors.getMode);
   const district = useAppSelector(DistrictSelectors.getDistrict);
   const dispatch = useAppDispatch();
-
-  useGlobalShortcuts("Escape", () => dispatch(NodesActions.selectNode(null)));
 
   const changeMode = (mode: Modes) => () => {
     dispatch(ProjectActions.setMode(mode));
@@ -46,17 +30,11 @@ function Tabs() {
           )}
           onClick={changeMode("create")}
           disabled={!district}
-          shortcut="KeyA"
         >
           <div className="flex flex-row gap-1.5 items-baseline whitespace-nowrap">
             <span>
               Cre<span className="underline">a</span>te nodes
             </span>
-            {/*(cache?.additions.length ?? 0) > 0 && (
-              <span className="text-green-400 text-sm">
-                {formatLength(cache!.additions.length)}
-              </span>
-            )*/}
           </div>
         </Button>
 
@@ -68,17 +46,11 @@ function Tabs() {
           )}
           onClick={changeMode("update")}
           disabled={!district || district.isCustom}
-          shortcut="KeyE"
         >
           <div className="flex flex-row gap-1.5 items-baseline whitespace-nowrap">
             <span>
               Updat<span className="underline">e</span> nodes
             </span>
-            {/*(cache?.updates.length ?? 0) > 0 && (
-              <span className="text-yellow-400 text-sm">
-                {formatLength(cache!.updates.length)}
-              </span>
-            )*/}
           </div>
         </Button>
 
@@ -90,17 +62,11 @@ function Tabs() {
           )}
           onClick={changeMode("delete")}
           disabled={!district || district.isCustom}
-          shortcut="KeyD"
         >
           <div className="flex flex-row gap-1.5 items-baseline whitespace-nowrap">
             <span>
               <span className="underline">D</span>elete nodes
             </span>
-            {/*(cache?.deletions.length ?? 0) > 0 && (
-              <span className="text-red-400 text-sm">
-                {formatLength(cache!.deletions.length)}
-              </span>
-            )*/}
           </div>
         </Button>
       </div>

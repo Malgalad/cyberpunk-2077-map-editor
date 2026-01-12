@@ -12,11 +12,11 @@ import Dropdown from "../components/common/Dropdown/Dropdown.tsx";
 import Tooltip from "../components/common/Tooltip.tsx";
 import { TEMPLATE_ID } from "../constants.ts";
 import { useAppDispatch, useAppSelector } from "../hooks/hooks.ts";
-import { getParent } from "../hooks/nodes.hooks.ts";
 import { useMap3D } from "../map3d/map3d.context.ts";
 import { DistrictSelectors } from "../store/district.ts";
 import { ModalsActions } from "../store/modals.ts";
 import { NodesActions, NodesSelectors } from "../store/nodesV2.ts";
+import { getParent } from "../utilities/nodes.ts";
 import { toTuple3 } from "../utilities/utilities.ts";
 
 function AddNodesTemplates() {

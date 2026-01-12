@@ -18,11 +18,7 @@ import DropdownItem from "../components/common/Dropdown/Dropdown.Item.tsx";
 import DropdownSeparator from "../components/common/Dropdown/Dropdown.Separator.tsx";
 import Dropdown from "../components/common/Dropdown/Dropdown.tsx";
 import Tooltip from "../components/common/Tooltip.tsx";
-import {
-  useAppDispatch,
-  useAppSelector,
-  useGlobalShortcuts,
-} from "../hooks/hooks.ts";
+import { useAppDispatch, useAppSelector } from "../hooks/hooks.ts";
 import {
   useExportDDS,
   useImportDDS,
@@ -48,18 +44,6 @@ function Menu() {
   const saveProject = useSaveProject();
   const hasPast = useAppSelector((state) => state.past.length > 0);
   const hasFuture = useAppSelector((state) => state.future.length > 0);
-
-  useGlobalShortcuts(
-    "Control+KeyZ",
-    () => dispatch(ActionCreators.undo()),
-    !hasPast,
-  );
-  useGlobalShortcuts(
-    "Control+Shift+KeyZ",
-    () => dispatch(ActionCreators.redo()),
-    !hasFuture,
-  );
-  useGlobalShortcuts("Control+Shift+KeyS", () => saveProject(), !projectName);
 
   return (
     <div className="flex flex-row justify-between px-2">

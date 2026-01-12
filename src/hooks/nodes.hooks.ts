@@ -6,13 +6,10 @@ import { ModalsActions } from "../store/modals.ts";
 import { NodesActions, NodesSelectors } from "../store/nodesV2.ts";
 import { ProjectActions } from "../store/project.ts";
 import type { MapNodeV2, Modes, NodesIndex, Plane } from "../types/types.ts";
+import { getParent } from "../utilities/nodes.ts";
 import { invalidateCachedTransforms } from "../utilities/transforms.ts";
 import { toTuple3 } from "../utilities/utilities.ts";
 import { useAppDispatch, useAppSelector, useAppStore } from "./hooks.ts";
-
-export function getParent(node?: MapNodeV2) {
-  return node ? (node.type === "group" ? node.id : node.parent) : null;
-}
 
 export function useFocusNode(node: MapNodeV2) {
   const selected = useAppSelector(NodesSelectors.getSelectedNodes);
@@ -55,7 +52,7 @@ export function useCloneNode(node?: MapNodeV2) {
   );
 }
 
-export function useTransferNode(node?: MapNodeV2) {
+export function useChangeNodeTag(node?: MapNodeV2) {
   const dispatch = useAppDispatch();
   const invalidate = useInvalidateTransformsCache();
 
@@ -70,27 +67,27 @@ export function useTransferNode(node?: MapNodeV2) {
   );
 }
 
-export function useDeleteNode(selectedNodes: string[]) {
+export function useDeleteNode(selected: string[]) {
   const dispatch = useAppDispatch();
   const nodes = useAppSelector(NodesSelectors.getNodes);
   const invalidate = useInvalidateTransformsCache();
 
   return React.useCallback(async () => {
-    if (selectedNodes.length === 0) return;
+    if (selected.length === 0) return;
 
     const message =
-      selectedNodes.length > 1
-        ? `Do you want to delete ${selectedNodes.length} nodes?`
-        : `Do you want to delete node "${nodes[selectedNodes[0]].label}"?`;
+      selected.length > 1
+        ? `Do you want to delete ${selected.length} nodes?`
+        : `Do you want to delete node "${nodes[selected[0]].label}"?`;
     const confirmed = await dispatch(
       ModalsActions.openModal("confirm", message),
     );
 
     if (confirmed) {
-      invalidate(selectedNodes);
-      dispatch(NodesActions.deleteNodesDeep(selectedNodes));
+      invalidate(selected);
+      dispatch(NodesActions.deleteNodesDeep(selected));
     }
-  }, [dispatch, selectedNodes, nodes, invalidate]);
+  }, [dispatch, selected, nodes, invalidate]);
 }
 
 export function useAddNode(type: MapNodeV2["type"], tag: MapNodeV2["tag"]) {
@@ -148,6 +145,27 @@ export function useMirrorNode(node?: MapNodeV2) {
     },
     [dispatch, node, invalidate],
   );
+}
+
+export function useHideNode(selected: string[]) {
+  const dispatch = useAppDispatch();
+  const invalidate = useInvalidateTransformsCache();
+  const nodes = useAppSelector(NodesSelectors.getNodes);
+
+  return React.useCallback(() => {
+    if (!selected.length) return;
+    const updates: MapNodeV2[] = [];
+    for (const id of selected) {
+      const node = nodes[id];
+
+      updates.push({
+        ...node,
+        hidden: !node.hidden,
+      });
+    }
+    invalidate(selected);
+    dispatch(NodesActions.editNodes(updates));
+  }, [dispatch, invalidate, selected, nodes]);
 }
 
 const getNodeAncestors = (index: NodesIndex, node: MapNodeV2) => {

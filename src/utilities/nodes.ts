@@ -162,3 +162,7 @@ export function transplantNode(
     rotation: toTuple3(object.rotation.toArray() as number[]),
   };
 }
+
+export function getParent(node?: MapNodeV2) {
+  return node ? (node.type === "group" ? node.id : node.parent) : null;
+}

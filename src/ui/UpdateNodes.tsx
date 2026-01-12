@@ -9,13 +9,13 @@ import Button from "../components/common/Button.tsx";
 import Tooltip from "../components/common/Tooltip.tsx";
 import EditNode from "../components/EditNode.tsx";
 import Node from "../components/Node.tsx";
-import { useAppSelector, useGlobalShortcuts } from "../hooks/hooks.ts";
+import { useAppSelector } from "../hooks/hooks.ts";
 import {
   useAddNode,
+  useChangeNodeTag,
   useCloneNode,
   useDeleteNode,
   useDeselectNode,
-  useTransferNode,
 } from "../hooks/nodes.hooks.ts";
 import { DistrictSelectors } from "../store/district.ts";
 import { NodesSelectors } from "../store/nodesV2.ts";
@@ -34,7 +34,7 @@ function UpdateNodes() {
   const onDelete = useDeleteNode(selected);
   const onClone = useCloneNode(nodes[selected[0]]);
   const onAddGroup = useAddNode("group", "update");
-  const onTransfer = useTransferNode(nodes[selected[0]]);
+  const onTransfer = useChangeNodeTag(nodes[selected[0]]);
 
   const onEditAsNew = () => {
     if (selected.length !== 1) return;
@@ -44,8 +44,6 @@ function UpdateNodes() {
     onTransfer("delete", "create");
     onClone({ tag: "create", position, indexInDistrict: undefined });
   };
-
-  useGlobalShortcuts("Delete", onDelete);
 
   if (!district) return null;
 

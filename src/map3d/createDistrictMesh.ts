@@ -54,23 +54,25 @@ export function createDistrictMesh(
   let needsUpdate = false;
 
   for (let index = 0; index < instances.length; index++) {
-    if (instances[index] === mesh.userData.instances[index]) continue;
+    const instance = instances[index];
+
+    if (instance === mesh.userData.instances[index]) continue;
 
     const position = new THREE.Vector3(
-      instances[index].position.x,
-      instances[index].position.z,
-      -instances[index].position.y,
+      instance.position.x,
+      instance.position.z,
+      -instance.position.y,
     );
     const rotation = new THREE.Quaternion(
-      instances[index].orientation.x,
-      instances[index].orientation.z,
-      -instances[index].orientation.y,
-      instances[index].orientation.w,
+      instance.orientation.x,
+      instance.orientation.z,
+      -instance.orientation.y,
+      instance.orientation.w,
     );
     const scale = new THREE.Vector3(
-      instances[index].scale.x,
-      instances[index].scale.z,
-      instances[index].scale.y,
+      instance.scale.x,
+      instance.scale.z,
+      instance.scale.y,
     );
 
     needsUpdate = true;
@@ -85,7 +87,7 @@ export function createDistrictMesh(
     index++
   ) {
     const position = new THREE.Vector3(0, 0, 0);
-    const rotation = new THREE.Quaternion(0, 0, 0);
+    const rotation = new THREE.Quaternion(0, 0, 0, 0);
     const scale = new THREE.Vector3(0, 0, 0);
 
     needsUpdate = true;
@@ -94,10 +96,10 @@ export function createDistrictMesh(
     if (color) mesh.setColorAt(index, color);
   }
 
-  const ids = instances.map(({ id, originId }) => originId || id);
+  const originIds = instances.map(({ id, originId }) => originId || id);
   mesh.userData.district = district.name;
   mesh.userData.instances = instances;
-  mesh.userData.ids = ids.reduce(
+  mesh.userData.ids = originIds.reduce(
     (acc, id, index) => {
       acc[id] = (acc[id] || []).concat(index);
       return acc;

@@ -44,16 +44,14 @@ export class Map3D extends Map3DBase {
   #updates: THREE.InstancedMesh | null = null;
   #deletions: THREE.InstancedMesh | null = null;
   #selected: string[] = [];
-  #prevSelected: string[] = [];
   #canvasRect: DOMRect | null = null;
   #pointer: THREE.Vector2 = new THREE.Vector2(1, 1);
   #startedPointingAt: [InstancedMeshTransforms, THREE.InstancedMesh] | null =
     null;
   #pointingAt: [InstancedMeshTransforms, THREE.InstancedMesh] | null = null;
-  #prevPointingAt: [InstancedMeshTransforms, THREE.InstancedMesh] | null = null;
   #helper = new AxesHelper(50);
   #markers: string[] = [];
-  #prevMode: Modes = "create";
+  #previousHighlights: Array<[THREE.InstancedMesh, string, THREE.Color]> = [];
 
   constructor(canvas: HTMLCanvasElement, store: AppStore) {
     super(canvas);
@@ -263,44 +261,26 @@ export class Map3D extends Map3DBase {
       if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
     };
 
-    if (meshes[this.#prevMode]) {
-      if (this.#prevSelected !== this.#selected) {
-        const prevMesh = meshes[this.#prevMode]!;
-
-        for (const id of this.#prevSelected) {
-          const color = getIdleColor(prevMesh, id, this.#prevMode);
-          setColorForId(prevMesh, id, color);
-        }
-
-        if (this.#prevMode === "create" && this.#additionsVirtual) {
-          const prevMesh = this.#additionsVirtual;
-
-          for (const id of this.#prevSelected) {
-            if (!prevMesh.userData.ids[id]) continue;
-            const color = getIdleColor(prevMesh, id, this.#prevMode);
-            setColorForId(prevMesh, id, color);
-          }
-        }
-      }
-
-      if (
-        this.#prevPointingAt !== this.#pointingAt &&
-        this.#prevPointingAt !== null
-      ) {
-        const [{ id }, prevMesh] = this.#prevPointingAt;
-        if (this.#selected.includes(id)) return;
-        const color = getIdleColor(prevMesh, id, this.#prevMode);
-        setColorForId(prevMesh, id, color);
-      }
+    for (const previous of this.#previousHighlights) {
+      const [mesh, id, color] = previous;
+      setColorForId(mesh, id, color);
     }
 
+    this.#previousHighlights = [];
+
     if (meshes[mode]) {
-      if (this.#prevSelected !== this.#selected) {
+      if (this.#selected.length) {
         const mesh = meshes[mode]!;
 
         for (const id of this.#selected) {
           const color = getSelectedColor(id, mode);
           setColorForId(mesh, id, color);
+
+          this.#previousHighlights.push([
+            mesh,
+            id,
+            getIdleColor(mesh, id, mode),
+          ]);
         }
 
         if (mode === "create" && this.#additionsVirtual) {
@@ -310,24 +290,25 @@ export class Map3D extends Map3DBase {
             if (!mesh.userData.ids[id]) continue;
             const color = getSelectedColor(id, mode);
             setColorForId(mesh, id, color);
+
+            this.#previousHighlights.push([
+              mesh,
+              id,
+              getIdleColor(mesh, id, mode),
+            ]);
           }
         }
       }
 
-      if (
-        this.#prevPointingAt !== this.#pointingAt &&
-        this.#pointingAt !== null
-      ) {
+      if (this.#pointingAt !== null) {
         const [{ id }, mesh] = this.#pointingAt;
         if (this.#selected.includes(id)) return;
         const color = getPointingAtColor(mesh, id, mode);
         setColorForId(mesh, id, color);
+
+        this.#previousHighlights.push([mesh, id, getIdleColor(mesh, id, mode)]);
       }
     }
-
-    this.#prevMode = mode;
-    this.#prevSelected = this.#selected;
-    this.#prevPointingAt = this.#pointingAt;
   }
 
   /** Apply selected material to virtual geometry */

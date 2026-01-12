@@ -13,7 +13,7 @@ import Tooltip from "../components/common/Tooltip.tsx";
 import EditNode from "../components/EditNode.tsx";
 import Node from "../components/Node.tsx";
 // import { MAX_DEPTH } from "../constants.ts";
-import { useAppSelector, useGlobalShortcuts } from "../hooks/hooks.ts";
+import { useAppSelector } from "../hooks/hooks.ts";
 import {
   useAddNode,
   useCloneNode,
@@ -39,8 +39,6 @@ function AddNodes() {
   const onAddInstance = useAddNode("instance", "create");
   const onAddGroup = useAddNode("group", "create");
   const onMirror = useMirrorNode(nodes[selected[0]]);
-
-  useGlobalShortcuts("Delete", onDelete);
 
   if (!district) return null;
 
