@@ -35,6 +35,23 @@ export const DEFAULT_DISTRICT_DATA: DistrictProperties[] = Object.entries(
     }) as DistrictProperties,
 );
 
+export const KNOWN_MESHES: Array<keyof (typeof mapData)["meshes"]> = [
+  "3dmap_roads",
+  "3dmap_roads_borders",
+  "3dmap_metro",
+  "3dmap_cliffs",
+  "terrain_mesh",
+  "water_mesh",
+  "cz_cz_building_h_icosphere",
+  "ext_monument_av_building_b",
+  "ferris_wheel_collapsed",
+  "ferris_wheel_pacifica",
+  "monument_ave_pyramid",
+  "northoak_sign_a",
+  "obelisk",
+  "statue_splash_a",
+];
+
 export const DEFAULT_TRANSFORM: InstancedMeshTransforms = {
   id: "-1",
   virtual: false,

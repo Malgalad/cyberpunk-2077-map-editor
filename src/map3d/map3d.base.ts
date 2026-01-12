@@ -136,9 +136,10 @@ export class Map3DBase {
   }
 
   loadResource = (promise: Promise<THREE.Mesh>) => {
-    promise.then((mesh: THREE.Mesh) => {
+    return promise.then((mesh: THREE.Mesh) => {
       this.#scene.add(mesh);
       requestAnimationFrame(this.#render);
+      return mesh;
     });
   };
 

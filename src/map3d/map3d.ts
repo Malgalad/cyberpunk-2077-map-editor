@@ -52,6 +52,7 @@ export class Map3D extends Map3DBase {
   #helper = new AxesHelper(50);
   #markers: string[] = [];
   #previousHighlights: Array<[THREE.InstancedMesh, string, THREE.Color]> = [];
+  #meshes: Record<string, THREE.Mesh | THREE.Mesh[] | undefined> = {};
 
   constructor(canvas: HTMLCanvasElement, store: AppStore) {
     super(canvas);
@@ -60,7 +61,7 @@ export class Map3D extends Map3DBase {
     this.#store = store;
     this.#canvasRect = this.canvas.getBoundingClientRect();
 
-    setupTerrain(this.loadResource);
+    this.#meshes = setupTerrain(this.loadResource);
     this.scene.add(this.#visibleDistricts);
     this.scene.add(this.#helper);
 
@@ -106,6 +107,10 @@ export class Map3D extends Map3DBase {
 
   get #patternView() {
     return OptionsSelectors.getPatternView(this.#store.getState());
+  }
+
+  get #visibleMeshes() {
+    return OptionsSelectors.getVisibleMeshes(this.#store.getState());
   }
 
   get #tool() {
@@ -318,6 +323,20 @@ export class Map3D extends Map3DBase {
     const next = virtualEditsMaterial[this.#patternView];
     if (this.#additionsVirtual.material !== next) {
       this.#additionsVirtual.material = next;
+    }
+  }
+
+  #refreshMeshes() {
+    for (const [key, value] of Object.entries(this.#meshes)) {
+      if (value === undefined) continue;
+      const mesh = this.#meshes[key]!;
+      if (Array.isArray(mesh)) {
+        mesh.forEach(
+          (item) => (item.visible = this.#visibleMeshes.includes(key)),
+        );
+      } else {
+        mesh.visible = this.#visibleMeshes.includes(key);
+      }
     }
   }
 
@@ -535,14 +554,17 @@ export class Map3D extends Map3DBase {
     this.toggleControls(this.#tool === "move");
     this.#refreshInstancesColors();
     this.#refreshMaterials();
+    this.#refreshMeshes();
     super.render();
     this.#canvasRect = this.canvas.getBoundingClientRect();
   };
 
   getCenter = () => {
-    const terrain = this.scene.getObjectByName("terrain_mesh");
+    const terrain = this.#meshes["terrain_mesh"];
 
     if (!terrain) throw new Error("Terrain mesh not found");
+    if (Array.isArray(terrain))
+      throw new Error("Multiple terrain meshes found");
 
     this.#raycaster.setFromCamera(new THREE.Vector2(0, 0), this.camera);
     const intersection = this.#raycaster.intersectObject(terrain);

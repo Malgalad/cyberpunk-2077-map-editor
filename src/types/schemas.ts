@@ -30,6 +30,7 @@ export const OptionsStateSchema = z.object({
     z.literal("solid"),
   ]),
   visibleDistricts: z.array(z.string()),
+  visibleMeshes: z.array(z.string()),
 });
 
 const DistrictPropertiesSchema = z.intersection(

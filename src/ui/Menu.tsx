@@ -18,6 +18,7 @@ import DropdownItem from "../components/common/Dropdown/Dropdown.Item.tsx";
 import DropdownSeparator from "../components/common/Dropdown/Dropdown.Separator.tsx";
 import Dropdown from "../components/common/Dropdown/Dropdown.tsx";
 import Tooltip from "../components/common/Tooltip.tsx";
+import { KNOWN_MESHES } from "../constants.ts";
 import { useAppDispatch, useAppSelector } from "../hooks/hooks.ts";
 import {
   useExportDDS,
@@ -39,6 +40,7 @@ function Menu() {
   const patternView = useAppSelector(OptionsSelectors.getPatternView);
   const districtView = useAppSelector(OptionsSelectors.getDistrictView);
   const visibleDistricts = useAppSelector(OptionsSelectors.getVisibleDistricts);
+  const visibleMeshes = useAppSelector(OptionsSelectors.getVisibleMeshes);
   const exportDDS = useExportDDS();
   const importDDS = useImportDDS();
   const saveProject = useSaveProject();
@@ -239,6 +241,25 @@ function Menu() {
             >
               Solid
             </DropdownItem>
+          </Dropdown>
+
+          <Dropdown
+            trigger={<DropdownItem>Meshes</DropdownItem>}
+            direction="right"
+            align="top"
+            disabled={!projectName}
+          >
+            {KNOWN_MESHES.map((id) => (
+              <DropdownItem
+                key={id}
+                checked={visibleMeshes.includes(id)}
+                onClick={() =>
+                  dispatch(OptionsActions.toggleMeshVisibility(id))
+                }
+              >
+                {id}
+              </DropdownItem>
+            ))}
           </Dropdown>
         </Dropdown>
 

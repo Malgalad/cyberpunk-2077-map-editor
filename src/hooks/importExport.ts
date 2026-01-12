@@ -1,6 +1,7 @@
 import * as React from "react";
 import * as THREE from "three";
 
+import { KNOWN_MESHES } from "../constants.ts";
 import { loadFile, saveBlobToFile } from "../helpers.ts";
 import { useMap3D } from "../map3d/map3d.context.ts";
 import { decodeImageData, encodeImageData } from "../map3d/processDDS.ts";
@@ -82,6 +83,9 @@ export function useLoadProject() {
     if (data.nodes.nodes[0].indexInDistrict === undefined) {
       data.nodes.nodes = reviveNodes(data.nodes.nodes);
       data.nodes.selected = [data.nodes.editingId].filter(Boolean).flat();
+    }
+    if (!data.options.visibleMeshes) {
+      data.options.visibleMeshes = KNOWN_MESHES;
     }
     const state = PersistentStateSchema.parse(data);
 

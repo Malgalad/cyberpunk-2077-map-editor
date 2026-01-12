@@ -1,5 +1,6 @@
 import * as THREE from "three";
 
+import { KNOWN_MESHES } from "../constants.ts";
 import mapData from "../mapData.min.json";
 import { STATIC_ASSETS } from "./constants.js";
 import { importDRC } from "./importDRC.ts";
@@ -29,25 +30,47 @@ async function importMesh(
   return mesh;
 }
 
-export function setupTerrain(addMesh: (promise: Promise<THREE.Mesh>) => void) {
-  addMesh(importMesh("terrain_mesh", materials.terrainMaterial));
-  addMesh(importMesh("3dmap_cliffs", materials.terrainMaterial));
+const materialsMap: Record<string, THREE.Material | THREE.Material[]> = {
+  terrain_mesh: materials.terrainMaterial,
+  "3dmap_cliffs": materials.terrainMaterial,
+  "3dmap_roads": [materials.roadsMaterial, materials.roadsMaterial2],
+  "3dmap_roads_borders": materials.roadsBordersMaterial,
+  "3dmap_metro": materials.metroMaterial,
+  water_mesh: materials.waterMaterial,
+  northoak_sign_a: materials.statuesMaterial,
+  monument_ave_pyramid: materials.statuesMaterial,
+  obelisk: materials.statuesMaterial,
+  cz_cz_building_h_icosphere: materials.statuesMaterial,
+  statue_splash_a: materials.statuesMaterial,
+  ferris_wheel_pacifica: materials.statuesMaterial,
+  ferris_wheel_collapsed: materials.statuesMaterial,
+  ext_monument_av_building_b: materials.statuesMaterial,
+};
 
-  addMesh(importMesh("3dmap_roads", materials.roadsMaterial));
-  addMesh(importMesh("3dmap_roads", materials.roadsMaterial2));
-  addMesh(importMesh("3dmap_roads_borders", materials.roadsBordersMaterial));
+export function setupTerrain(
+  addMesh: (promise: Promise<THREE.Mesh>) => Promise<THREE.Mesh>,
+): Record<
+  keyof (typeof mapData)["meshes"],
+  THREE.Mesh | THREE.Mesh[] | undefined
+> {
+  const meshes: Record<string, THREE.Mesh | THREE.Mesh[]> = {};
 
-  addMesh(importMesh("3dmap_metro", materials.metroMaterial));
+  for (const name of KNOWN_MESHES) {
+    const material = materialsMap[name];
 
-  addMesh(importMesh("water_mesh", materials.waterMaterial));
+    if (Array.isArray(material)) {
+      meshes[name] = [] as THREE.Mesh[];
+      for (const mat of material) {
+        addMesh(importMesh(name, mat)).then((mesh) => {
+          (meshes[name] as THREE.Mesh[]).push(mesh);
+        });
+      }
+    } else {
+      addMesh(importMesh(name, material)).then((mesh) => {
+        meshes[name] = mesh;
+      });
+    }
+  }
 
-  // TODO make meshes configurable (project level?)
-  addMesh(importMesh("northoak_sign_a", materials.statuesMaterial));
-  addMesh(importMesh("monument_ave_pyramid", materials.statuesMaterial));
-  addMesh(importMesh("obelisk", materials.statuesMaterial));
-  addMesh(importMesh("cz_cz_building_h_icosphere", materials.statuesMaterial));
-  addMesh(importMesh("statue_splash_a", materials.statuesMaterial));
-  addMesh(importMesh("ferris_wheel_collapsed", materials.statuesMaterial));
-  addMesh(importMesh("ferris_wheel_pacifica", materials.statuesMaterial));
-  addMesh(importMesh("ext_monument_av_building_b", materials.statuesMaterial));
+  return meshes;
 }
