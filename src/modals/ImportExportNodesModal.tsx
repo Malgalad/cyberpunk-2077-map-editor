@@ -1,45 +1,42 @@
-import {
-  AlertTriangle,
-  Square,
-  SquareCheckBig,
-  SquareMinus,
-  SquarePlus,
-} from "lucide-react";
-import * as React from "react";
-import * as z from "zod";
-
-import Button from "../components/common/Button.tsx";
-import Modal from "../components/common/Modal.tsx";
-import Select from "../components/common/Select.tsx";
-import { loadFile, saveBlobToFile } from "../helpers.ts";
-import { useAppDispatch, useAppSelector } from "../hooks/hooks.ts";
-import { DistrictActions, DistrictSelectors } from "../store/district.ts";
-import { NodesActions, NodesSelectors } from "../store/nodes.ts";
-import type { ModalProps } from "../types/modals.ts";
-import { NodeSchema } from "../types/schemas.ts";
-import type { District, MapNode } from "../types/types.ts";
-import { getDistrictName } from "../utilities/district.ts";
-import {
-  cloneNode,
-  createGroupNodesCache,
-  parseNode,
-  validateNode,
-} from "../utilities/nodes.ts";
-import { clsx } from "../utilities/utilities.ts";
-
+// import {
+//   AlertTriangle,
+//   Square,
+//   SquareCheckBig,
+//   SquareMinus,
+//   SquarePlus,
+// } from "lucide-react";
+// import * as React from "react";
+// import * as z from "zod";
+//
+// import Button from "../components/common/Button.tsx";
+// import Modal from "../components/common/Modal.tsx";
+// import Select from "../components/common/Select.tsx";
+// import { loadFile, saveBlobToFile } from "../helpers.ts";
+// import { useAppDispatch, useAppSelector } from "../hooks/hooks.ts";
+// import { DistrictActions, DistrictSelectors } from "../store/district.ts";
+// import { NodesActions, NodesSelectors } from "../store/nodesV2.ts";
+// import type { ModalProps } from "../types/modals.ts";
+// import { NodeSchema } from "../types/schemas.ts";
+// import type { District, MapNode } from "../types/types.ts";
+// import { getDistrictName } from "../utilities/district.ts";
+// import { cloneNode } from "../utilities/nodes.ts";
+// import { clsx } from "../utilities/utilities.ts";
+//
 export type Tabs = "import" | "export";
-type Loaded = {
-  filename: string | null;
-  nodes: MapNode[] | null;
-  error: z.ZodError | Error | null;
-};
-const tabs: { key: Tabs; label: string }[] = [
-  { key: "import", label: "Import" },
-  { key: "export", label: "Export" },
-];
-const NodesSchema = z.array(NodeSchema);
+// type Loaded = {
+//   filename: string | null;
+//   nodes: MapNode[] | null;
+//   error: z.ZodError | Error | null;
+// };
+// const tabs: { key: Tabs; label: string }[] = [
+//   { key: "import", label: "Import" },
+//   { key: "export", label: "Export" },
+// ];
+// const NodesSchema = z.array(NodeSchema);
 
-function ImportExportNodesModal(props: ModalProps) {
+function ImportExportNodesModal() {
+  return null;
+  /*
   const { data: defaultTab = "export" } = props as { data?: Tabs };
   const dispatch = useAppDispatch();
   const [tab, setTab] = React.useState<Tabs>(defaultTab);
@@ -388,6 +385,7 @@ function ImportExportNodesModal(props: ModalProps) {
       </div>
     </Modal>
   );
+   */
 }
 
 export default ImportExportNodesModal;

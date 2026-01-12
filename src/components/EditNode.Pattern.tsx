@@ -1,71 +1,111 @@
 import { CheckIcon } from "lucide-react";
 import * as React from "react";
+import * as THREE from "three";
 
 import { AXII, PLANES } from "../constants.ts";
 import { useAppDispatch } from "../hooks/hooks.ts";
-import { NodesActions } from "../store/nodes.ts";
-import type { Axis, MapNode, Plane, Transform } from "../types/types.ts";
-import { clsx } from "../utilities/utilities.ts";
+import { useInvalidateTransformsCache } from "../hooks/nodes.hooks.ts";
+import { NodesActions } from "../store/nodesV2.ts";
+import type { Axis, MapNodeV2, Plane, Transform } from "../types/types.ts";
+import { clsx, toNumber } from "../utilities/utilities.ts";
 import Button from "./common/Button.tsx";
 import DraggableInput from "./common/DraggableInput.tsx";
 import Toggle from "./common/Toggle.tsx";
 
 interface EditNodePatternProps {
-  node: MapNode;
+  node: MapNodeV2;
 }
 
 function EditNodePattern({ node }: EditNodePatternProps) {
   const dispatch = useAppDispatch();
-  const hasMirror = node.pattern?.mirror !== undefined;
+  const invalidate = useInvalidateTransformsCache();
+  const hasMirror = node.pattern?.mirror !== null;
 
   const togglePattern = () => {
-    dispatch(
-      NodesActions.patchNode(node.id, (draft) => {
-        if (draft.pattern) {
-          draft.pattern = undefined;
-        } else {
-          draft.pattern = {
+    invalidate([node.id]);
+    if (node.pattern) {
+      dispatch(
+        NodesActions.editNode({
+          id: node.id,
+          pattern: undefined,
+        }),
+      );
+    } else {
+      dispatch(
+        NodesActions.editNode({
+          id: node.id,
+          pattern: {
             count: 1,
-            position: ["0", "0", "0"],
-            rotation: ["0", "0", "0"],
-            scale: ["0", "0", "0"],
-          };
-        }
-      }),
-    );
+            mirror: null,
+            position: [0, 0, 0],
+            rotation: [0, 0, 0],
+            scale: [0, 0, 0],
+          },
+        }),
+      );
+    }
   };
   const changeCount = (event: React.ChangeEvent<HTMLInputElement>) => {
+    if (!node.pattern) return;
+
+    invalidate([node.id]);
     dispatch(
-      NodesActions.patchNode(node.id, (draft) => {
-        draft.pattern!.count = parseInt(event.target.value, 10);
+      NodesActions.editNode({
+        id: node.id,
+        pattern: {
+          ...node.pattern,
+          count: Math.floor(toNumber(event.target.value)),
+        },
       }),
     );
   };
   const changeProperty =
     (property: keyof Transform, index: number) =>
     (event: React.ChangeEvent<HTMLInputElement>) => {
+      if (!node.pattern) return;
+
+      invalidate([node.id]);
       dispatch(
-        NodesActions.patchNode(node.id, (draft) => {
-          draft.pattern![property][index] = event.target.value;
+        NodesActions.editNode({
+          id: node.id,
+          pattern: {
+            ...node.pattern,
+            [property]: node.pattern[property].toSpliced(
+              index,
+              1,
+              property === "rotation"
+                ? THREE.MathUtils.degToRad(toNumber(event.target.value))
+                : toNumber(event.target.value),
+            ),
+          },
         }),
       );
     };
   const changeMirror = (plane: Plane) => () => {
-    dispatch(
-      NodesActions.patchNode(node.id, (draft) => {
-        if (!draft.pattern) return;
+    if (!node.pattern) return;
 
-        if (draft.pattern.mirror === plane) {
-          draft.pattern.mirror = undefined;
-        } else {
-          draft.pattern.mirror = plane;
-          draft.pattern.count = 1;
-          draft.pattern.position = ["0", "0", "0"];
-          draft.pattern.rotation = ["0", "0", "0"];
-          draft.pattern.scale = ["0", "0", "0"];
-        }
-      }),
-    );
+    invalidate([node.id]);
+    if (node.pattern.mirror === plane) {
+      dispatch(
+        NodesActions.editNode({
+          id: node.id,
+          pattern: { ...node.pattern, mirror: null },
+        }),
+      );
+    } else {
+      dispatch(
+        NodesActions.editNode({
+          id: node.id,
+          pattern: {
+            count: 1,
+            mirror: plane,
+            position: [0, 0, 0],
+            rotation: [0, 0, 0],
+            scale: [0, 0, 0],
+          },
+        }),
+      );
+    }
   };
 
   return (
@@ -86,7 +126,7 @@ function EditNodePattern({ node }: EditNodePatternProps) {
                 className="w-16"
                 min={1}
                 step={1}
-                value={node.pattern.count.toString()}
+                value={node.pattern.count}
                 onChange={changeCount}
                 disabled={hasMirror}
               />
@@ -99,7 +139,7 @@ function EditNodePattern({ node }: EditNodePatternProps) {
                   <DraggableInput
                     key={axis}
                     className="w-20"
-                    step={0.25}
+                    step={0.1}
                     value={node.pattern!.position[axis]}
                     onChange={changeProperty("position", axis)}
                     disabled={hasMirror}
@@ -115,8 +155,10 @@ function EditNodePattern({ node }: EditNodePatternProps) {
                   <DraggableInput
                     key={axis}
                     className="w-20"
-                    step={0.5}
-                    value={node.pattern!.rotation[axis]}
+                    step={0.25}
+                    value={THREE.MathUtils.radToDeg(
+                      node.pattern!.rotation[axis],
+                    )}
                     onChange={changeProperty("rotation", axis)}
                     disabled={hasMirror}
                   />
@@ -131,7 +173,7 @@ function EditNodePattern({ node }: EditNodePatternProps) {
                   <DraggableInput
                     key={axis}
                     className="w-20"
-                    step={0.1}
+                    step={0.05}
                     value={node.pattern!.scale[axis]}
                     onChange={changeProperty("scale", axis)}
                     disabled={hasMirror}

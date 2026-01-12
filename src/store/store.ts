@@ -5,7 +5,7 @@ import { persistMiddleware } from "./@middleware.ts";
 import undoRedoConfig from "./@undoredo.ts";
 import districtSlice from "./district.ts";
 import modalsSlice from "./modals.ts";
-import nodesSlice from "./nodes.ts";
+import nodesSlice from "./nodesV2.ts";
 import optionsSlice from "./options.ts";
 import projectSlice from "./project.ts";
 
@@ -23,11 +23,7 @@ export const combinedReducer = undoable(
 const store = configureStore({
   reducer: combinedReducer,
   middleware: (getDefaultMiddleware) =>
-    getDefaultMiddleware({
-      serializableCheck: {
-        ignoredActions: ["nodes/patchNode"],
-      },
-    }).concat(persistMiddleware),
+    getDefaultMiddleware().concat(persistMiddleware),
 });
 
 export default store;

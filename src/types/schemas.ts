@@ -1,5 +1,8 @@
 import * as z from "zod";
 
+const Vector3Schema = z.tuple([z.number(), z.number(), z.number()]);
+const Vector4Schema = z.tuple([z.number(), z.number(), z.number(), z.number()]);
+
 export const ProjectStateSchema = z.object({
   name: z.string(),
   mode: z.union([
@@ -32,10 +35,10 @@ export const OptionsStateSchema = z.object({
 const DistrictPropertiesSchema = z.intersection(
   z.object({
     name: z.string(),
-    position: z.tuple([z.number(), z.number(), z.number()]),
-    orientation: z.tuple([z.number(), z.number(), z.number(), z.number()]),
-    transMin: z.tuple([z.number(), z.number(), z.number(), z.number()]),
-    transMax: z.tuple([z.number(), z.number(), z.number(), z.number()]),
+    position: Vector3Schema,
+    orientation: Vector4Schema,
+    transMin: Vector4Schema,
+    transMax: Vector4Schema,
     cubeSize: z.number(),
   }),
   z.discriminatedUnion("isCustom", [
@@ -86,9 +89,41 @@ export const NodesStateSchema = z.object({
   editingId: z.union([z.string(), z.array(z.string()), z.null()]),
 });
 
+export const NodeSchemaV2 = z.object({
+  id: z.string(),
+  label: z.string(),
+  type: z.union([z.literal("group"), z.literal("instance")]),
+  tag: z.union([z.literal("create"), z.literal("update"), z.literal("delete")]),
+  parent: z.string().nullable(),
+  district: z.string(),
+  indexInDistrict: z.number(),
+  hidden: z.boolean(),
+  position: Vector3Schema,
+  rotation: Vector3Schema,
+  scale: Vector3Schema,
+  mirror: z
+    .union([z.literal("XY"), z.literal("XZ"), z.literal("YZ")])
+    .nullable(),
+  pattern: z
+    .object({
+      count: z.number(),
+      mirror: z
+        .union([z.literal("XY"), z.literal("XZ"), z.literal("YZ")])
+        .nullable(),
+      position: Vector3Schema,
+      rotation: Vector3Schema,
+      scale: Vector3Schema,
+    })
+    .optional(),
+});
+export const NodesStateSchemaV2 = z.object({
+  nodes: z.record(z.string(), NodeSchemaV2),
+  selected: z.string().array(),
+});
+
 export const PersistentStateSchema = z.object({
   project: ProjectStateSchema,
   options: OptionsStateSchema,
   district: PersistentDistrictStateSchema,
-  nodes: NodesStateSchema,
+  nodes: NodesStateSchemaV2,
 });

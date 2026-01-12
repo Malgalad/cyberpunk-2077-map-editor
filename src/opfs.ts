@@ -103,6 +103,10 @@ export async function removeEntry(pathname: string) {
   await parent.removeEntry(path.at(-1)!);
 }
 
+async function nuke() {
+  await removeEntry("persistentData");
+}
+
 Object.defineProperties(window, {
   $opfs: {
     enumerable: false,
@@ -113,6 +117,7 @@ Object.defineProperties(window, {
       loadJSON,
       saveJSON,
       removeEntry,
+      nuke,
     },
   },
 });

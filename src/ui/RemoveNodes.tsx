@@ -4,7 +4,6 @@ import Button from "../components/common/Button.tsx";
 import Tooltip from "../components/common/Tooltip.tsx";
 import EditNode from "../components/EditNode.tsx";
 import Node from "../components/Node.tsx";
-import { MAX_DEPTH } from "../constants.ts";
 import { useAppSelector, useGlobalShortcuts } from "../hooks/hooks.ts";
 import {
   useAddNode,
@@ -12,60 +11,56 @@ import {
   useDeselectNode,
   useTransferNode,
 } from "../hooks/nodes.hooks.ts";
-import { getDeletions } from "../store/@selectors.ts";
 import { DistrictSelectors } from "../store/district.ts";
-import { NodesSelectors } from "../store/nodes.ts";
+import { NodesSelectors } from "../store/nodesV2.ts";
 
 function RemoveNodes() {
-  const deleteNodes = useAppSelector(getDeletions);
-  const selectedNodes = useAppSelector(NodesSelectors.getSelectedNodes);
-  const selectedDistrict = useAppSelector(DistrictSelectors.getDistrict);
-  const nodesIndex = useAppSelector(NodesSelectors.getChildNodesCache);
-  const rootNodes = deleteNodes.filter(
-    (node) => node.parent === selectedDistrict?.name,
-  );
+  const nodes = useAppSelector(NodesSelectors.getNodes);
+  const tree = useAppSelector(NodesSelectors.getNodesTree);
+  const selected = useAppSelector(NodesSelectors.getSelectedNodes);
+  const district = useAppSelector(DistrictSelectors.getDistrict);
+  const root = tree[district?.name ?? "--"] ?? {};
+  const branches = root && root.type === "district" ? root.delete : [];
 
   const onDeselect = useDeselectNode();
-  const onDelete = useDeleteNode(selectedNodes);
+  const onDelete = useDeleteNode(selected);
   const onAddGroup = useAddNode("group", "delete");
-  const onTransfer = useTransferNode(selectedNodes[0]);
+  const onTransfer = useTransferNode(nodes[selected[0]]);
 
   useGlobalShortcuts("Delete", onDelete);
 
-  if (!selectedDistrict) return null;
+  if (!district) return null;
 
   return (
     <>
       <div className="flex flex-col gap-2 grow overflow-auto bg-slate-800 relative">
         <div className="grow p-2 flex flex-col" onClick={onDeselect}>
-          {!deleteNodes.length && (
+          {!branches.length && (
             <div className="grow flex items-center justify-center italic bg-slate-800">
               Pick block using "Select" tool on the map
             </div>
           )}
 
-          {rootNodes.map((node) => (
-            <Node key={node.id} node={node} />
+          {branches.map((branch) => (
+            <Node key={branch.id} node={nodes[branch.id]} />
           ))}
         </div>
 
         <div className="flex flex-row gap-2 sticky pr-1 bottom-0 justify-end border-t border-slate-900 bg-slate-800">
-          {selectedNodes.length > 0 && (
+          {selected.length > 0 && (
             <>
               <Tooltip tooltip="Update block">
                 <Button
                   className="border-none"
                   onClick={() => onTransfer("update")}
-                  disabled={selectedNodes.length !== 1}
+                  disabled={selected.length !== 1}
                 >
                   <ArrowLeftToLine />
                 </Button>
               </Tooltip>
 
               <Tooltip
-                tooltip={
-                  selectedNodes.length > 1 ? "Delete nodes" : "Delete node"
-                }
+                tooltip={selected.length > 1 ? "Delete nodes" : "Delete node"}
                 flow="top"
               >
                 <Button className="border-none" onClick={onDelete}>
@@ -82,9 +77,9 @@ function RemoveNodes() {
               className="border-none"
               onClick={onAddGroup}
               disabled={
-                selectedNodes.length > 1 ||
-                (selectedNodes[0]?.type === "group" &&
-                  nodesIndex[selectedNodes[0].id].level >= MAX_DEPTH - 1)
+                selected.length > 1 /* ||
+                (selected[0]?.type === "group" &&
+                  nodesIndex[selected[0].id].level >= MAX_DEPTH - 1)*/
               }
             >
               <FolderPlus />
@@ -94,8 +89,8 @@ function RemoveNodes() {
       </div>
 
       <div className="flex flex-col basis-[132px] shrink-0">
-        {selectedNodes.length > 0 ? (
-          <EditNode key={selectedNodes[0].id} mode="delete" />
+        {selected.length > 0 ? (
+          <EditNode key={selected[0]} mode="delete" />
         ) : (
           <div className="grow flex items-center justify-center italic bg-slate-800">
             Select a single node

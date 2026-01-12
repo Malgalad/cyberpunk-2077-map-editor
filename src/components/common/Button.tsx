@@ -8,7 +8,7 @@ type ButtonProps = React.ButtonHTMLAttributes<HTMLButtonElement> & {
   onClick?: (
     event: React.MouseEvent<HTMLButtonElement, MouseEvent>,
   ) => unknown | Promise<unknown>;
-  shortcut?: string | ((event: KeyboardEvent) => boolean);
+  shortcut?: string;
 };
 
 function Button({ onClick, children, shortcut, ...props }: ButtonProps) {

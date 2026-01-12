@@ -17,7 +17,7 @@ type DropdownProps = {
   disabled?: boolean;
   indent?: boolean;
   trigger: React.ReactElement<HTMLButtonElement>;
-  shortcut?: string | ((event: KeyboardEvent) => boolean);
+  shortcut?: string;
 };
 
 function Dropdown({

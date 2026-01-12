@@ -6,12 +6,13 @@ import type {
   AppStore,
   DistrictWithTransforms,
   InstancedMeshTransforms,
-  MapNodeParsed,
+  MapNodeV2,
+  Modes,
   PatternView,
 } from "../types/types.ts";
 import { partition } from "../utilities/utilities.ts";
 import AxesHelper from "./axesHelper.ts";
-import { ADDITIONS, BUILDINGS, DELETIONS, UPDATES } from "./colors.ts";
+import * as COLORS from "./colors.ts";
 import { createDistrictMesh } from "./createDistrictMesh.ts";
 import { Map3DBase } from "./map3d.base.ts";
 import {
@@ -42,13 +43,17 @@ export class Map3D extends Map3DBase {
   #additionsVirtual: THREE.InstancedMesh | null = null;
   #updates: THREE.InstancedMesh | null = null;
   #deletions: THREE.InstancedMesh | null = null;
-  #selectedIndexes: number[] = [];
+  #selected: string[] = [];
+  #prevSelected: string[] = [];
   #canvasRect: DOMRect | null = null;
   #pointer: THREE.Vector2 = new THREE.Vector2(1, 1);
-  #startedPointingAt: [number, THREE.Object3D] | null = null;
-  #pointingAt: [number, THREE.Object3D] | null = null;
+  #startedPointingAt: [InstancedMeshTransforms, THREE.InstancedMesh] | null =
+    null;
+  #pointingAt: [InstancedMeshTransforms, THREE.InstancedMesh] | null = null;
+  #prevPointingAt: [InstancedMeshTransforms, THREE.InstancedMesh] | null = null;
   #helper = new AxesHelper(50);
   #markers: string[] = [];
+  #prevMode: Modes = "create";
 
   constructor(canvas: HTMLCanvasElement, store: AppStore) {
     super(canvas);
@@ -110,17 +115,17 @@ export class Map3D extends Map3DBase {
   }
 
   /** Add mesh to the scene */
-  #add<T extends THREE.Object3D>(mesh: T): T {
+  #add = <T extends THREE.Object3D>(mesh: T): T => {
     this.scene.add(mesh);
     return mesh;
-  }
+  };
 
   /** Remove mesh from the scene and dispose of geometry */
-  #remove(mesh?: THREE.Mesh | THREE.Line | null) {
+  #remove = (mesh?: THREE.Mesh | THREE.Line | null) => {
     if (!mesh) return;
     this.scene.remove(mesh);
     mesh.geometry.dispose();
-  }
+  };
 
   #onMouseDown = (event: MouseEvent) => {
     if (event.button !== 0 || this.#tool !== "select") return;
@@ -153,10 +158,14 @@ export class Map3D extends Map3DBase {
     const previousPointingAt = this.#pointingAt;
 
     if (intersection.length > 0) {
-      const instanceId = intersection[0].instanceId;
+      const index = intersection[0].instanceId;
 
-      if (instanceId !== undefined) {
-        this.#pointingAt = [instanceId, intersection[0].object];
+      if (index !== undefined) {
+        const mesh = intersection[0].object;
+        if (!("ids" in mesh.userData)) return;
+        const instance = intersection[0].object.userData.instances[index];
+
+        this.#pointingAt = [instance, mesh as THREE.InstancedMesh];
       }
     } else {
       this.#pointingAt = null;
@@ -174,10 +183,7 @@ export class Map3D extends Map3DBase {
   #onClick = () => {
     const mode = this.#mode;
 
-    if (
-      this.#startedPointingAt?.[0] !== this.#pointingAt?.[0] ||
-      this.#tool !== "select"
-    )
+    if (this.#startedPointingAt !== this.#pointingAt || this.#tool !== "select")
       return;
 
     if (this.#pointingAt == null) {
@@ -187,159 +193,141 @@ export class Map3D extends Map3DBase {
       return;
     }
 
-    const index = this.#pointingAt[0];
+    const [{ id, index }, mesh] = this.#pointingAt;
+    let eventType: "select-node" | "update-node" | "remove-node";
+    let detail: { id: string } | { index: number };
 
-    if (mode === "create") {
-      window.dispatchEvent(
-        new CustomEvent("select-node", { detail: { index } }),
-      );
+    if (mode === "create" || (mode === "update" && mesh === this.#updates)) {
+      eventType = "select-node";
+      detail = { id };
     } else if (mode === "delete") {
-      window.dispatchEvent(
-        new CustomEvent("remove-node", { detail: { index } }),
-      );
-    } else if (mode === "update") {
-      if (this.#pointingAt[1] === this.#updates) {
-        window.dispatchEvent(
-          new CustomEvent("select-node", { detail: { index } }),
-        );
-      } else {
-        window.dispatchEvent(
-          new CustomEvent("update-node", { detail: { index } }),
-        );
-      }
+      eventType = "remove-node";
+      detail = { index };
+    } else if (mode === "update" && mesh === this.#currentDistrict) {
+      eventType = "update-node";
+      detail = { index };
+    }
+
+    // @ts-expect-error they will be initialized 100%
+    if (eventType && detail) {
+      window.dispatchEvent(new CustomEvent(eventType, { detail }));
     }
   };
 
-  // TODO optimize via previousPointerAt
   #refreshInstancesColors() {
-    const current = new THREE.Color();
     const mode = this.#mode;
 
-    if (this.#additions) {
-      const instances: Array<InstancedMeshTransforms> =
-        this.#additions.userData.instances;
-      let needsUpdate = false;
+    const meshes: Record<Modes, THREE.InstancedMesh | null> = {
+      create: this.#additions,
+      update: this.#updates,
+      delete: this.#deletions,
+    };
 
-      for (let i = 0; i < this.#additions.count; i++) {
-        const id = instances[i].id ?? "";
-        const isMarker = this.#markers.includes(id);
-        const color =
-          mode === "create" && this.#selectedIndexes.includes(i)
-            ? isMarker
-              ? DELETIONS.selected
-              : ADDITIONS.selected
-            : isMarker
-              ? ADDITIONS.marker
-              : mode === "create" && i === this.#pointingAt?.[0]
-                ? ADDITIONS.pointingAt
-                : ADDITIONS.default;
+    const getIdleColor = (
+      mesh: THREE.InstancedMesh,
+      id: string,
+      mode: Modes,
+    ) =>
+      mesh === this.#currentDistrict
+        ? COLORS.BUILDINGS.default
+        : this.#markers.includes(id)
+          ? COLORS.MARKERS.default
+          : COLORS.IDLE_COLORS[mode];
+    const getPointingAtColor = (
+      mesh: THREE.InstancedMesh,
+      id: string,
+      mode: Modes,
+    ) =>
+      mesh === this.#currentDistrict
+        ? COLORS.BUILDING_COLORS[mode]
+        : this.#markers.includes(id)
+          ? COLORS.MARKERS.selected
+          : COLORS.POINTING_AT_COLORS[mode];
+    const getSelectedColor = (id: string, mode: Modes) =>
+      this.#markers.includes(id)
+        ? COLORS.MARKERS.selected
+        : COLORS.SELECTED_COLORS[mode];
+    const setColorForId = (
+      mesh: THREE.InstancedMesh,
+      id: string,
+      color: THREE.Color,
+    ) => {
+      const ids: Record<string, number[]> = mesh.userData.ids;
 
-        this.#additions.getColorAt(i, current);
-        if (!current.equals(color)) {
-          this.#additions.setColorAt(i, color);
-          needsUpdate = true;
-        }
+      if (!ids[id]) return;
+
+      for (const index of ids[id]) {
+        mesh.setColorAt(index, color);
       }
 
-      if (needsUpdate && this.#additions.instanceColor)
-        this.#additions.instanceColor.needsUpdate = true;
+      if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
+    };
 
-      if (this.#additionsVirtual) {
-        let needsUpdate = false;
-        const origins: Array<InstancedMeshTransforms> =
-          this.#additionsVirtual.userData.instances;
+    if (meshes[this.#prevMode]) {
+      if (this.#prevSelected !== this.#selected) {
+        const prevMesh = meshes[this.#prevMode]!;
 
-        for (let i = 0; i < this.#additionsVirtual.count; i++) {
-          const originId = origins[i].originId ?? "";
-          const index = instances.findIndex((k) => k.id === originId);
-          const color =
-            mode === "create" && this.#selectedIndexes.includes(index)
-              ? ADDITIONS.selected
-              : ADDITIONS.default;
+        for (const id of this.#prevSelected) {
+          const color = getIdleColor(prevMesh, id, this.#prevMode);
+          setColorForId(prevMesh, id, color);
+        }
 
-          this.#additionsVirtual.getColorAt(i, current);
-          if (!current.equals(color)) {
-            this.#additionsVirtual.setColorAt(i, color);
-            needsUpdate = true;
+        if (this.#prevMode === "create" && this.#additionsVirtual) {
+          const prevMesh = this.#additionsVirtual;
+
+          for (const id of this.#prevSelected) {
+            if (!prevMesh.userData.ids[id]) continue;
+            const color = getIdleColor(prevMesh, id, this.#prevMode);
+            setColorForId(prevMesh, id, color);
           }
         }
+      }
 
-        if (needsUpdate && this.#additionsVirtual.instanceColor)
-          this.#additionsVirtual.instanceColor.needsUpdate = true;
+      if (
+        this.#prevPointingAt !== this.#pointingAt &&
+        this.#prevPointingAt !== null
+      ) {
+        const [{ id }, prevMesh] = this.#prevPointingAt;
+        if (this.#selected.includes(id)) return;
+        const color = getIdleColor(prevMesh, id, this.#prevMode);
+        setColorForId(prevMesh, id, color);
       }
     }
 
-    if (this.#updates) {
-      const instances: Array<InstancedMeshTransforms> =
-        this.#updates.userData.instances;
-      let needsUpdate = false;
+    if (meshes[mode]) {
+      if (this.#prevSelected !== this.#selected) {
+        const mesh = meshes[mode]!;
 
-      for (let i = 0; i < this.#updates.count; i++) {
-        const index = instances[i] != null ? (instances[i].index ?? -1) : -1;
-        const color =
-          mode === "update" && this.#selectedIndexes.includes(index)
-            ? UPDATES.selected
-            : mode === "update" &&
-                i === this.#pointingAt?.[0] &&
-                this.#updates === this.#pointingAt?.[1]
-              ? UPDATES.pointingAt
-              : UPDATES.default;
+        for (const id of this.#selected) {
+          const color = getSelectedColor(id, mode);
+          setColorForId(mesh, id, color);
+        }
 
-        this.#updates.getColorAt(i, current);
-        if (!current.equals(color)) {
-          this.#updates.setColorAt(i, color);
-          needsUpdate = true;
+        if (mode === "create" && this.#additionsVirtual) {
+          const mesh = this.#additionsVirtual;
+
+          for (const id of this.#selected) {
+            if (!mesh.userData.ids[id]) continue;
+            const color = getSelectedColor(id, mode);
+            setColorForId(mesh, id, color);
+          }
         }
       }
 
-      if (needsUpdate && this.#updates.instanceColor)
-        this.#updates.instanceColor.needsUpdate = true;
-    }
-
-    if (this.#deletions) {
-      const instances: Array<InstancedMeshTransforms> =
-        this.#deletions.userData.instances;
-      let needsUpdate = false;
-
-      for (let i = 0; i < this.#deletions.count; i++) {
-        const index = instances[i] != null ? (instances[i].index ?? -1) : -1;
-        const color =
-          mode && this.#selectedIndexes.includes(index)
-            ? DELETIONS.selected
-            : DELETIONS.default;
-
-        this.#deletions.getColorAt(i, current);
-        if (!current.equals(color)) {
-          this.#deletions.setColorAt(i, color);
-          needsUpdate = true;
-        }
+      if (
+        this.#prevPointingAt !== this.#pointingAt &&
+        this.#pointingAt !== null
+      ) {
+        const [{ id }, mesh] = this.#pointingAt;
+        if (this.#selected.includes(id)) return;
+        const color = getPointingAtColor(mesh, id, mode);
+        setColorForId(mesh, id, color);
       }
-
-      if (needsUpdate && this.#deletions.instanceColor)
-        this.#deletions.instanceColor.needsUpdate = true;
     }
 
-    if (this.#currentDistrict) {
-      let needsUpdate = false;
-
-      for (let i = 0; i < this.#currentDistrict.count; i++) {
-        const color =
-          mode === "delete" && this.#pointingAt?.[0] === i
-            ? BUILDINGS.pointingAtDeletion
-            : mode === "update" && this.#pointingAt?.[0] === i
-              ? BUILDINGS.pointingAtUpdate
-              : BUILDINGS.default;
-
-        this.#currentDistrict.getColorAt(i, current);
-        if (!current.equals(color)) {
-          this.#currentDistrict.setColorAt(i, color);
-          needsUpdate = true;
-        }
-      }
-
-      if (needsUpdate && this.#currentDistrict.instanceColor)
-        this.#currentDistrict.instanceColor.needsUpdate = true;
-    }
+    this.#prevMode = mode;
+    this.#prevSelected = this.#selected;
+    this.#prevPointingAt = this.#pointingAt;
   }
 
   /** Apply selected material to virtual geometry */
@@ -367,13 +355,13 @@ export class Map3D extends Map3DBase {
     requestAnimationFrame(this.render);
   }
 
-  selectInstances(indexes: number[]) {
-    this.#selectedIndexes = indexes;
+  selectInstances(ids: string[]) {
+    this.#selected = ids;
 
     requestAnimationFrame(this.render);
   }
 
-  setHelper(node?: MapNodeParsed, relative?: boolean) {
+  setHelper(node?: MapNodeV2, relative?: boolean) {
     if (!node) {
       this.#helper.visible = false;
       return;
@@ -407,56 +395,58 @@ export class Map3D extends Map3DBase {
   }
 
   setAdditions({ district, transforms }: DistrictWithTransforms) {
-    this.#remove(this.#additions);
-    this.#remove(this.#additionsVirtual);
-
     this.#markers = transforms.filter(isMarker).map(({ id }) => id);
-    const map = partition(transforms, (item) => !!item.virtual);
-    const virtual = map.get(true) ?? [];
-    const real = map.get(false) ?? [];
 
-    this.#additions = this.#add(
-      createDistrictMesh(district, real, additionsMaterial, ADDITIONS.default),
+    const split = partition(transforms, (transform) => `${transform.virtual}`);
+
+    this.#additions = createDistrictMesh(
+      this.#additions,
+      district,
+      split["false"] ?? [],
+      additionsMaterial,
+      this.#remove,
+      this.#add,
+      COLORS.ADDITIONS.default,
     );
-    this.#additionsVirtual = this.#add(
-      createDistrictMesh(
-        district,
-        virtual,
-        virtualEditsMaterial[this.#patternView],
-        ADDITIONS.default,
-      ),
+    this.#additionsVirtual = createDistrictMesh(
+      this.#additionsVirtual,
+      district,
+      split["true"] ?? [],
+      virtualEditsMaterial[this.#patternView],
+      this.#remove,
+      this.#add,
+      COLORS.ADDITIONS.default,
     );
 
     requestAnimationFrame(this.render);
   }
 
   setDeletions({ district, transforms }: DistrictWithTransforms) {
-    this.#remove(this.#deletions);
-
-    this.#deletions = this.#add(
-      createDistrictMesh(
-        district,
-        transforms,
-        wireframeMaterial,
-        DELETIONS.default,
-      ),
+    this.#deletions = createDistrictMesh(
+      this.#deletions,
+      district,
+      transforms,
+      wireframeMaterial,
+      this.#remove,
+      this.#add,
+      COLORS.DELETIONS.default,
     );
 
     requestAnimationFrame(this.render);
   }
 
   setCurrentDistrict(data: DistrictWithTransforms) {
-    this.#remove(this.#currentDistrict);
     this.#remove(this.#currentDistrictBoundaries);
 
     const { district, transforms } = data;
-    this.#currentDistrict = this.#add(
-      createDistrictMesh(
-        district,
-        transforms,
-        buildingsMaterial,
-        BUILDINGS.default,
-      ),
+    this.#currentDistrict = createDistrictMesh(
+      this.#currentDistrict,
+      district,
+      transforms,
+      buildingsMaterial,
+      this.#remove,
+      this.#add,
+      COLORS.BUILDINGS.default,
     );
 
     const minMaxBox = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1));
@@ -478,15 +468,14 @@ export class Map3D extends Map3DBase {
   }
 
   setUpdates({ district, transforms }: DistrictWithTransforms) {
-    this.#remove(this.#updates);
-
-    this.#updates = this.#add(
-      createDistrictMesh(
-        district,
-        transforms,
-        additionsMaterial,
-        UPDATES.default,
-      ),
+    this.#updates = createDistrictMesh(
+      this.#updates,
+      district,
+      transforms,
+      additionsMaterial,
+      this.#remove,
+      this.#add,
+      COLORS.UPDATES.default,
     );
 
     requestAnimationFrame(this.render);
@@ -496,12 +485,28 @@ export class Map3D extends Map3DBase {
     const visibleNames = districts.map((item) => item.district.name);
 
     const objectsToRemove: THREE.Object3D[] = [];
-    for (const object3d of this.#visibleDistricts.children) {
+    for (
+      let index = 0;
+      index < this.#visibleDistricts.children.length;
+      index++
+    ) {
+      const object3d = this.#visibleDistricts.children[index];
       const { name } = object3d;
 
       if (!visibleNames.includes(name)) {
         objectsToRemove.push(object3d);
         (object3d as THREE.InstancedMesh).geometry.dispose();
+      } else {
+        const { district, transforms } = districts.find(
+          (item) => item.district.name === name,
+        )!;
+
+        this.#visibleDistricts.children[index] = createDistrictMesh(
+          this.#visibleDistricts.children[index] as THREE.InstancedMesh,
+          district,
+          transforms,
+          staticMaterial,
+        );
       }
     }
     if (objectsToRemove.length > 0)
@@ -516,7 +521,12 @@ export class Map3D extends Map3DBase {
       const { district, transforms } = item;
 
       if (!currentNames.includes(district.name)) {
-        const mesh = createDistrictMesh(district, transforms, staticMaterial);
+        const mesh = createDistrictMesh(
+          null,
+          district,
+          transforms,
+          staticMaterial,
+        );
         mesh.name = district.name;
         objectsToAdd.push(mesh);
       }

@@ -2,34 +2,35 @@ import { nanoid } from "nanoid";
 import * as React from "react";
 
 import { useAppDispatch, useAppSelector, useAppStore } from "./hooks/hooks.ts";
-import { getParent } from "./hooks/nodes.hooks.ts";
-import { Map3D } from "./map3d/map3d.ts";
 import {
-  getAdditionsTransforms,
-  getDeletions,
-  getDeletionsTransforms,
-  getDistrictNodes,
-  getUpdates,
-  getUpdatesTransforms,
-} from "./store/@selectors.ts";
+  getParent,
+  useInvalidateTransformsCache,
+} from "./hooks/nodes.hooks.ts";
+import { Map3D } from "./map3d/map3d.ts";
 import { DistrictSelectors } from "./store/district.ts";
-import { NodesActions, NodesSelectors } from "./store/nodes.ts";
+import { NodesActions, NodesSelectors } from "./store/nodesV2.ts";
 import { OptionsSelectors } from "./store/options.ts";
 import { ProjectSelectors } from "./store/project.ts";
 import type {
   District,
   DistrictWithTransforms,
-  MapNode,
+  MapNodeV2,
+  TreeNode,
 } from "./types/types.ts";
 import {
   getFinalDistrictTransformsFromNodes,
   immutableDistrictTransforms,
 } from "./utilities/district.ts";
-import { parseNode, transplantNode } from "./utilities/nodes.ts";
-import { applyTransforms, transformToNode } from "./utilities/transforms.ts";
-import { invariant } from "./utilities/utilities.ts";
+import { transplantNode } from "./utilities/nodes.ts";
+import {
+  applyTransforms,
+  projectNodesToDistrict,
+  transformToNode,
+} from "./utilities/transforms.ts";
+import { partition } from "./utilities/utilities.ts";
 
-const emptyArray: District[] = [];
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const emptyArray: any[] = [];
 
 export function useInitMap3D(ref: React.RefObject<HTMLCanvasElement | null>) {
   const [map3d, setMap3D] = React.useState<Map3D | null>(null);
@@ -81,9 +82,14 @@ export function useDrawAllDistricts(map3d: Map3D | null) {
     const districtsWithTransforms: DistrictWithTransforms[] = [];
     const state = store.getState();
     const nodes = NodesSelectors.getNodes(state);
+    const tree = NodesSelectors.getNodesTree(state);
 
     for (const district of nonCurrentDistricts) {
-      const transforms = getFinalDistrictTransformsFromNodes(nodes, district);
+      const transforms = getFinalDistrictTransformsFromNodes(
+        district,
+        nodes,
+        tree,
+      );
 
       districtsWithTransforms.push({
         district,
@@ -96,34 +102,42 @@ export function useDrawAllDistricts(map3d: Map3D | null) {
 }
 
 export function useDrawCurrentDistrict(map3d: Map3D | null) {
+  const store = useAppStore();
   const project = useAppSelector(ProjectSelectors.getProjectName);
   const district = useAppSelector(DistrictSelectors.getDistrict);
-  const updates = useAppSelector(getUpdates);
-  const deletions = useAppSelector(getDeletions);
-  const updateIndexes = React.useMemo(
-    () => new Set(updates.map((node) => node.index)),
-    [updates],
-  );
-  const deletionIndexes = React.useMemo(
-    () => new Set(deletions.map((node) => node.index)),
-    [deletions],
-  );
+  const index = useAppSelector(NodesSelectors.getNodesIndex);
+  const root = index[district?.name ?? ""];
 
   React.useEffect(() => {
     if (!map3d || !district) return;
 
-    const transforms = (
-      immutableDistrictTransforms.get(district.name) ?? []
-    ).map((instance, index) => {
-      if (updateIndexes.has(index) || deletionIndexes.has(index)) {
-        return { ...instance, scale: { x: 0, y: 0, z: 0, w: 0 } };
-      }
+    const baseTransforms = immutableDistrictTransforms.get(district.name) ?? [];
 
-      return instance;
-    });
+    if (root) {
+      const nodes = NodesSelectors.getNodes(store.getState());
+      const { update: updates = [], delete: deletions = [] } = partition(
+        root.descendantIds,
+        (id) => nodes[id].tag,
+      );
+      const updateIndexes = new Set(
+        updates.map((id) => nodes[id].indexInDistrict),
+      );
+      const deletionIndexes = new Set(
+        deletions.map((id) => nodes[id].indexInDistrict),
+      );
 
-    map3d.setCurrentDistrict({ district, transforms });
-  }, [map3d, district, updateIndexes, deletionIndexes]);
+      const transforms = baseTransforms.map((instance, index) => {
+        if (updateIndexes.has(index) || deletionIndexes.has(index)) {
+          return { ...instance, scale: { x: 0, y: 0, z: 0, w: 0 } };
+        }
+
+        return instance;
+      });
+      map3d.setCurrentDistrict({ district, transforms });
+    } else {
+      map3d.setCurrentDistrict({ district, transforms: baseTransforms });
+    }
+  }, [map3d, district, store, root]);
 
   React.useEffect(() => {
     if (!map3d || !district) return;
@@ -140,98 +154,96 @@ export function useDrawCurrentDistrict(map3d: Map3D | null) {
 
 export function useDrawAdditions(map3d: Map3D | null) {
   const district = useAppSelector(DistrictSelectors.getDistrict);
-  const transforms = useAppSelector(getAdditionsTransforms);
+  const nodes = useAppSelector(NodesSelectors.getNodes);
+  const tree = useAppSelector(NodesSelectors.getNodesTree);
+  const root = tree[district?.name ?? ""] ?? {};
+  const additions =
+    root && root.type === "district" ? root.create : (emptyArray as TreeNode[]);
 
   React.useEffect(() => {
     if (!map3d || !district) return;
 
+    const transforms = projectNodesToDistrict(district, nodes, additions);
+
     map3d.setAdditions({ district, transforms });
-  }, [map3d, district, transforms]);
+  }, [map3d, district, nodes, additions]);
 }
 
 export function useDrawUpdates(map3d: Map3D | null) {
   const district = useAppSelector(DistrictSelectors.getDistrict);
-  const transforms = useAppSelector(getUpdatesTransforms);
+  const nodes = useAppSelector(NodesSelectors.getNodes);
+  const tree = useAppSelector(NodesSelectors.getNodesTree);
+  const root = tree[district?.name ?? ""] ?? {};
+  const updates =
+    root && root.type === "district" ? root.update : (emptyArray as TreeNode[]);
 
   React.useEffect(() => {
     if (!map3d || !district) return;
 
+    const transforms = projectNodesToDistrict(district, nodes, updates);
+
     map3d.setUpdates({ district, transforms });
-  }, [map3d, district, transforms]);
+  }, [map3d, district, nodes, updates]);
 }
 
 export function useDrawDeletions(map3d: Map3D | null) {
   const district = useAppSelector(DistrictSelectors.getDistrict);
-  const transforms = useAppSelector(getDeletionsTransforms);
+  const nodes = useAppSelector(NodesSelectors.getNodes);
+  const tree = useAppSelector(NodesSelectors.getNodesTree);
+  const root = tree[district?.name ?? ""] ?? {};
+  const deletions =
+    root && root.type === "district" ? root.delete : (emptyArray as TreeNode[]);
 
   React.useEffect(() => {
     if (!map3d || !district) return;
+
+    const transforms = projectNodesToDistrict(district, nodes, deletions);
+
     map3d.setDeletions({ district, transforms });
-  }, [map3d, district, transforms]);
+  }, [map3d, district, nodes, deletions]);
 }
 
 export function useDrawSelection(map3d: Map3D | null) {
+  const store = useAppStore();
+  const district = useAppSelector(DistrictSelectors.getDistrict);
   const mode = useAppSelector(ProjectSelectors.getMode);
-  const additions = useAppSelector(getAdditionsTransforms);
-  const updates = useAppSelector(getUpdatesTransforms);
-  const deletions = useAppSelector(getDeletionsTransforms);
   const selected = useAppSelector(NodesSelectors.getSelectedNodes);
-  const cache = useAppSelector(NodesSelectors.getChildNodesCache);
-  const nodes = useAppSelector(getDistrictNodes);
-  const nodesMap = React.useMemo(
-    () => new Map(nodes.map((node) => [node.id, parseNode(node)])),
-    [nodes],
-  );
+  const nodes = useAppSelector(NodesSelectors.getNodes);
   const tool = useAppSelector(ProjectSelectors.getTool);
 
   React.useEffect(() => {
-    if (!map3d) return;
+    if (!map3d || !district) return;
 
     if (selected.length === 0) {
       map3d.selectInstances([]);
       return;
     }
 
-    const indexes: number[] = [];
-    const selectedIds = selected.reduce((set, node) => {
-      if (node.type === "instance") set.add(node.id);
-      else cache[node.id].instances.forEach((id) => set.add(id));
-      return set;
-    }, new Set<string>());
+    const state = store.getState();
+    const nodes = NodesSelectors.getNodes(state);
+    const index = NodesSelectors.getNodesIndex(state);
 
-    if (mode === "create") {
-      for (let index = 0; index < additions.length; index++) {
-        const transform = additions[index];
+    const allSelected = new Set<string>(
+      selected.flatMap((id) => {
+        const node = nodes[id];
+        if (node.type === "instance") return [id];
+        return index[node.id].descendantIds.filter(
+          (id) => nodes[id].type == "instance",
+        );
+      }),
+    );
 
-        if (selectedIds.has(transform.id)) {
-          indexes.push(index);
-        }
-      }
-    } else if (mode === "delete") {
-      for (const transform of deletions) {
-        if (selectedIds.has(transform.id)) {
-          indexes.push(transform.index ?? -1);
-        }
-      }
-    } else if (mode === "update") {
-      for (const transform of updates) {
-        if (selectedIds.has(transform.id)) {
-          indexes.push(transform.index ?? -1);
-        }
-      }
-    }
-
-    map3d.selectInstances(indexes);
-  }, [selected, cache, deletions, additions, map3d, mode, updates]);
+    map3d.selectInstances([...allSelected.values()]);
+  }, [selected, map3d, district, mode, store]);
 
   React.useEffect(() => {
     if (!map3d || mode === "delete") return;
     if (selected.length !== 1) {
       map3d.setHelper(undefined);
     } else {
-      map3d.setHelper(applyTransforms(parseNode(selected[0]), nodesMap), true);
+      map3d.setHelper(applyTransforms(nodes, nodes[selected[0]]), true);
     }
-  }, [map3d, mode, selected, nodesMap]);
+  }, [map3d, mode, selected, nodes, store]);
 
   React.useEffect(() => {
     if (!map3d) return;
@@ -241,67 +253,72 @@ export function useDrawSelection(map3d: Map3D | null) {
 
 export function useMap3DEvents(map3d: Map3D | null) {
   const dispatch = useAppDispatch();
+  const store = useAppStore();
   const selected = useAppSelector(NodesSelectors.getSelectedNodes);
-  const nodes = useAppSelector(NodesSelectors.getNodes);
   const mode = useAppSelector(ProjectSelectors.getMode);
   const district = useAppSelector(DistrictSelectors.getDistrict);
-  const additions = useAppSelector(getAdditionsTransforms);
-  const updates = useAppSelector(getUpdates);
+  const invalidate = useInvalidateTransformsCache();
 
   const addNode = React.useCallback(
-    (index: number, tag: MapNode["tag"]) => {
-      invariant(district, "Unexpected error: District is not defined");
+    (index: number, tag: MapNodeV2["tag"]) => {
+      if (!district) return;
       const transform = immutableDistrictTransforms.get(district.name)?.[index];
-      invariant(transform, "Transform is not defined");
+      if (!transform) return;
 
-      const parent = getParent(district, selected[0]);
+      const state = store.getState();
+      const nodes = NodesSelectors.getNodes(state);
+      const tree = NodesSelectors.getNodesTree(state);
+
+      const parent = getParent(nodes[selected[0]]);
       const id = nanoid();
 
       // If the user clicks twice without moving mouse, the highlighted block
       // will stay the same and trigger event twice
+      const districtTree = tree[district.name];
       if (
-        nodes.find(
-          (node) =>
-            node.district === district.name &&
-            node.tag === tag &&
-            node.index === index,
+        districtTree &&
+        districtTree.type === "district" &&
+        districtTree[tag].find(
+          (treeNode) => nodes[treeNode.id].indexInDistrict === index,
         )
       )
         return;
 
       const node = transformToNode(transform, district, {
         label: `Block #${index}`,
-        parent: district.name,
+        parent: null,
         district: district.name,
         tag,
         id,
-        index,
+        indexInDistrict: index,
       });
-      const nodeWithCorrectParent = transplantNode(nodes, node, parent);
-      dispatch(NodesActions.addNode(nodeWithCorrectParent));
+
+      if (parent) {
+        const nodeWithCorrectParent = transplantNode(
+          nodes,
+          node,
+          parent,
+          district.name,
+        );
+        invalidate([parent]);
+        dispatch(NodesActions.addNode(nodeWithCorrectParent));
+      } else {
+        dispatch(NodesActions.addNode(node));
+      }
       dispatch(NodesActions.selectNode({ id }));
     },
-    [district, selected, nodes, dispatch],
+    [district, selected, dispatch, store, invalidate],
   );
 
   React.useEffect(() => {
-    if (!map3d) return;
+    if (!map3d || !district) return;
 
-    const onSelect = ((event: CustomEvent<{ index: number }>) => {
+    const onSelect = ((event: CustomEvent<{ id: string }>) => {
       if (event.detail) {
-        const { index } = event.detail;
+        const { id } = event.detail;
 
-        if (index != null) {
-          const id =
-            mode === "create"
-              ? additions[index].id
-              : mode === "update"
-                ? updates[index].id
-                : null;
-
-          if (id != null) {
-            dispatch(NodesActions.selectNode({ id }));
-          }
+        if (id != null) {
+          dispatch(NodesActions.selectNode({ id }));
         } else {
           dispatch(NodesActions.selectNode(null));
         }
@@ -327,5 +344,5 @@ export function useMap3DEvents(map3d: Map3D | null) {
       window.removeEventListener("remove-node", onRemove);
       window.removeEventListener("update-node", onUpdate);
     };
-  }, [addNode, additions, mode, updates, dispatch, map3d]);
+  }, [addNode, mode, store, dispatch, district, map3d]);
 }

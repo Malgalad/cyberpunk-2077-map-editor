@@ -8,6 +8,7 @@ import {
 } from "lucide-react";
 import * as React from "react";
 
+import { useGlobalShortcuts } from "../../../hooks/hooks.ts";
 import { clsx } from "../../../utilities/utilities.ts";
 import {
   useDropdownContext,
@@ -21,11 +22,20 @@ interface DropdownItemProps {
   disabled?: boolean;
   icon?: React.ReactElement<Parameters<typeof Icon>[0]>;
   onClick?: () => void;
+  shortcut?: string;
 }
 
 function DropdownItem(props: DropdownItemProps) {
-  const { checked, children, className, disabled, icon, onClick, ...rest } =
-    props;
+  const {
+    checked,
+    children,
+    className,
+    disabled,
+    icon,
+    onClick,
+    shortcut,
+    ...rest
+  } = props;
   const { indent } = useDropdownContext();
   const { direction, isTrigger } = useDropdownTriggerContext();
   const iconProps = {
@@ -46,6 +56,8 @@ function DropdownItem(props: DropdownItemProps) {
       {direction === "bottom" && <ChevronDown {...iconProps} />}
     </div>
   );
+
+  useGlobalShortcuts(shortcut, onClick, disabled);
 
   return (
     <div

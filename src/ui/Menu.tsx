@@ -17,6 +17,7 @@ import Button from "../components/common/Button.tsx";
 import DropdownItem from "../components/common/Dropdown/Dropdown.Item.tsx";
 import DropdownSeparator from "../components/common/Dropdown/Dropdown.Separator.tsx";
 import Dropdown from "../components/common/Dropdown/Dropdown.tsx";
+import Tooltip from "../components/common/Tooltip.tsx";
 import {
   useAppDispatch,
   useAppSelector,
@@ -27,7 +28,6 @@ import {
   useImportDDS,
   useSaveProject,
 } from "../hooks/importExport.ts";
-import { getDistrictCache } from "../store/@selectors.ts";
 import { DistrictSelectors } from "../store/district.ts";
 import { ModalsActions } from "../store/modals.ts";
 import { OptionsActions, OptionsSelectors } from "../store/options.ts";
@@ -43,7 +43,6 @@ function Menu() {
   const patternView = useAppSelector(OptionsSelectors.getPatternView);
   const districtView = useAppSelector(OptionsSelectors.getDistrictView);
   const visibleDistricts = useAppSelector(OptionsSelectors.getVisibleDistricts);
-  const cache = useAppSelector(getDistrictCache);
   const exportDDS = useExportDDS();
   const importDDS = useImportDDS();
   const saveProject = useSaveProject();
@@ -51,15 +50,16 @@ function Menu() {
   const hasFuture = useAppSelector((state) => state.future.length > 0);
 
   useGlobalShortcuts(
-    (event) => event.code === "KeyZ" && event.ctrlKey && !event.shiftKey,
+    "Control+KeyZ",
     () => dispatch(ActionCreators.undo()),
     !hasPast,
   );
   useGlobalShortcuts(
-    (event) => event.code === "KeyZ" && event.ctrlKey && event.shiftKey,
+    "Control+Shift+KeyZ",
     () => dispatch(ActionCreators.redo()),
     !hasFuture,
   );
+  useGlobalShortcuts("Control+Shift+KeyS", () => saveProject(), !projectName);
 
   return (
     <div className="flex flex-row justify-between px-2">
@@ -72,8 +72,6 @@ function Menu() {
             <div className="border-r border-slate-500 h-full" />
           </>
         )}
-
-        <div className="border-r border-slate-600 w-[1px]" />
 
         <Dropdown
           trigger={
@@ -99,18 +97,21 @@ function Menu() {
           >
             Load from disk
           </DropdownItem>
-          <DropdownItem
-            icon={<HardDriveDownload />}
-            onClick={saveProject}
-            disabled={!projectName}
-          >
-            Save to disk
-          </DropdownItem>
+          <Tooltip tooltip="Ctrl+Shift+S" flow="right">
+            <DropdownItem
+              icon={<HardDriveDownload />}
+              onClick={saveProject}
+              disabled={!projectName}
+            >
+              <span>Save to disk</span>
+            </DropdownItem>
+          </Tooltip>
           <DropdownSeparator />
           <Dropdown
             direction="right"
             align="top"
             trigger={<DropdownItem>Import/Export</DropdownItem>}
+            disabled
           >
             <DropdownItem
               onClick={() =>
@@ -146,20 +147,24 @@ function Menu() {
             <Button className="border-none cursor-default!">Edit</Button>
           }
         >
-          <DropdownItem
-            icon={<Undo />}
-            onClick={() => dispatch(ActionCreators.undo())}
-            disabled={!hasPast}
-          >
-            Undo
-          </DropdownItem>
-          <DropdownItem
-            icon={<Redo />}
-            onClick={() => dispatch(ActionCreators.redo())}
-            disabled={!hasFuture}
-          >
-            Redo
-          </DropdownItem>
+          <Tooltip tooltip="Ctrl+Z" flow="right">
+            <DropdownItem
+              icon={<Undo />}
+              onClick={() => dispatch(ActionCreators.undo())}
+              disabled={!hasPast}
+            >
+              Undo
+            </DropdownItem>
+          </Tooltip>
+          <Tooltip tooltip="Ctrl+Shift+Z" flow="right">
+            <DropdownItem
+              icon={<Redo />}
+              onClick={() => dispatch(ActionCreators.redo())}
+              disabled={!hasFuture}
+            >
+              Redo
+            </DropdownItem>
+          </Tooltip>
           <DropdownSeparator />
           <DropdownItem
             icon={<Settings2 />}
@@ -259,10 +264,9 @@ function Menu() {
           className="border-none tooltip"
           onClick={exportDDS}
           disabled={
-            !projectName ||
-            !district ||
+            !projectName || !district /*||
             !cache?.instances.length ||
-            (cache?.errors.length ?? 0) > 0
+            (cache?.errors.length ?? 0) > 0*/
           }
           data-tooltip="Compile district changes and export to DDS texture"
           data-flow="bottom"

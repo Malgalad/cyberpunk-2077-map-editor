@@ -1,21 +1,21 @@
-import { EyeOff, SquareStack, TriangleAlert } from "lucide-react";
+import { EyeOff, SquareStack } from "lucide-react";
 
 import { useAppDispatch, useAppSelector } from "../hooks/hooks.ts";
 import { useFocusNode } from "../hooks/nodes.hooks.ts";
-import { NodesActions, NodesSelectors } from "../store/nodes.ts";
-import type { MapNode } from "../types/types.ts";
+import { NodesActions, NodesSelectors } from "../store/nodesV2.ts";
+import type { MapNodeV2 } from "../types/types.ts";
 import { clsx } from "../utilities/utilities.ts";
 import Button from "./common/Button.tsx";
 import Tooltip from "./common/Tooltip.tsx";
 
 interface InstanceProps {
   lookAtNode: () => void;
-  node: MapNode;
+  node: MapNodeV2;
 }
 
 function Instance({ lookAtNode, node }: InstanceProps) {
   const dispatch = useAppDispatch();
-  const selected = useAppSelector(NodesSelectors.getSelectedNodeIds);
+  const selected = useAppSelector(NodesSelectors.getSelectedNodes);
   const ref = useFocusNode(node);
 
   return (
@@ -70,13 +70,6 @@ function Instance({ lookAtNode, node }: InstanceProps) {
               >
                 <SquareStack />
               </Button>
-            </Tooltip>
-          )}
-          {node.errors && (
-            <Tooltip tooltip={node.errors.join("\n")} flow="left">
-              <div>
-                <TriangleAlert className="text-red-500" />
-              </div>
             </Tooltip>
           )}
         </div>

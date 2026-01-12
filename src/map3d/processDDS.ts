@@ -1,3 +1,4 @@
+import { DEFAULT_TRANSFORM } from "../constants.ts";
 import type { InstancedMeshTransforms } from "../types/types.ts";
 import { calculateHeight } from "../utilities/district.ts";
 
@@ -17,13 +18,6 @@ const magic = [
   0, 1, 0, 0, 0,
 ];
 const uint16 = 2 ** 16 - 1; // 65535
-
-const paddingTransform: InstancedMeshTransforms = {
-  id: "-1",
-  position: { x: 0, y: 0, z: 0, w: 1 },
-  orientation: { x: 0, y: 0, z: 0, w: 0 },
-  scale: { x: 0, y: 0, z: 0, w: 1 },
-};
 
 /**
  * XYZW data is encoded in 16-bit texture as RGBA channels
@@ -56,7 +50,7 @@ export function decodeImageData(data: Uint16Array): InstancedMeshTransforms[] {
     if (x >= height) continue;
     if (index < height) {
       // Game ignores the first column, so replace it with empty transforms
-      instances[index] = paddingTransform;
+      instances[index] = DEFAULT_TRANSFORM;
       continue;
     }
 
@@ -81,6 +75,9 @@ export function decodeImageData(data: Uint16Array): InstancedMeshTransforms[] {
 
     instances[index] = {
       id: `${index}`,
+      virtual: false,
+      originId: null,
+      index,
       position,
       orientation,
       scale,
@@ -90,9 +87,6 @@ export function decodeImageData(data: Uint16Array): InstancedMeshTransforms[] {
   return instances;
 }
 
-// FIXME handle case if default district has blocks added and it causes
-// the height to change, and we need to add new padding while preserving padding
-// for original height
 export function encodeImageData(
   data: InstancedMeshTransforms[],
 ): Uint16Array<ArrayBuffer> {

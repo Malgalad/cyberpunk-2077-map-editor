@@ -10,30 +10,21 @@ import {
   useGlobalShortcuts,
   usePreviousValue,
 } from "../hooks/hooks.ts";
+import { useInvalidateTransformsCache } from "../hooks/nodes.hooks.ts";
 import { useMap3D } from "../map3d/map3d.context.ts";
-import { getDistrictNodes } from "../store/@selectors.ts";
 import { DistrictSelectors } from "../store/district.ts";
-import { NodesActions, NodesSelectors } from "../store/nodes.ts";
-import type {
-  DistrictProperties,
-  GroupNodeCache,
-  MapNode,
-  Modes,
-} from "../types/types.ts";
-import type { SelectItem } from "../types/ui.types.ts";
-import { getDistrictName } from "../utilities/district.ts";
-import { parseNode, transplantNode } from "../utilities/nodes.ts";
-import { parseTransform } from "../utilities/transforms.ts";
-import { clsx } from "../utilities/utilities.ts";
+import { ModalsActions } from "../store/modals.ts";
+import { NodesActions, NodesSelectors } from "../store/nodesV2.ts";
+import type { MapNodeV2 } from "../types/types.ts";
+import { clsx, toNumber, toTuple3 } from "../utilities/utilities.ts";
 import Button from "./common/Button.tsx";
 import DraggableInput from "./common/DraggableInput.tsx";
 import Input from "./common/Input.tsx";
-import Select from "./common/Select.tsx";
 import Toggle from "./common/Toggle.tsx";
 import Tooltip from "./common/Tooltip.tsx";
 
 interface EditNodePropertiesProps {
-  selected: MapNode[];
+  selected: string[];
   mode: "create" | "update" | "delete";
 }
 
@@ -42,48 +33,49 @@ const axiiColors = [
   "border-green-500!",
   "border-blue-500!",
 ] as const;
+const updateTuple = <T,>(tuple: T[], index: number, value: T) =>
+  toTuple3(tuple.toSpliced(index, 1, value));
 
 function EditNodeProperties({ selected, mode }: EditNodePropertiesProps) {
-  const [node] = selected;
   const isMultiple = selected.length > 1;
   const dispatch = useAppDispatch();
   const forceUpdate = useForceUpdate();
+  const invalidate = useInvalidateTransformsCache();
   const map3d = useMap3D();
-  const nodes = useAppSelector(getDistrictNodes);
+  const nodes = useAppSelector(NodesSelectors.getNodes);
   const district = useAppSelector(DistrictSelectors.getDistrict);
-  const districts = useAppSelector(DistrictSelectors.getAllDistricts);
-  const cache = useAppSelector(NodesSelectors.getChildNodesCache);
-  const parents = React.useMemo(
-    () => getParentsList(selected, nodes, district, districts, cache, mode),
-    [district, districts, nodes, selected, cache, mode],
-  );
   const [useLocal, setUseLocal] = React.useState(false);
   const wasLocal = usePreviousValue(useLocal);
-  const [local, setLocal] = React.useState(["0", "0", "0"]);
-  const [copy, setCopy] = React.useState<MapNode | null>(null);
+  const [local, setLocal] = React.useState([0, 0, 0]);
+  const [copy, setCopy] = React.useState<MapNodeV2["position"]>([0, 0, 0]);
+  const node = nodes[selected[0]];
 
   React.useEffect(() => {
     if (useLocal && !wasLocal) {
-      setCopy(node);
-      setLocal(["0", "0", "0"]);
+      setCopy(node.position);
+      setLocal([0, 0, 0]);
     }
   }, [useLocal, wasLocal, node]);
 
   React.useEffect(() => {
     if (!map3d) return;
 
+    // Force update so that input step update
     return map3d.onZoomChange(forceUpdate);
   }, [map3d, forceUpdate]);
 
   const onHide = () => {
-    if (selected.length === 0) return;
-    const updates: MapNode[] = [];
-    for (const node of selected) {
+    if (!selected.length) return;
+    const updates: MapNodeV2[] = [];
+    for (const id of selected) {
+      const node = nodes[id];
+
       updates.push({
         ...node,
         hidden: !node.hidden,
       });
     }
+    invalidate(selected);
     dispatch(NodesActions.editNodes(updates));
   };
 
@@ -110,43 +102,19 @@ function EditNodeProperties({ selected, mode }: EditNodePropertiesProps) {
     <>
       <div>Parent:</div>
       <div>
-        {/* TODO split parent nodes and district select */}
-        <Select
+        <Button
           className="w-[248px]"
           disabled={
-            !selected.every((node) => node.parent === selected[0].parent)
+            !selected.every(
+              (id) => nodes[id].parent === nodes[selected[0]].parent,
+            )
           }
-          items={parents}
-          onChange={(event) => {
-            const parent = event.target.value;
-            const map = new Map(
-              nodes.map((node) => [node.id, parseNode(node)]),
-            );
-            const updates: MapNode[] = [];
-
-            for (const node of selected) {
-              const twig = transplantNode(map, node, parent);
-
-              updates.push(twig);
-
-              if (node.type === "group" && node.district !== twig.district) {
-                const children = cache[node.id]?.nodes ?? [];
-
-                for (const childId of children) {
-                  const child = nodes.find((n) => n.id === childId)!;
-
-                  updates.push({
-                    ...child,
-                    district: twig.district,
-                  });
-                }
-              }
-            }
-
-            dispatch(NodesActions.editNodes(updates));
-          }}
-          value={node.parent}
-        />
+          onClick={() =>
+            dispatch(ModalsActions.openModal("update-node-parent"))
+          }
+        >
+          Change parent
+        </Button>
       </div>
     </>
   );
@@ -156,7 +124,7 @@ function EditNodeProperties({ selected, mode }: EditNodePropertiesProps) {
         <span className="underline">H</span>idden:
       </div>
       <div>
-        <Toggle enabled={!!node.hidden} onChange={() => onHide()} />
+        <Toggle enabled={node.hidden} onChange={() => onHide()} />
       </div>
     </>
   );
@@ -211,51 +179,37 @@ function EditNodeProperties({ selected, mode }: EditNodePropertiesProps) {
         <div className="flex flex-row gap-1 items-center">
           {AXII.map((axis) => (
             <DraggableInput
-              key={axis}
+              key={`${axis}+${useLocal}`}
               className={clsx("w-20", axiiColors[axis])}
               step={3 / (map3d?.camera.zoom ?? 1)}
               value={useLocal ? local[axis] : node.position[axis]}
               onChange={(event) => {
+                const value = toNumber(event.target.value);
+                invalidate([node.id]);
                 if (useLocal) {
-                  const newLocal = local.toSpliced(axis, 1, event.target.value);
+                  const newLocal = updateTuple(local, axis, value);
 
                   setLocal(newLocal);
 
-                  if (!copy) return;
-
-                  // FIXME use new rotation when changing angle while local transform is used
-                  const parsedNode = parseTransform(copy);
-                  const parsedLocalPosition = parseTransform({
-                    position: newLocal as [string, string, string],
-                    rotation: ["0", "0", "0"],
-                    scale: ["1", "1", "1"],
-                  });
-
                   const position = new THREE.Vector3()
-                    .fromArray(parsedNode.position)
+                    .fromArray(copy)
                     .add(
                       new THREE.Vector3()
-                        .fromArray(parsedLocalPosition.position)
-                        .applyEuler(
-                          new THREE.Euler().fromArray(parsedNode.rotation),
-                        ),
+                        .fromArray(newLocal)
+                        .applyEuler(new THREE.Euler().fromArray(node.rotation)),
                     );
 
                   dispatch(
-                    NodesActions.patchNode(node.id, (draft) => {
-                      draft.position = position
-                        .toArray()
-                        .map((number) => number.toString()) as [
-                        string,
-                        string,
-                        string,
-                      ];
+                    NodesActions.editNode({
+                      id: node.id,
+                      position: toTuple3(position.toArray()),
                     }),
                   );
                 } else {
                   dispatch(
-                    NodesActions.patchNode(node.id, (draft) => {
-                      draft.position[axis] = event.target.value;
+                    NodesActions.editNode({
+                      id: node.id,
+                      position: updateTuple(node.position, axis, value),
                     }),
                   );
                 }
@@ -271,11 +225,16 @@ function EditNodeProperties({ selected, mode }: EditNodePropertiesProps) {
               key={axis}
               className={clsx("w-20", axiiColors[axis])}
               step={5 / (map3d?.camera.zoom ?? 1)}
-              value={node.rotation[axis]}
+              value={THREE.MathUtils.radToDeg(node.rotation[axis])}
               onChange={(event) => {
+                const value = THREE.MathUtils.degToRad(
+                  toNumber(event.target.value),
+                );
+                invalidate([node.id]);
                 dispatch(
-                  NodesActions.patchNode(node.id, (draft) => {
-                    draft.rotation[axis] = event.target.value;
+                  NodesActions.editNode({
+                    id: node.id,
+                    rotation: updateTuple(node.rotation, axis, value),
                   }),
                 );
               }}
@@ -293,9 +252,12 @@ function EditNodeProperties({ selected, mode }: EditNodePropertiesProps) {
               }
               value={node.scale[axis]}
               onChange={(event) => {
+                const value = toNumber(event.target.value);
+                invalidate([node.id]);
                 dispatch(
-                  NodesActions.patchNode(node.id, (draft) => {
-                    draft.scale[axis] = event.target.value;
+                  NodesActions.editNode({
+                    id: node.id,
+                    scale: updateTuple(node.scale, axis, value),
                   }),
                 );
               }}
@@ -311,70 +273,6 @@ function EditNodeProperties({ selected, mode }: EditNodePropertiesProps) {
       </div>
     </div>
   );
-}
-
-const emptyArr: unknown[] = [];
-
-function getParentsList(
-  selectedNodes: MapNode[],
-  nodes: MapNode[],
-  selectedDistrict: DistrictProperties | undefined,
-  districts: DistrictProperties[],
-  cache: GroupNodeCache,
-  mode: Modes,
-): SelectItem[] {
-  if (!selectedDistrict) return emptyArr as SelectItem[];
-
-  const { tag, parent } = selectedNodes[0];
-  const excludedGroups = new Set(
-    selectedNodes.reduce(
-      (acc, node) => acc.concat(cache[node.id]?.groups ?? []),
-      [] as string[],
-    ),
-  );
-  const selectedIds = new Set(selectedNodes.map((node) => node.id));
-  const items: SelectItem[] = [];
-  const wrapLabel = (label: string, value: string) =>
-    [
-      label,
-      parent === value && " (current)",
-      selectedIds.has(value) && " (self)",
-    ]
-      .filter(Boolean)
-      .join(" ");
-
-  const addItem = (node: MapNode, parentId: string, level: number) => {
-    if (excludedGroups.has(node.id)) return;
-    if (node.parent === parentId && node.tag === tag && node.type === "group") {
-      items.push({
-        disabled: parent === node.id || selectedIds.has(node.id),
-        label: wrapLabel(node.label, node.id),
-        level,
-        value: node.id,
-      });
-
-      for (const child of nodes) {
-        addItem(child, node.id, level + 1);
-      }
-    }
-  };
-
-  for (const district of districts) {
-    if (mode !== "create" && district.name !== selectedDistrict.name) continue;
-
-    items.push({
-      disabled: parent === district.name,
-      label: wrapLabel(getDistrictName(district), district.name),
-      level: 0,
-      value: district.name,
-    });
-
-    for (const node of nodes) {
-      addItem(node, district.name, 1);
-    }
-  }
-
-  return items;
 }
 
 export default EditNodeProperties;

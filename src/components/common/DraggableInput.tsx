@@ -2,6 +2,18 @@ import * as React from "react";
 
 import { clsx } from "../../utilities/utilities.ts";
 
+// keep the number of digits after floating point constant
+const toPrecision = (value: number) =>
+  value.toPrecision(
+    Math.abs(value) > 1000
+      ? 8
+      : Math.abs(value) > 100
+        ? 7
+        : Math.abs(value) > 10
+          ? 6
+          : 5,
+  );
+
 export default function DraggableInput(
   props: React.InputHTMLAttributes<HTMLInputElement>,
 ) {
@@ -12,6 +24,7 @@ export default function DraggableInput(
     min = -Infinity,
     step = 1,
   } = props;
+  const [value, setValue] = React.useState(`${props.value}`);
   const [isDragging, setIsDragging] = React.useState(false);
   const [startY, setStartY] = React.useState(0);
   const [startValue, setStartValue] = React.useState("0");
@@ -41,15 +54,8 @@ export default function DraggableInput(
           parseFloat(startValue) + deltaY * parseFloat(`${step}`),
         ),
       );
-      const precision =
-        Math.abs(value) > 1000
-          ? 8
-          : Math.abs(value) > 100
-            ? 7
-            : Math.abs(value) > 10
-              ? 6
-              : 5;
-      const eventLike = { target: { value: value.toPrecision(precision) } };
+      const eventLike = { target: { value: toPrecision(value) } };
+      setValue(eventLike.target.value);
       onChange?.(eventLike as React.ChangeEvent<HTMLInputElement>);
     },
     [isDragging, max, min, onChange, startValue, startY, step],
@@ -59,6 +65,14 @@ export default function DraggableInput(
     setIsDragging(false);
     document.body.style.cursor = "default";
   }, []);
+
+  const handleChange = React.useCallback(
+    (event: React.ChangeEvent<HTMLInputElement>) => {
+      setValue(event.target.value);
+      onChange?.(event);
+    },
+    [onChange],
+  );
 
   React.useEffect(() => {
     if (isDragging) {
@@ -79,6 +93,8 @@ export default function DraggableInput(
     >
       <input
         {...props}
+        value={value}
+        onChange={handleChange}
         ref={inputRef}
         type="number"
         onMouseDown={handleMouseDown}

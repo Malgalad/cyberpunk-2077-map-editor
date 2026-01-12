@@ -1,20 +1,15 @@
-import { DISTRICT_LABELS } from "../constants.ts";
+import { DEFAULT_TRANSFORM, DISTRICT_LABELS } from "../constants.ts";
 import type {
   ComputedDistrictProperties,
   DefaultDistrictNames,
   District,
   DistrictProperties,
   InstancedMeshTransforms,
-  MapNode,
+  NodesMap,
+  NodesTree,
 } from "../types/types.ts";
 import { projectNodesToDistrict } from "./transforms.ts";
-
-const paddingTransform: InstancedMeshTransforms = {
-  id: "-1",
-  position: { x: 0, y: 0, z: 0, w: 1 },
-  orientation: { x: 0, y: 0, z: 0, w: 0 },
-  scale: { x: 0, y: 0, z: 0, w: 1 },
-};
+import { invariant } from "./utilities.ts";
 
 export const getDistrictName = (district: DistrictProperties) =>
   district.isCustom
@@ -48,55 +43,42 @@ export const immutableDistrictTransforms = new Map<
   InstancedMeshTransforms[]
 >();
 
-const not =
-  <T>(fn: (value: T) => boolean) =>
-  (value: T) =>
-    !fn(value);
-const valid = (n: number) => n >= 0 && n <= 1;
-const validOrientation = (n: number) => n >= -1 && n <= 1;
-const validate = (transform: InstancedMeshTransforms) => {
-  if (
-    Object.values(transform.position).some(not(valid)) ||
-    Object.values(transform.orientation).some(not(validOrientation)) ||
-    Object.values(transform.scale).some(not(valid))
-  )
-    throw new Error(`Invalid transform: ${JSON.stringify(transform)}`);
-};
-const isHidden = ({ scale: { x, y, z, w } }: InstancedMeshTransforms) =>
-  (x === 0 && y === 0 && z === 0) || w === 0;
+const isVisible = ({ scale: { x, y, z, w } }: InstancedMeshTransforms) =>
+  !((x === 0 && y === 0 && z === 0) || w === 0);
 export function getFinalDistrictTransformsFromNodes(
-  nodes: MapNode[],
   district: District,
+  nodes: NodesMap,
+  tree: NodesTree,
 ): InstancedMeshTransforms[] {
-  const transforms = immutableDistrictTransforms.get(district.name) ?? [];
-  const additions: MapNode[] = [];
-  const updates: MapNode[] = [];
-  const deletions = new Set<number>();
+  const baseTransforms = immutableDistrictTransforms.get(district.name) ?? [];
+  const districtTree = tree[district.name];
 
-  for (const node of nodes) {
-    if (node.district !== district.name) continue;
-    if (node.tag === "create") {
-      additions.push(node);
-    } else if (node.tag === "update") {
-      updates.push(node);
-    } else if (node.tag === "delete" && node.type === "instance") {
-      deletions.add(node.index ?? -1);
-    }
-  }
+  if (!districtTree) return baseTransforms;
 
-  const additionTransforms = projectNodesToDistrict(additions, district).filter(
-    (transform) => !isHidden(transform),
+  invariant(
+    districtTree.type === "district",
+    "District tree must have a district type.",
   );
+  const additions = districtTree.create;
+  const updates = districtTree.update;
+  const deletions = new Set(
+    districtTree.delete.map((treeNode) => nodes[treeNode.id].indexInDistrict),
+  );
+
+  const additionTransforms = projectNodesToDistrict(
+    district,
+    nodes,
+    additions,
+  ).filter(isVisible);
   const updateTransforms = new Map(
-    projectNodesToDistrict(updates, district)
-      .filter((transform) => !isHidden(transform))
+    projectNodesToDistrict(district, nodes, updates)
+      .filter(isVisible)
       .map((transform) => [transform.index, transform]),
   );
   const districtTransforms: InstancedMeshTransforms[] = [];
 
-  for (let index = 0; index < transforms.length; index++) {
-    const transform = transforms[index];
-    validate(transform);
+  for (let index = 0; index < baseTransforms.length; index++) {
+    const transform = baseTransforms[index];
 
     if (deletions.has(index)) continue;
     if (updateTransforms.has(index)) {
@@ -107,21 +89,22 @@ export function getFinalDistrictTransformsFromNodes(
   }
 
   const result = [...districtTransforms, ...additionTransforms];
-  const difference = result.length - transforms.length;
+  let padding = 0;
+
   if (district.isCustom) {
-    const height = padHeight(result.length, calculateHeight(result.length));
     // Pad custom district with empty transforms so that all blocks are rendered
-    const padding: InstancedMeshTransforms[] =
-      Array(height).fill(paddingTransform);
-    result.unshift(...padding);
+    padding = padHeight(result.length, calculateHeight(result.length));
+  } else {
+    const difference = result.length - baseTransforms.length;
+
+    if (difference < 0) {
+      // Maintain the same transforms length so that height does not change
+      padding = Math.abs(difference);
+    }
   }
-  if (difference < 0) {
-    // Maintain the same transforms length so that height does not change
-    const padding: InstancedMeshTransforms[] = Array(Math.abs(difference)).fill(
-      paddingTransform,
-    );
-    result.unshift(...padding);
-  }
+
+  result.unshift(...Array(padding).fill(DEFAULT_TRANSFORM));
+
   return result;
 }
 

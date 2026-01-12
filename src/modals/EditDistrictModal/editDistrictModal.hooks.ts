@@ -1,7 +1,7 @@
 import * as React from "react";
 
 import { useAppSelector } from "../../hooks/hooks.ts";
-import { NodesSelectors } from "../../store/nodes.ts";
+import { NodesSelectors } from "../../store/nodesV2.ts";
 import type { District } from "../../types/types.ts";
 import {
   calculateHeight,
@@ -165,10 +165,11 @@ export function useDrawOnCanvas(
 
 export function useDistrictTextureHeight(district?: District) {
   const nodes = useAppSelector(NodesSelectors.getNodes);
+  const tree = useAppSelector(NodesSelectors.getNodesTree);
 
   if (!district) return 0;
 
-  const transforms = getFinalDistrictTransformsFromNodes(nodes, district);
+  const transforms = getFinalDistrictTransformsFromNodes(district, nodes, tree);
 
   return calculateHeight(transforms.length);
 }

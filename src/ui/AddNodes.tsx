@@ -12,7 +12,7 @@ import Dropdown from "../components/common/Dropdown/Dropdown.tsx";
 import Tooltip from "../components/common/Tooltip.tsx";
 import EditNode from "../components/EditNode.tsx";
 import Node from "../components/Node.tsx";
-import { MAX_DEPTH } from "../constants.ts";
+// import { MAX_DEPTH } from "../constants.ts";
 import { useAppSelector, useGlobalShortcuts } from "../hooks/hooks.ts";
 import {
   useAddNode,
@@ -21,24 +21,24 @@ import {
   useDeselectNode,
   useMirrorNode,
 } from "../hooks/nodes.hooks.ts";
-import { getAdditions } from "../store/@selectors.ts";
 import { DistrictSelectors } from "../store/district.ts";
-import { NodesSelectors } from "../store/nodes.ts";
+import { NodesSelectors } from "../store/nodesV2.ts";
 import AddNodesTemplates from "./AddNodes.Templates.tsx";
 
 function AddNodes() {
-  const nodes = useAppSelector(getAdditions);
+  const nodes = useAppSelector(NodesSelectors.getNodes);
+  const tree = useAppSelector(NodesSelectors.getNodesTree);
   const selected = useAppSelector(NodesSelectors.getSelectedNodes);
   const district = useAppSelector(DistrictSelectors.getDistrict);
-  const cache = useAppSelector(NodesSelectors.getChildNodesCache);
-  const rootNodes = nodes.filter((node) => node.parent === district?.name);
+  const root = tree[district?.name ?? "--"] ?? {};
+  const branches = root && root.type === "district" ? root.create : [];
 
   const onDeselect = useDeselectNode();
   const onDelete = useDeleteNode(selected);
-  const onClone = useCloneNode(selected[0]);
+  const onClone = useCloneNode(nodes[selected[0]]);
   const onAddInstance = useAddNode("instance", "create");
   const onAddGroup = useAddNode("group", "create");
-  const onMirror = useMirrorNode(selected[0]);
+  const onMirror = useMirrorNode(nodes[selected[0]]);
 
   useGlobalShortcuts("Delete", onDelete);
 
@@ -51,14 +51,14 @@ function AddNodes() {
           className="grow p-2 flex flex-col overflow-auto"
           onClick={onDeselect}
         >
-          {rootNodes.length === 0 && (
+          {branches.length === 0 && (
             <div className="grow flex items-center justify-center italic">
               Add new nodes
             </div>
           )}
 
-          {rootNodes.map((node) => (
-            <Node key={node.id} node={node} />
+          {branches.map((branch) => (
+            <Node key={branch.id} node={nodes[branch.id]} />
           ))}
         </div>
 
@@ -136,9 +136,9 @@ function AddNodes() {
               className="border-none"
               onClick={onAddGroup}
               disabled={
-                selected.length > 1 ||
-                (selected[0]?.type === "group" &&
-                  cache[selected[0].id].level >= MAX_DEPTH - 1)
+                selected.length > 1 /* ||
+                (nodes[selected[0]]?.type === "group" &&
+                  cache[selected[0].id].level >= MAX_DEPTH - 1)*/
               }
             >
               <FolderPlus />
@@ -149,7 +149,7 @@ function AddNodes() {
 
       <div className="flex flex-col basis-[320px] shrink-0">
         {selected.length > 0 ? (
-          <EditNode key={selected[0].id} mode="create" />
+          <EditNode key={selected[0]} mode="create" />
         ) : (
           <div className="grow flex items-center justify-center italic bg-slate-800">
             Select a single node

@@ -1,7 +1,7 @@
 import * as React from "react";
 
 import { useAppSelector } from "../hooks/hooks.ts";
-import { NodesSelectors } from "../store/nodes.ts";
+import { NodesSelectors } from "../store/nodesV2.ts";
 import { clsx } from "../utilities/utilities.ts";
 import Button from "./common/Button.tsx";
 import EditNodePattern from "./EditNode.Pattern.tsx";
@@ -18,6 +18,7 @@ interface EditNodeProps {
 }
 
 function EditNode(props: EditNodeProps) {
+  const nodes = useAppSelector(NodesSelectors.getNodes);
   const selected = useAppSelector(NodesSelectors.getSelectedNodes);
   const [tab, setTab] = React.useState<Tabs>("properties");
 
@@ -63,7 +64,7 @@ function EditNode(props: EditNodeProps) {
       {tab === "properties" && (
         <EditNodeProperties selected={selected} mode={props.mode} />
       )}
-      {tab === "pattern" && <EditNodePattern node={selected[0]} />}
+      {tab === "pattern" && <EditNodePattern node={nodes[selected[0]]} />}
     </div>
   );
 }

@@ -1,11 +1,9 @@
 import { createAsyncThunk } from "@reduxjs/toolkit";
-import { nanoid } from "nanoid";
 
-import { TEMPLATE_ID } from "../constants.ts";
 import type {
   District,
-  MapNode,
-  MapNodeParsed,
+  DistrictProperties,
+  InstancedMeshTransforms,
   PersistentAppState,
   RevivedAppState,
 } from "../types/types.ts";
@@ -13,82 +11,64 @@ import {
   computeDistrictProperties,
   immutableDistrictTransforms,
 } from "../utilities/district.ts";
-import {
-  getNodeDistrict,
-  normalizeNodes,
-  parseNode,
-  validateNode,
-} from "../utilities/nodes.ts";
 import { getDistrictTransforms } from "../utilities/transforms.ts";
-import { invariant, toNumber } from "../utilities/utilities.ts";
+
+const unclampTransform =
+  (district: District) => (transform: InstancedMeshTransforms) => {
+    const { cubeSize, minMax } = district;
+
+    const position = {
+      x: transform.position.x * minMax.x,
+      y: transform.position.y * minMax.y,
+      z: transform.position.z * minMax.z,
+      w: 1,
+    };
+    const scale = {
+      x: transform.scale.x * cubeSize * 2,
+      y: transform.scale.y * cubeSize * 2,
+      z: transform.scale.z * cubeSize * 2,
+      w: 1,
+    };
+
+    return {
+      ...transform,
+      position,
+      scale,
+    };
+  };
+
+const resolveDistrict = async (
+  districtProperties: DistrictProperties,
+): Promise<District> => {
+  const transforms = await getDistrictTransforms(districtProperties);
+  const computedProperties = computeDistrictProperties(
+    districtProperties,
+    transforms.length,
+  );
+  const district: District = {
+    ...districtProperties,
+    ...computedProperties,
+  };
+  const unclampedTransforms = transforms.map(unclampTransform(district));
+
+  immutableDistrictTransforms.set(district.name, unclampedTransforms);
+
+  return district;
+};
 
 export const hydrateStateActionPrefix = "hydrateState";
 export const hydrateState = createAsyncThunk(
   hydrateStateActionPrefix,
   async (persistentState: PersistentAppState) => {
-    const { districts } = persistentState.district;
-    const { nodes } = persistentState.nodes;
-    const resolvedDistricts: District[] = await Promise.all(
-      districts.map((district) =>
-        getDistrictTransforms(district).then((transforms) => {
-          immutableDistrictTransforms.set(district.name, transforms);
-
-          return {
-            ...district,
-            ...computeDistrictProperties(district, transforms.length),
-          };
-        }),
-      ),
-    );
-    const updatedNodes = nodes.map((node) => {
-      if (node.tag === "create" || node.type === "group" || node.index != null)
-        return node;
-
-      const id = nanoid();
-      const index = toNumber(node.id);
-
-      return {
-        ...node,
-        id,
-        index,
-      };
-    });
-    const map = new Map<string, MapNodeParsed>(
-      updatedNodes.map((node) => [node.id, parseNode(node)]),
-    );
-    const validatedNodes: MapNode[] = normalizeNodes(updatedNodes)
-      .map((node) => {
-        if (node.district) return node;
-
-        const district = getNodeDistrict(map, node);
-
-        return {
-          ...node,
-          district,
-        };
-      })
-      .map((node) => {
-        if (node.district === TEMPLATE_ID) return node;
-
-        const district = resolvedDistricts.find(
-          (district) => district.name === node.district,
-        );
-        invariant(
-          district,
-          `Cannot find district "${parent} for node ${node.label} [${node.id}]"`,
-        );
-        return validateNode(node, map, district);
-      });
+    const { districts, current } = persistentState.district;
+    const resolvedDistricts = await Promise.all(districts.map(resolveDistrict));
 
     return {
       district: {
         districts: resolvedDistricts,
-        current: persistentState.district.current,
+        current,
       },
-      nodes: {
-        nodes: validatedNodes,
-        editingId: persistentState.nodes.editingId,
-      },
+      nodes: persistentState.nodes,
       options: persistentState.options,
       project: persistentState.project,
     } satisfies RevivedAppState as RevivedAppState;

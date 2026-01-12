@@ -7,13 +7,13 @@ import type {
   District,
   DistrictProperties,
   InstancedMeshTransforms,
-  MapNode,
-  MapNodeParsed,
-  Transform,
-  TransformParsed,
+  MapNodeV2,
+  NodesMap,
+  Plane,
+  TreeNode,
 } from "../types/types.ts";
-import { cloneNode, mirrorNode, nodeToTransform, parseNode } from "./nodes.ts";
-import { invariant, toNumber, toString } from "./utilities.ts";
+import { nodeToTransform } from "./nodes.ts";
+import { pipe } from "./utilities.ts";
 
 type Tuple3<T> = [T, T, T];
 const toTuple3 = <T>(array: T[]) => array.slice(0, 3) as Tuple3<T>;
@@ -23,111 +23,245 @@ const toQuaternion = (rotation: THREE.Vector3Tuple | THREE.EulerTuple) =>
 const hadamardProduct = (a: number[], b: number[]) =>
   a.map((x, i) => x * (b[i] ?? 0));
 const addTuples = (a: THREE.Vector3Tuple, b: number[]) =>
-  a.forEach((_, i) => (a[i] += b[i] ?? 0));
+  toTuple3(a.map((_, i) => a[i] + (b[i] ?? 0)));
 const scalePattern = (i: number) => (value: number) => value * (i + 1);
 const noTransforms: InstancedMeshTransforms[] = [];
 
-export function applyParentTransform<Node extends TransformParsed>(
-  node: Node,
-  parent: TransformParsed,
-): Node {
-  const parentPosition = new THREE.Vector3().fromArray(parent.position);
-  const parentRotation = toQuaternion(parent.rotation);
+const mirrorPosition = (plane: Plane | null, position: THREE.Vector3Tuple) => {
+  if (plane == null) return position;
+  const mirror = {
+    XY: [1, 1, -1],
+    XZ: [1, -1, 1],
+    YZ: [-1, 1, 1],
+  }[plane];
+  return toTuple3(hadamardProduct(position, mirror));
+};
+const mirrorRotation = (plane: Plane | null, rotation: THREE.Vector3Tuple) => {
+  if (plane == null) return rotation;
+  const mirror = {
+    XY: [-1, -1, 1],
+    XZ: [-1, 1, -1],
+    YZ: [1, -1, -1],
+  }[plane];
+  return toTuple3(hadamardProduct(rotation, mirror));
+};
 
-  const object = new THREE.Object3D();
+export function applyParentTransform(parent: MapNodeV2 | null) {
+  return (node: MapNodeV2): MapNodeV2 => {
+    if (!parent) return node;
 
-  object.position.fromArray(hadamardProduct(node.position, parent.scale));
-  object.rotation.fromArray(node.rotation);
-  object.scale.fromArray(hadamardProduct(node.scale, parent.scale));
+    const parentPosition = new THREE.Vector3().fromArray(parent.position);
+    const parentRotation = toQuaternion(parent.rotation);
 
-  object.applyQuaternion(parentRotation);
-  object.position.applyQuaternion(parentRotation);
-  object.position.add(parentPosition);
+    const object = new THREE.Object3D();
 
-  return {
-    ...node,
-    position: object.position.toArray(),
-    rotation: toTuple3(object.rotation.toArray()),
-    scale: object.scale.toArray(),
+    object.position.fromArray(
+      hadamardProduct(
+        mirrorPosition(node.mirror || parent.mirror, node.position),
+        parent.scale,
+      ),
+    );
+    object.rotation.fromArray(
+      mirrorRotation(node.mirror || parent.mirror, node.rotation),
+    );
+    object.scale.fromArray(hadamardProduct(node.scale, parent.scale));
+
+    object.applyQuaternion(parentRotation);
+    object.position.applyQuaternion(parentRotation);
+    object.position.add(parentPosition);
+
+    return {
+      ...node,
+      position: object.position.toArray(),
+      rotation: toTuple3(object.rotation.toArray() as number[]),
+      scale: object.scale.toArray(),
+    };
   };
 }
 
-export function applyTransforms(
-  node: MapNodeParsed,
-  nodes: Map<string, MapNodeParsed>,
-) {
+export function applyTransforms(nodes: NodesMap, node: MapNodeV2) {
   let current = node;
   let parentId = current.parent;
 
-  while (nodes.has(parentId)) {
-    const parent = nodes.get(parentId)!;
+  while (parentId) {
+    const parent = nodes[parentId];
 
-    current = applyParentTransform(current, parent);
+    current = applyParentTransform(parent)(current);
     parentId = parent.parent;
   }
 
   return current;
 }
 
-export function projectNodesToDistrict(
-  nodes: MapNode[],
-  district: District | undefined,
-): InstancedMeshTransforms[] {
+function applyDistrict(district: District) {
+  return (node: MapNodeV2): MapNodeV2 => {
+    return {
+      ...node,
+      position: toTuple3([
+        node.position[0] - district.origin.x,
+        node.position[1] - district.origin.y,
+        node.position[2] - district.origin.z,
+      ]),
+    };
+  };
+}
+
+function applyHidden(node: MapNodeV2): MapNodeV2 {
+  if (node.hidden) return { ...node, scale: [0, 0, 0] };
+  return node;
+}
+
+function applyCloned(parents: MapNodeV2[]) {
+  return (node: MapNodeV2): MapNodeV2 => {
+    const isCloned = parents.some((parent) => parent.virtual);
+    if (!isCloned || node.virtual) return node;
+    return { ...node, virtual: true, originId: node.id };
+  };
+}
+
+function applyOffset(node: MapNodeV2): MapNodeV2 {
+  // set node Z transform origin to bottom instead of center
+  if (node.tag === "create")
+    return {
+      ...node,
+      position: [
+        node.position[0],
+        node.position[1],
+        node.position[2] + node.scale[2] / 2,
+      ],
+    };
+  return node;
+}
+
+function applyPattern(node: MapNodeV2): MapNodeV2[] {
+  if (!node.pattern) return [];
+
+  if (node.pattern.mirror) {
+    return [
+      {
+        ...node,
+        id: node.id + "--X",
+        virtual: true,
+        originId: node.id,
+        mirror: node.pattern.mirror,
+      },
+    ];
+  }
+
+  const clones: MapNodeV2[] = Array(node.pattern.count)
+    .fill(node)
+    .map((clone, index) => ({
+      ...clone,
+      id: clone.id + `--${index}`,
+      virtual: true,
+      originId: node.id,
+    }));
+
+  for (let i = 0; i < clones.length; i++) {
+    const clone = clones[i];
+
+    clone.position = addTuples(
+      clone.position,
+      node.pattern.position.map(scalePattern(i)),
+    );
+    clone.rotation = addTuples(
+      clone.rotation,
+      node.pattern.rotation.map(scalePattern(i)),
+    );
+    clone.scale = addTuples(
+      clone.scale,
+      node.pattern.scale.map(scalePattern(i)),
+    );
+  }
+
+  return clones;
+}
+
+const cache = new Map<string, InstancedMeshTransforms[]>();
+const extraKeys = new Map<string, string[]>();
+const getKey = <T extends { id: string }>(node: T, parents: T[]) =>
+  `${node.id}+${parents.map((p) => p.id).join("+")}`;
+
+export const addTransformsToCache = (
+  id: string,
+  key: string,
+  transforms: InstancedMeshTransforms[],
+) => {
+  const keys = extraKeys.get(id) ?? [];
+  keys.push(key);
+  extraKeys.set(id, keys);
+  cache.set(key, transforms);
+};
+export const invalidateCachedTransforms = (ids: string[]) => {
+  for (const id of ids) {
+    const keys = extraKeys.get(id) ?? [];
+    extraKeys.set(id, []);
+    for (const key of keys) cache.delete(key);
+  }
+};
+export const invalidateCache = () => {
+  cache.clear();
+  extraKeys.clear();
+};
+
+export const projectNodesToDistrict = (
+  district: District,
+  nodes: NodesMap,
+  treeNodes: TreeNode[],
+): InstancedMeshTransforms[] => {
   if (!district) return noTransforms;
 
   const transforms: InstancedMeshTransforms[] = [];
-  const nodesParsed = nodes.map(parseNode);
-  const nodesMap = new Map(nodesParsed.map((node) => [node.id, node]));
 
-  // iterate in reverse order to ensure child patterns are resolved before parent patterns
-  for (let i = nodesParsed.length - 1; i >= 0; i--) {
-    const node = nodesParsed[i];
+  const processNode = (
+    treeNode: TreeNode,
+    parents: MapNodeV2[],
+  ): InstancedMeshTransforms[] => {
+    const node = nodes[treeNode.id];
+    const key = getKey(node, parents);
+    let transforms: InstancedMeshTransforms[] = [];
 
-    invariant(node, "Unexpected error: node is undefined");
+    if (cache.has(key)) return cache.get(key) ?? noTransforms;
 
-    if (node.hidden) node.scale = [0, 0, 0];
-    if (!node.pattern || node.virtual) continue;
+    if (node.type === "instance") {
+      const clones = applyPattern(node);
+      const resolveNode = pipe(
+        applyParentTransform(parents.at(-1)!),
+        applyHidden,
+        applyCloned(parents),
+        applyOffset,
+        applyDistrict(district),
+      );
+      const resolvedNodes = [node, ...clones].map(resolveNode);
 
-    for (let k = 0; k < node.pattern.count; k++) {
-      const clones = cloneNode(nodesParsed, node, node.parent, true);
+      transforms = resolvedNodes.map(nodeToTransform);
+    } else {
+      const clones = applyPattern(node);
+      const resolveNode = pipe(
+        applyParentTransform(parents.at(-1)!),
+        applyHidden,
+        applyCloned(parents),
+      );
+      const resolvedNodes = [node, ...clones].map(resolveNode);
 
-      for (const clone of clones) {
-        nodesMap.set(clone.id, clone);
-      }
-
-      const [self] = clones;
-
-      if (node.pattern.mirror) {
-        if (node.type === "instance") {
-          mirrorNode(node.pattern.mirror)(self);
-        } else {
-          const children = clones.filter((child) => child.parent === self.id);
-
-          for (const child of children) {
-            mirrorNode(node.pattern.mirror)(child);
-          }
-        }
-      } else {
-        addTuples(self.position, node.pattern.position.map(scalePattern(k)));
-        addTuples(self.rotation, node.pattern.rotation.map(scalePattern(k)));
-        addTuples(self.scale, node.pattern.scale.map(scalePattern(k)));
-      }
-
-      nodesParsed.push(...clones);
+      transforms = treeNode.children.flatMap((child) =>
+        resolvedNodes.flatMap((parent) =>
+          processNode(child, [...parents, parent]),
+        ),
+      );
     }
-  }
 
-  for (const node of nodesParsed) {
-    if (node.type === "group") continue;
+    addTransformsToCache(node.id, key, transforms);
 
-    const resolved = applyTransforms(node, nodesMap);
-    // set node Z transform origin to bottom instead of center
-    if (node.tag === "create") resolved.position[2] += resolved.scale[2] / 2;
-    transforms.push(nodeToTransform(resolved, district));
+    return transforms;
+  };
+
+  for (const treeNode of treeNodes) {
+    transforms.push(...processNode(treeNode, []));
   }
 
   return transforms;
-}
+};
 
 export async function getDistrictTransforms(district: DistrictProperties) {
   if (district.isCustom) return [];
@@ -139,46 +273,19 @@ export async function getDistrictTransforms(district: DistrictProperties) {
   return decodeImageData(new Uint16Array(arrayBuffer));
 }
 
-export function parseTransform<K>(
-  transform: Transform & K,
-): TransformParsed & K {
-  return {
-    ...transform,
-    position: transform.position.map(toNumber) as THREE.Vector3Tuple,
-    rotation: transform.rotation
-      .map(toNumber)
-      .map(THREE.MathUtils.degToRad) as THREE.Vector3Tuple,
-    scale: transform.scale.map(toNumber) as THREE.Vector3Tuple,
-  };
-}
-
-export function stringifyTransform<K>(
-  transform: TransformParsed & K,
-): Transform & K {
-  return {
-    ...transform,
-    position: transform.position.map(toString) as Transform["position"],
-    rotation: transform.rotation
-      .map(THREE.MathUtils.radToDeg)
-      .map(toString) as Transform["rotation"],
-    scale: transform.scale.map(toString) as Transform["scale"],
-  };
-}
-
 export function transformToNode(
   transform: InstancedMeshTransforms,
   district: District,
   properties: Pick<
-    MapNode,
-    "label" | "parent" | "district" | "tag" | "id" | "index"
+    MapNodeV2,
+    "label" | "parent" | "district" | "tag" | "id" | "indexInDistrict"
   >,
-): MapNode {
-  const { cubeSize, origin, minMax } = district;
-  const position = [
-    transform.position.x * minMax.x + origin.x,
-    transform.position.y * minMax.y + origin.y,
-    transform.position.z * minMax.z + origin.z,
-  ].map(toString) as MapNode["position"];
+): MapNodeV2 {
+  const position = toTuple3([
+    transform.position.x + district.origin.x,
+    transform.position.y + district.origin.y,
+    transform.position.z + district.origin.z,
+  ]);
   const rotation = toTuple3(
     new THREE.Euler()
       .setFromQuaternion(
@@ -189,21 +296,22 @@ export function transformToNode(
           transform.orientation.w,
         ),
       )
-      .toArray(),
-  )
-    .map((angle) => THREE.MathUtils.radToDeg(angle as number))
-    .map(toString) as MapNode["rotation"];
-  const scale = [
-    transform.scale.x * 2 * cubeSize,
-    transform.scale.y * 2 * cubeSize,
-    transform.scale.z * 2 * cubeSize,
-  ].map(toString) as MapNode["scale"];
+      .toArray() as number[],
+  );
+  const scale = toTuple3([
+    transform.scale.x,
+    transform.scale.y,
+    transform.scale.z,
+  ]);
+  const mirror = null;
 
   return {
     ...properties,
     type: "instance",
+    hidden: false,
     position,
     rotation,
     scale,
-  } satisfies MapNode as MapNode;
+    mirror,
+  } satisfies MapNodeV2 as MapNodeV2;
 }

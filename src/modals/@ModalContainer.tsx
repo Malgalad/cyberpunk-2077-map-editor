@@ -11,6 +11,7 @@ import EditDistrictModal from "./EditDistrictModal/EditDistrictModal.tsx";
 import ImportExportNodesModal from "./ImportExportNodesModal.tsx";
 import LoadingModal from "./LoadingModal.tsx";
 import ProjectModal from "./ProjectModal.tsx";
+import UpdateNodeParentModal from "./UpdateNodeParentModal.tsx";
 
 const ComponentMap: Record<ModalType, React.FC<ModalProps>> = {
   alert: AlertModal,
@@ -21,6 +22,7 @@ const ComponentMap: Record<ModalType, React.FC<ModalProps>> = {
   project: ProjectModal,
   "edit-district": EditDistrictModal,
   "import-export": ImportExportNodesModal,
+  "update-node-parent": UpdateNodeParentModal,
 };
 
 function ModalContainer() {

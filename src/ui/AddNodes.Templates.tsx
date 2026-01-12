@@ -16,27 +16,31 @@ import { getParent } from "../hooks/nodes.hooks.ts";
 import { useMap3D } from "../map3d/map3d.context.ts";
 import { DistrictSelectors } from "../store/district.ts";
 import { ModalsActions } from "../store/modals.ts";
-import { NodesActions, NodesSelectors } from "../store/nodes.ts";
-import type { MapNode } from "../types/types.ts";
-import { toString } from "../utilities/utilities.ts";
+import { NodesActions, NodesSelectors } from "../store/nodesV2.ts";
+import { toTuple3 } from "../utilities/utilities.ts";
 
 function AddNodesTemplates() {
   const dispatch = useAppDispatch();
   const map3d = useMap3D();
+  const nodes = useAppSelector(NodesSelectors.getNodes);
   const district = useAppSelector(DistrictSelectors.getDistrict);
   const selected = useAppSelector(NodesSelectors.getSelectedNodes);
-  const templates = useAppSelector(NodesSelectors.getTemplateNodes);
+  const tree = useAppSelector(NodesSelectors.getNodesTree);
+  const templatesTree = tree[TEMPLATE_ID];
+  const templates =
+    templatesTree && templatesTree.type === "template"
+      ? templatesTree.children
+      : [];
 
   if (!district) return null;
 
-  const onInsert = (template: MapNode) => () => {
+  const onInsert = (id: string) => () => {
+    const template = nodes[id];
     if (!map3d) return;
     const center = map3d.getCenter();
     if (!center) return;
-    const parent = getParent(district, selected[0]);
-    const position = (
-      selected[0] ? ["0", "0", "0"] : center.map(toString)
-    ) as MapNode["position"];
+    const parent = getParent(nodes[selected[0]]);
+    const position = toTuple3(parent ? [0, 0, 0] : center);
     const label = template.label.replace(/TEMPLATE <(.+?)>/, "$1");
 
     dispatch(
@@ -54,7 +58,8 @@ function AddNodesTemplates() {
     );
   };
 
-  const onDelete = (template: MapNode) => async () => {
+  const onDelete = (id: string) => async () => {
+    const template = nodes[id];
     const confirmed = await dispatch(
       ModalsActions.openModal(
         "confirm",
@@ -71,12 +76,11 @@ function AddNodesTemplates() {
     if (selected.length !== 1) return;
     dispatch(
       NodesActions.cloneNode({
-        id: selected[0].id,
+        id: selected[0],
         updates: {
-          label: `TEMPLATE <${selected[0].label}>`,
-          parent: TEMPLATE_ID,
-          position: ["0", "0", "0"],
-          errors: undefined,
+          label: `TEMPLATE <${nodes[selected[0]].label}>`,
+          parent: null,
+          position: [0, 0, 0],
         },
         globalUpdates: {
           district: TEMPLATE_ID,
@@ -108,7 +112,7 @@ function AddNodesTemplates() {
               key={template.id}
               trigger={
                 <DropdownItem icon={<ChevronLeft />}>
-                  {template.label}
+                  {nodes[template.id].label}
                 </DropdownItem>
               }
               className="min-w-auto!"
@@ -117,12 +121,12 @@ function AddNodesTemplates() {
               indent={false}
             >
               <DropdownItem
-                onClick={onInsert(template)}
+                onClick={onInsert(template.id)}
                 icon={<BetweenHorizonalEnd />}
               >
                 Insert
               </DropdownItem>
-              <DropdownItem onClick={onDelete(template)} icon={<Trash2 />}>
+              <DropdownItem onClick={onDelete(template.id)} icon={<Trash2 />}>
                 Delete
               </DropdownItem>
             </Dropdown>

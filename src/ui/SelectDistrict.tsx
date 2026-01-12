@@ -1,4 +1,4 @@
-import { ChevronDown, Plus, Trash2, TriangleAlert } from "lucide-react";
+import { ChevronDown, Plus, Trash2 /*TriangleAlert*/ } from "lucide-react";
 
 import Button from "../components/common/Button.tsx";
 import DropdownItem from "../components/common/Dropdown/Dropdown.Item.tsx";
@@ -8,25 +8,24 @@ import { useAppDispatch, useAppSelector } from "../hooks/hooks.ts";
 import { useMap3D } from "../map3d/map3d.context.ts";
 import { DistrictActions, DistrictSelectors } from "../store/district.ts";
 import { ModalsActions } from "../store/modals.ts";
-import { NodesActions, NodesSelectors } from "../store/nodes.ts";
+import { NodesActions, NodesSelectors } from "../store/nodesV2.ts";
 import { ProjectActions, ProjectSelectors } from "../store/project.ts";
-import type { GroupNodeCache } from "../types/types.ts";
+import type { NodesIndex } from "../types/types.ts";
 import { getDistrictName } from "../utilities/district.ts";
+import { clsx } from "../utilities/utilities.ts";
 
-const getEdits = (cachedDistrict: GroupNodeCache[string]) => {
-  if (!cachedDistrict) return null;
+const getEdits = (index: NodesIndex[string]) => {
+  if (!index || index.treeNode.type !== "district") return null;
+  const treeNode = index.treeNode;
+  const additions = treeNode.create.reduce((acc, node) => acc + node.weight, 0);
+  const updates = treeNode.update.reduce((acc, node) => acc + node.weight, 0);
+  const deletions = treeNode.delete.reduce((acc, node) => acc + node.weight, 0);
 
   return (
     <div className="flex flex-row gap-0.5 text-sm &:empty:hidden">
-      {cachedDistrict.additions.length > 0 && (
-        <div className="text-green-400">+{cachedDistrict.additions.length}</div>
-      )}
-      {cachedDistrict.updates.length > 0 && (
-        <div className="text-yellow-400">~{cachedDistrict.updates.length}</div>
-      )}
-      {cachedDistrict.deletions.length > 0 && (
-        <div className="text-red-400">-{cachedDistrict.deletions.length}</div>
-      )}
+      {additions > 0 && <div className="text-green-400">+{additions}</div>}
+      {updates > 0 && <div className="text-yellow-400">~{updates}</div>}
+      {deletions > 0 && <div className="text-red-400">-{deletions}</div>}
     </div>
   );
 };
@@ -37,21 +36,24 @@ function SelectDistrict() {
   const project = useAppSelector(ProjectSelectors.getProjectName);
   const district = useAppSelector(DistrictSelectors.getDistrict);
   const districts = useAppSelector(DistrictSelectors.getAllDistricts);
-  const cache = useAppSelector(NodesSelectors.getChildNodesCache);
+  const index = useAppSelector(NodesSelectors.getNodesIndex);
 
   return (
     <Dropdown
       trigger={
-        <Button className="w-64 justify-between! border-none">
+        <Button
+          className={clsx(
+            "w-64 justify-between!",
+            project && !district && "border border-amber-500!",
+            (!project || district) && "border-none",
+          )}
+        >
           <div className="w-full truncate text-left">
             {district
               ? `Selected: ${getDistrictName(district)}`
               : "Select district"}
           </div>
           <div className="flex flex-row gap-1 items-center">
-            {((district && cache[district.name]?.errors.length) ?? 0) > 0 && (
-              <TriangleAlert className="text-red-500" />
-            )}
             <ChevronDown className="shrink-0" />
           </div>
         </Button>
@@ -74,10 +76,7 @@ function SelectDistrict() {
             <div className="flex flex-row gap-4 items-baseline justify-between">
               {getDistrictName(item)}
               <div className="flex flex-row gap-1 items-center">
-                {getEdits(cache[item.name])}
-                {(cache[item.name]?.errors.length ?? 0) > 0 && (
-                  <TriangleAlert className="text-red-500" size={16} />
-                )}
+                {getEdits(index[item.name])}
               </div>
             </div>
           </DropdownItem>
@@ -85,8 +84,8 @@ function SelectDistrict() {
 
         if (!item.isCustom) return element;
 
-        const districtCache = cache[item.name];
-        const disableDelete = districtCache?.nodes.length > 0;
+        const districtIndex = index[item.name];
+        const disableDelete = districtIndex?.descendantIds.length > 0;
 
         return (
           <Dropdown

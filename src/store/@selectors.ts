@@ -2,20 +2,13 @@ import { createSelector } from "@reduxjs/toolkit";
 
 import type {
   AppState,
-  District,
   DistrictProperties,
-  GroupNodeCache,
-  MapNode,
   PersistentAppState,
 } from "../types/types.ts";
-import { structuralSharing } from "../utilities/structuralSharing.ts";
-import { projectNodesToDistrict } from "../utilities/transforms.ts";
-import districtSlice, { DistrictSelectors } from "./district.ts";
-import nodesSlice, { NodesSelectors } from "./nodes.ts";
+import districtSlice from "./district.ts";
+import nodesSlice from "./nodesV2.ts";
 import optionsSlice from "./options.ts";
 import projectSlice from "./project.ts";
-
-const emptyArray: MapNode[] = [];
 
 export const getInitialState = createSelector(
   [
@@ -54,46 +47,4 @@ export const getPersistentState = createSelector(
       options,
       project,
     }) satisfies PersistentAppState as PersistentAppState,
-);
-
-export const getDistrictCache = createSelector(
-  [DistrictSelectors.getDistrict, NodesSelectors.getChildNodesCache],
-  (district: District | undefined, cache: GroupNodeCache) =>
-    district && cache[district.name],
-);
-
-export const getDistrictNodes = createSelector(
-  [NodesSelectors.getNodes, DistrictSelectors.getDistrict],
-  structuralSharing((nodes: MapNode[], district: District | undefined) => {
-    if (!district) return emptyArray;
-
-    return nodes.filter((node) => node.district === district.name);
-  }),
-);
-
-export const getAdditions = createSelector([getDistrictNodes], (nodes) =>
-  nodes.filter((node) => node.tag === "create"),
-);
-
-export const getUpdates = createSelector([getDistrictNodes], (nodes) =>
-  nodes.filter((node) => node.tag === "update"),
-);
-
-export const getDeletions = createSelector([getDistrictNodes], (nodes) =>
-  nodes.filter((node) => node.tag === "delete"),
-);
-
-export const getAdditionsTransforms = createSelector(
-  [getAdditions, DistrictSelectors.getDistrict],
-  projectNodesToDistrict,
-);
-
-export const getUpdatesTransforms = createSelector(
-  [getUpdates, DistrictSelectors.getDistrict],
-  projectNodesToDistrict,
-);
-
-export const getDeletionsTransforms = createSelector(
-  [getDeletions, DistrictSelectors.getDistrict],
-  projectNodesToDistrict,
 );

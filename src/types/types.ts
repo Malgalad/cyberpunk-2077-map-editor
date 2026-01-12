@@ -4,7 +4,10 @@ import type * as THREE from "three";
 import mapData from "../mapData.min.json";
 import store from "../store/store.ts";
 
-type NestedArray<T> = T | NestedArray<T>[];
+export type NestedArray<T> = T | NestedArray<T>[];
+export type Optional<T, K extends keyof T> = Partial<T> & Pick<T, K>;
+export type Tuple3<T> = [T, T, T];
+export type Vector3 = Tuple3<number>;
 
 export type Axis = "X" | "Y" | "Z";
 export type Plane = "XY" | "XZ" | "YZ";
@@ -38,17 +41,11 @@ export type Transform = {
   rotation: [string, string, string];
   scale: [string, string, string];
 };
-export type TransformParsed = {
-  position: THREE.Vector3Tuple;
-  rotation: THREE.Vector3Tuple;
-  scale: THREE.Vector3Tuple;
-};
-
 type PatternProperties = {
   count: number;
   mirror?: Plane;
 };
-type NodeProperties<T extends Transform | TransformParsed> = T & {
+export type MapNode = Transform & {
   id: string;
   label: string;
   type: "group" | "instance";
@@ -59,49 +56,15 @@ type NodeProperties<T extends Transform | TransformParsed> = T & {
   originId?: string;
   index?: number;
   hidden?: boolean;
-  pattern?: T & PatternProperties;
+  pattern?: Transform & PatternProperties;
   errors?: string[];
 };
 
-export type MapNode = NodeProperties<Transform>;
-export type MapNodeParsed = NodeProperties<TransformParsed>;
-export type MapNodeUri = Pick<
-  MapNodeParsed,
-  "id" | "parent" | "type" | "tag"
-> & { hasErrors: boolean };
-
-export type GroupNodeCache = Record<
-  string,
-  {
-    instances: string[];
-    groups: string[];
-    nodes: string[];
-    additions: string[];
-    updates: string[];
-    deletions: string[];
-    errors: string[];
-    level: number;
-  }
->;
-export type IntermediateGroupNodeCache = Record<
-  string,
-  {
-    instances: NestedArray<string>[];
-    groups: NestedArray<string>[];
-    nodes: NestedArray<string>[];
-    additions: NestedArray<string>[];
-    updates: NestedArray<string>[];
-    deletions: NestedArray<string>[];
-    errors: NestedArray<string>[];
-    level: number;
-  }
->;
-
 export type InstancedMeshTransforms = {
   id: string;
-  virtual?: boolean;
-  originId?: string;
-  index?: number;
+  virtual: boolean;
+  originId: string | null;
+  index: number;
   position: THREE.Vector4Like;
   orientation: THREE.Vector4Like;
   scale: THREE.Vector4Like;
@@ -132,13 +95,79 @@ export type PersistentAppState = {
     districts: DistrictProperties[];
     current: string | null;
   };
-  nodes: AppState["present"]["nodes"];
+  nodes: {
+    nodes: AppState["present"]["nodes"]["nodes"];
+    selected: AppState["present"]["nodes"]["selected"];
+  };
   options: AppState["present"]["options"];
   project: AppState["present"]["project"];
 };
 export type RevivedAppState = {
   district: AppState["present"]["district"];
-  nodes: AppState["present"]["nodes"];
+  nodes: {
+    nodes: AppState["present"]["nodes"]["nodes"];
+    selected: AppState["present"]["nodes"]["selected"];
+  };
   options: AppState["present"]["options"];
   project: AppState["present"]["project"];
 };
+
+export type TransformV2 = {
+  position: Vector3;
+  rotation: Vector3;
+  scale: Vector3;
+  mirror: Plane | null;
+};
+export type MapNodeV2 = TransformV2 & {
+  id: string;
+  label: string;
+  type: "group" | "instance";
+  tag: "create" | "update" | "delete";
+  parent: string | null;
+  district: string;
+  indexInDistrict: number;
+  hidden: boolean;
+  virtual?: boolean;
+  originId?: string;
+  pattern?: TransformV2 & {
+    count: number;
+  };
+};
+export type NodesMap = Record<string, MapNodeV2>;
+
+export type TreeNode = {
+  id: string;
+  type: "group" | "instance";
+  children: TreeNode[];
+  weight: number;
+};
+export type TreeRoot =
+  | {
+      id: string;
+      type: "district";
+      create: TreeNode[];
+      update: TreeNode[];
+      delete: TreeNode[];
+    }
+  | {
+      id: string;
+      type: "template";
+      children: TreeNode[];
+    };
+export type NodesTree = Record<string, TreeRoot>;
+export type NodesIndexIntermediate = Record<
+  string,
+  {
+    treeNode: TreeNode | TreeRoot;
+    descendantIds: NestedArray<string>[];
+    ancestorIds: NestedArray<string>[];
+  }
+>;
+export type NodesIndex = Record<
+  string,
+  {
+    treeNode: TreeNode | TreeRoot;
+    descendantIds: string[];
+    ancestorIds: string[];
+  }
+>;

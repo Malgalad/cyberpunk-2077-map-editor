@@ -1,13 +1,12 @@
 import Button from "../components/common/Button.tsx";
-import Tooltip from "../components/common/Tooltip.tsx";
+// import Tooltip from "../components/common/Tooltip.tsx";
 import {
   useAppDispatch,
   useAppSelector,
   useGlobalShortcuts,
 } from "../hooks/hooks.ts";
-import { getDistrictCache } from "../store/@selectors.ts";
 import { DistrictSelectors } from "../store/district.ts";
-import { NodesActions } from "../store/nodes.ts";
+import { NodesActions } from "../store/nodesV2.ts";
 import { ProjectActions, ProjectSelectors } from "../store/project.ts";
 import type { Modes } from "../types/types.ts";
 import { clsx } from "../utilities/utilities.ts";
@@ -15,19 +14,18 @@ import AddNodes from "./AddNodes.tsx";
 import RemoveNodes from "./RemoveNodes.tsx";
 import UpdateNodes from "./UpdateNodes.tsx";
 
-const formatLength = (length: number) =>
-  length > 100 ? (
-    <Tooltip tooltip={`${length}`} flow="bottom">
-      <span>99+</span>
-    </Tooltip>
-  ) : (
-    length
-  );
+// const formatLength = (length: number) =>
+//   length > 100 ? (
+//     <Tooltip tooltip={`${length}`} flow="bottom">
+//       <span>99+</span>
+//     </Tooltip>
+//   ) : (
+//     length
+//   );
 
 function Tabs() {
   const mode = useAppSelector(ProjectSelectors.getMode);
   const district = useAppSelector(DistrictSelectors.getDistrict);
-  const cache = useAppSelector(getDistrictCache);
   const dispatch = useAppDispatch();
 
   useGlobalShortcuts("Escape", () => dispatch(NodesActions.selectNode(null)));
@@ -54,11 +52,11 @@ function Tabs() {
             <span>
               Cre<span className="underline">a</span>te nodes
             </span>
-            {(cache?.additions.length ?? 0) > 0 && (
+            {/*(cache?.additions.length ?? 0) > 0 && (
               <span className="text-green-400 text-sm">
                 {formatLength(cache!.additions.length)}
               </span>
-            )}
+            )*/}
           </div>
         </Button>
 
@@ -76,11 +74,11 @@ function Tabs() {
             <span>
               Updat<span className="underline">e</span> nodes
             </span>
-            {(cache?.updates.length ?? 0) > 0 && (
+            {/*(cache?.updates.length ?? 0) > 0 && (
               <span className="text-yellow-400 text-sm">
                 {formatLength(cache!.updates.length)}
               </span>
-            )}
+            )*/}
           </div>
         </Button>
 
@@ -98,11 +96,11 @@ function Tabs() {
             <span>
               <span className="underline">D</span>elete nodes
             </span>
-            {(cache?.deletions.length ?? 0) > 0 && (
+            {/*(cache?.deletions.length ?? 0) > 0 && (
               <span className="text-red-400 text-sm">
                 {formatLength(cache!.deletions.length)}
               </span>
-            )}
+            )*/}
           </div>
         </Button>
       </div>

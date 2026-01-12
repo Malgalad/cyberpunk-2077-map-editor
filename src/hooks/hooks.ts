@@ -36,7 +36,7 @@ export function useFilesList(directory?: string) {
 }
 
 export function useGlobalShortcuts(
-  shortcut?: string | ((event: KeyboardEvent) => boolean),
+  shortcut?: string,
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   callback?: React.EventHandler<any>,
   disabled?: boolean,
@@ -46,26 +46,33 @@ export function useGlobalShortcuts(
 
     const listener = (event: KeyboardEvent) => {
       if (disabled) return;
+
+      const sequence = shortcut.split("+");
+      const code = sequence.at(-1)!;
+      const expectedModifiers = sequence.slice(0, -1);
+
       if (event.target instanceof HTMLInputElement) return;
 
-      event.preventDefault();
-      event.stopPropagation();
+      const eventModifiers = ["Alt", "Control", "Meta", "Shift"];
 
-      if (typeof shortcut === "string") {
-        if (event.code !== shortcut) return;
+      if (
+        event.code === code &&
+        eventModifiers.every((modifier) =>
+          event.getModifierState(modifier)
+            ? expectedModifiers.includes(modifier)
+            : !expectedModifiers.includes(modifier),
+        )
+      ) {
+        event.preventDefault();
+        event.stopPropagation();
+        callback?.(event);
       }
-
-      if (typeof shortcut === "function") {
-        if (!shortcut(event)) return;
-      }
-
-      callback?.(event);
     };
 
-    document.addEventListener("keyup", listener);
+    window.addEventListener("keydown", listener);
 
     return () => {
-      document.removeEventListener("keyup", listener);
+      window.removeEventListener("keydown", listener);
     };
   }, [shortcut, callback, disabled]);
 }

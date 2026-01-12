@@ -1,16 +1,10 @@
-import {
-  EyeOff,
-  SquareMinus,
-  SquarePlus,
-  SquareStack,
-  TriangleAlert,
-} from "lucide-react";
+import { EyeOff, SquareMinus, SquarePlus, SquareStack } from "lucide-react";
 import * as React from "react";
 
 import { useAppDispatch, useAppSelector } from "../hooks/hooks.ts";
 import { useFocusNode } from "../hooks/nodes.hooks.ts";
-import { NodesActions, NodesSelectors } from "../store/nodes.ts";
-import type { MapNode } from "../types/types.ts";
+import { NodesActions, NodesSelectors } from "../store/nodesV2.ts";
+import type { MapNodeV2 } from "../types/types.ts";
 import { clsx } from "../utilities/utilities.ts";
 import Button from "./common/Button.tsx";
 import Tooltip from "./common/Tooltip.tsx";
@@ -18,32 +12,30 @@ import Node from "./Node.tsx";
 
 interface GroupProps {
   lookAtNode: () => void;
-  node: MapNode;
+  node: MapNodeV2;
 }
 
 function Group({ lookAtNode, node }: GroupProps) {
   const dispatch = useAppDispatch();
 
   const nodes = useAppSelector(NodesSelectors.getNodes);
-  const selected = useAppSelector(NodesSelectors.getSelectedNodeIds);
-  const cache = useAppSelector(NodesSelectors.getChildNodesCache);
+  const selected = useAppSelector(NodesSelectors.getSelectedNodes);
+  const index = useAppSelector(NodesSelectors.getNodesIndex);
   const [expanded, setExpanded] = React.useState(false);
-  const children = React.useMemo(
-    () => nodes.filter((child) => child.parent === node.id),
-    [nodes, node.id],
-  );
+  const treeNode = index[node.id].treeNode;
+  const children = treeNode.type === "group" ? treeNode.children : [];
+  const descendantIds = index[node.id].descendantIds;
   const ref = useFocusNode(node);
-  const nodeChildren = cache[node.id];
 
   React.useEffect(() => {
     if (
       selected.length > 0 &&
-      nodeChildren.nodes.some((child) => selected.includes(child)) &&
+      descendantIds.some((id) => selected.includes(id)) &&
       !expanded
     ) {
       setExpanded(true);
     }
-  }, [nodeChildren, selected, expanded]);
+  }, [descendantIds, selected, expanded]);
 
   return (
     <div
@@ -82,7 +74,7 @@ function Group({ lookAtNode, node }: GroupProps) {
           <span>
             {node.label}{" "}
             <span className="text-gray-400">
-              ({nodeChildren.instances.length})
+              ({treeNode.type === "group" ? treeNode.weight : 0})
             </span>
           </span>
           <div className="flex flex-row gap-1">
@@ -105,20 +97,13 @@ function Group({ lookAtNode, node }: GroupProps) {
                 </Button>
               </Tooltip>
             )}
-            {nodeChildren.errors?.length > 0 && (
-              <Tooltip tooltip="Node children have errors" flow="left">
-                <div>
-                  <TriangleAlert className="text-red-500" />
-                </div>
-              </Tooltip>
-            )}
           </div>
         </div>
       </div>
       {expanded && children.length > 0 && (
         <div className="pl-8 flex flex-col gap-1.5">
-          {children.map((node) => (
-            <Node key={node.id} node={node} />
+          {children.map((treeNode) => (
+            <Node key={treeNode.id} node={nodes[treeNode.id]} />
           ))}
         </div>
       )}
