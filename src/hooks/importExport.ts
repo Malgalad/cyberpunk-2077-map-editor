@@ -109,7 +109,10 @@ export function useExportDDS() {
       const imageData = encodeImageData(data);
       const blob = new Blob([imageData.buffer], { type: "image/dds" });
 
-      saveBlobToFile(blob, `${district.name}.dds`);
+      const fileName = district.isCustom
+        ? `${district.name.replace(/\s+/g, "_")}.dds`
+        : district.texture.replace(".xbm", ".dds");
+      saveBlobToFile(blob, fileName);
     } catch (error) {
       if (error instanceof Error) {
         dispatch(ModalsActions.openModal("alert", error.message));
