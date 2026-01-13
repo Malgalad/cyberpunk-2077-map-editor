@@ -43,7 +43,11 @@ function App() {
           <Menu />
 
           <div
-            className={clsx("grow relative", tool === "move" && "cursor-move")}
+            className={clsx(
+              "grow relative",
+              "before:absolute before:left-1/2 before:top-1/2 before:transform before:-translate-x-1/2 before:-translate-y-1/2 before:content-['⋅']",
+              tool === "move" && "cursor-move",
+            )}
           >
             <canvas className="w-full h-full block" ref={canvasRef} />
             <Tooltip tooltip="Reset camera [R]" flow="right">

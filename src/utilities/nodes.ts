@@ -58,8 +58,8 @@ export function cloneNode(
   };
   const clones: MapNodeV2[] = [clone];
 
-  if (clone.type === "group") {
-    const branch = index[clone.id].treeNode;
+  if (node.type === "group") {
+    const branch = index[node.id].treeNode;
     if (branch.type === "district") throw new Error("Trying to clone district");
     const leaves = branch.children;
 
