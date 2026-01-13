@@ -1,5 +1,6 @@
 import * as THREE from "three";
 import { MapControls } from "three/addons/controls/MapControls.js";
+import { OutlineEffect } from "three/addons/effects/OutlineEffect.js";
 
 import { saveBlobToFile } from "../helpers.ts";
 
@@ -10,6 +11,7 @@ export class Map3DBase {
   readonly #camera: THREE.OrthographicCamera;
   readonly #renderer: THREE.WebGLRenderer;
   readonly #controls: MapControls;
+  readonly #effect: OutlineEffect;
   #aspect: number = 1;
   #cameraPosition: THREE.Vector3 = new THREE.Vector3(0, 3000, 0);
   #cameraLookAt: THREE.Vector3 = new THREE.Vector3(0, 0, 0);
@@ -60,6 +62,8 @@ export class Map3DBase {
     light3.intensity = 0.5;
     light3.position.set(-100, 70, 100).normalize();
     this.#scene.add(light3);
+
+    this.#effect = new OutlineEffect(this.#renderer);
 
     // const dirLight1 = new THREE.DirectionalLight(0xffffff, 3);
     // dirLight1.position.set(1, 1, 1);
@@ -144,7 +148,7 @@ export class Map3DBase {
   };
 
   #render = () => {
-    this.#renderer.render(this.#scene, this.#camera);
+    this.#effect.render(this.#scene, this.#camera);
 
     this.#cameraPosition.copy(this.#camera.position);
     this.#cameraLookAt.copy(this.#controls.target);

@@ -1,6 +1,6 @@
 import * as THREE from "three";
 
-export const buildingsMaterial = new THREE.MeshLambertMaterial({
+export const buildingsMaterial = new THREE.MeshToonMaterial({
   color: 0xffffff,
 });
 
