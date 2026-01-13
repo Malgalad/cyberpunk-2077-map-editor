@@ -51,7 +51,7 @@ export class Map3D extends Map3DBase {
   #pointingAt: [InstancedMeshTransforms, THREE.InstancedMesh] | null = null;
   #helper = new AxesHelper(50);
   #markers: string[] = [];
-  #previousHighlights: Array<[THREE.InstancedMesh, string, THREE.Color]> = [];
+  #uncolorList: Array<[THREE.InstancedMesh, string, THREE.Color]> = [];
   #meshes: Record<string, THREE.Mesh | THREE.Mesh[] | undefined> = {};
 
   constructor(canvas: HTMLCanvasElement, store: AppStore) {
@@ -226,66 +226,32 @@ export class Map3D extends Map3DBase {
       delete: this.#deletions,
     };
 
-    const getIdleColor = (
-      mesh: THREE.InstancedMesh,
-      id: string,
-      mode: Modes,
-    ) =>
-      mesh === this.#currentDistrict
-        ? COLORS.BUILDINGS.default
-        : this.#markers.includes(id)
-          ? COLORS.MARKERS.default
-          : COLORS.IDLE_COLORS[mode];
-    const getPointingAtColor = (
-      mesh: THREE.InstancedMesh,
-      id: string,
-      mode: Modes,
-    ) =>
-      mesh === this.#currentDistrict
-        ? COLORS.BUILDING_COLORS[mode]
-        : this.#markers.includes(id)
-          ? COLORS.MARKERS.selected
-          : COLORS.POINTING_AT_COLORS[mode];
-    const getSelectedColor = (id: string, mode: Modes) =>
-      this.#markers.includes(id)
-        ? COLORS.MARKERS.selected
-        : COLORS.SELECTED_COLORS[mode];
-    const setColorForId = (
-      mesh: THREE.InstancedMesh,
-      id: string,
-      color: THREE.Color,
-    ) => {
-      const ids: Record<string, number[]> = mesh.userData.ids;
-
-      if (!ids[id]) return;
-
-      for (const index of ids[id]) {
-        mesh.setColorAt(index, color);
-      }
-
-      if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
-    };
-
-    for (const previous of this.#previousHighlights) {
-      const [mesh, id, color] = previous;
-      setColorForId(mesh, id, color);
+    for (const [mesh, id, color] of this.#uncolorList) {
+      COLORS.setColorForId(mesh, id, color);
     }
+    this.#uncolorList = [];
 
-    this.#previousHighlights = [];
+    const applyColor = (
+      mesh: THREE.InstancedMesh,
+      id: string,
+      variant: "selected" | "pointingAt",
+    ) => {
+      const color = COLORS.getColor(
+        mesh === this.#currentDistrict,
+        this.#markers.includes(id),
+        mode,
+      );
+      COLORS.setColorForId(mesh, id, color[variant]);
+
+      this.#uncolorList.push([mesh, id, color.idle]);
+    };
 
     if (meshes[mode]) {
       if (this.#selected.length) {
-        const mesh = meshes[mode]!;
+        const mesh = meshes[mode];
 
         for (const id of this.#selected) {
-          const color = getSelectedColor(id, mode);
-          setColorForId(mesh, id, color);
-
-          this.#previousHighlights.push([
-            mesh,
-            id,
-            getIdleColor(mesh, id, mode),
-          ]);
+          applyColor(mesh, id, "selected");
         }
 
         if (mode === "create" && this.#additionsVirtual) {
@@ -293,14 +259,7 @@ export class Map3D extends Map3DBase {
 
           for (const id of this.#selected) {
             if (!mesh.userData.ids[id]) continue;
-            const color = getSelectedColor(id, mode);
-            setColorForId(mesh, id, color);
-
-            this.#previousHighlights.push([
-              mesh,
-              id,
-              getIdleColor(mesh, id, mode),
-            ]);
+            applyColor(mesh, id, "selected");
           }
         }
       }
@@ -308,10 +267,7 @@ export class Map3D extends Map3DBase {
       if (this.#pointingAt !== null) {
         const [{ id }, mesh] = this.#pointingAt;
         if (this.#selected.includes(id)) return;
-        const color = getPointingAtColor(mesh, id, mode);
-        setColorForId(mesh, id, color);
-
-        this.#previousHighlights.push([mesh, id, getIdleColor(mesh, id, mode)]);
+        applyColor(mesh, id, "pointingAt");
       }
     }
   }
@@ -336,6 +292,15 @@ export class Map3D extends Map3DBase {
         );
       } else {
         mesh.visible = this.#visibleMeshes.includes(key);
+      }
+    }
+  }
+
+  #markMarkers() {
+    if (this.#additions) {
+      const mesh = this.#additions;
+      for (const id of this.#markers) {
+        COLORS.setColorForId(mesh, id, COLORS.MARKERS.default);
       }
     }
   }
@@ -408,6 +373,7 @@ export class Map3D extends Map3DBase {
       this.#add,
       COLORS.ADDITIONS.default,
     );
+    this.#markMarkers();
     this.#additionsVirtual = createDistrictMesh(
       this.#additionsVirtual,
       district,

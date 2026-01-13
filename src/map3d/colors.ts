@@ -51,3 +51,37 @@ export const BUILDING_COLORS: Record<Modes, THREE.Color> = {
   update: BUILDINGS.pointingAtUpdate,
   delete: BUILDINGS.pointingAtDeletion,
 };
+
+export const getColor = (
+  isDefaultMesh: boolean,
+  isMarker: boolean,
+  mode: Modes,
+) => ({
+  idle: isDefaultMesh
+    ? BUILDINGS.default
+    : isMarker
+      ? MARKERS.default
+      : IDLE_COLORS[mode],
+  pointingAt: isDefaultMesh
+    ? BUILDING_COLORS[mode]
+    : isMarker
+      ? MARKERS.selected
+      : POINTING_AT_COLORS[mode],
+  selected: isMarker ? MARKERS.selected : SELECTED_COLORS[mode],
+});
+
+export const setColorForId = (
+  mesh: THREE.InstancedMesh,
+  id: string,
+  color: THREE.Color,
+) => {
+  const ids: Record<string, number[]> = mesh.userData.ids;
+
+  if (!ids[id]) return;
+
+  for (const index of ids[id]) {
+    mesh.setColorAt(index, color);
+  }
+
+  if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
+};

@@ -67,6 +67,7 @@ export function useShortcuts(map3d: Map3D | null) {
   const selected = useAppSelector(NodesSelectors.getSelectedNodes);
   const hasPast = useAppSelector((state) => state.past.length > 0);
   const hasFuture = useAppSelector((state) => state.future.length > 0);
+  const invalidate = useInvalidateTransformsCache();
 
   const deselectNode = useDeselectNode();
   const hideNode = useHideNode(selected);
@@ -106,12 +107,20 @@ export function useShortcuts(map3d: Map3D | null) {
 
   useGlobalShortcuts(
     "Control+KeyZ",
-    () => dispatch(ActionCreators.undo()),
+    () => {
+      if (selected.length) invalidate(selected);
+      dispatch(ActionCreators.undo());
+      map3d?.render();
+    },
     !hasPast,
   );
   useGlobalShortcuts(
     "Control+Shift+KeyZ",
-    () => dispatch(ActionCreators.redo()),
+    () => {
+      if (selected.length) invalidate(selected);
+      dispatch(ActionCreators.redo());
+      map3d?.render();
+    },
     !hasFuture,
   );
   useGlobalShortcuts("Control+Shift+KeyS", () => saveProject(), !projectName);
