@@ -8,7 +8,7 @@ import type {
   NodesMap,
 } from "../types/types.ts";
 import { applyTransforms } from "./transforms.ts";
-import { toTuple3 } from "./utilities.ts";
+import { toTuple3, unwrapDraft } from "./utilities.ts";
 
 const toQuaternion = (rotation: THREE.Vector3Tuple | THREE.EulerTuple) =>
   new THREE.Quaternion().setFromEuler(new THREE.Euler().fromArray(rotation));
@@ -52,7 +52,7 @@ export function cloneNode(
   parent: string | null = node.parent,
 ): MapNodeV2[] {
   const clone = {
-    ...structuredClone(node),
+    ...structuredClone(unwrapDraft(node)),
     id: nanoid(),
     parent,
   };

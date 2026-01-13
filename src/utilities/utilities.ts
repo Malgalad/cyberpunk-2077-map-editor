@@ -1,3 +1,5 @@
+import { isDraft, original, type WritableDraft } from "immer";
+
 import type { Tuple3 } from "../types/types.ts";
 
 export function toNumber(value: string) {
@@ -11,6 +13,10 @@ export function toString(value: number) {
 
 export function toTuple3<T>(value: T[]) {
   return [value[0], value[1], value[2]] as Tuple3<T>;
+}
+
+export function unwrapDraft<T>(value: T | WritableDraft<T>): T {
+  return isDraft(value) ? (original(value) as T) : (value as T);
 }
 
 export function clsx(...args: unknown[]) {

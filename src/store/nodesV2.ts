@@ -276,7 +276,7 @@ const nodesSlice = createSlice({
           state.selected = siblings
             .slice(
               Math.min(startIndex, endIndex),
-              Math.max(startIndex, endIndex),
+              Math.max(startIndex, endIndex) + 1,
             )
             .map((leaf) => leaf.id);
         }
