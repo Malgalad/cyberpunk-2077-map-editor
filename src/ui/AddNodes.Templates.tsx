@@ -40,7 +40,7 @@ function AddNodesTemplates() {
     const center = map3d.getCenter();
     if (!center) return;
     const parent = getParent(nodes[selected[0]]);
-    const position = toTuple3(parent ? [0, 0, 0] : center);
+    const position = toTuple3(center);
     const label = template.label.replace(/TEMPLATE <(.+?)>/, "$1");
 
     dispatch(
