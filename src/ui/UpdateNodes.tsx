@@ -42,7 +42,7 @@ function UpdateNodes() {
     const position = offsetPosition(nodes[selected[0]]);
 
     onTransfer("delete", "create");
-    onClone({ tag: "create", position, indexInDistrict: undefined });
+    onClone({ position, indexInDistrict: -1 }, { tag: "create" });
   };
 
   if (!district) return null;

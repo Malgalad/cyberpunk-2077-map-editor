@@ -38,13 +38,14 @@ export function useCloneNode(node?: MapNodeV2) {
   const invalidate = useInvalidateTransformsCache();
 
   return React.useCallback(
-    (updates?: Partial<MapNodeV2>) => {
+    (updates?: Partial<MapNodeV2>, globalUpdates?: Partial<MapNodeV2>) => {
       if (!node) return;
       if (node.parent) invalidate([node.parent]);
       dispatch(
         NodesActions.cloneNode({
           id: node.id,
           updates,
+          globalUpdates,
         }),
       );
     },
@@ -55,15 +56,23 @@ export function useCloneNode(node?: MapNodeV2) {
 export function useChangeNodeTag(node?: MapNodeV2) {
   const dispatch = useAppDispatch();
   const invalidate = useInvalidateTransformsCache();
+  const nodes = useAppSelector(NodesSelectors.getNodes);
+  const index = useAppSelector(NodesSelectors.getNodesIndex);
 
   return React.useCallback(
     (tag: MapNodeV2["tag"], mode: Modes = tag) => {
       if (!node) return;
       if (node.parent) invalidate([node.parent]);
-      dispatch(NodesActions.editNode({ id: node.id, parent: null, tag }));
+      const updates: MapNodeV2[] = [{ ...node, tag }];
+      if (node.type === "group") {
+        for (const id of index[node.id].descendantIds) {
+          updates.push({ ...nodes[id], tag });
+        }
+      }
+      dispatch(NodesActions.editNodes(updates));
       dispatch(ProjectActions.setMode(mode));
     },
-    [dispatch, node, invalidate],
+    [dispatch, node, invalidate, nodes, index],
   );
 }
 

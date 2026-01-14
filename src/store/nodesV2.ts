@@ -211,7 +211,8 @@ const nodesSlice = createSlice({
 
       if (
         current.parent !== update.parent ||
-        current.district !== update.district
+        current.district !== update.district ||
+        current.tag !== update.tag
       ) {
         Object.assign(state, buildSupportStructures(state.nodes));
       }
@@ -222,8 +223,12 @@ const nodesSlice = createSlice({
         const current = state.nodes[update.id];
         const parentChanged = update.parent !== current.parent;
         const districtChanged = update.district !== current.district;
+        const tagChanged = update.tag !== current.tag;
         shouldRebuildSupport =
-          shouldRebuildSupport || parentChanged || districtChanged;
+          shouldRebuildSupport ||
+          parentChanged ||
+          districtChanged ||
+          tagChanged;
         Object.assign(state.nodes[update.id], update);
       }
       if (shouldRebuildSupport) {

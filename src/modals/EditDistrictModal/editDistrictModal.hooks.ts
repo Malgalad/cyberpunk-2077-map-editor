@@ -17,6 +17,7 @@ export function useDrawOnCanvas(
     EditDistrictData,
     React.Dispatch<React.SetStateAction<EditDistrictData>>,
   ],
+  disabled: boolean,
 ) {
   const renderRef = React.useRef<((current: EditDistrictData) => void) | null>(
     null,
@@ -146,6 +147,8 @@ export function useDrawOnCanvas(
     }
     renderRef.current = render;
 
+    if (disabled) return;
+
     canvas.addEventListener("mousedown", handleMouseDown);
     canvas.addEventListener("mousemove", handleMouseMove);
     canvas.addEventListener("mouseup", handleMouseUp);
@@ -167,9 +170,15 @@ export function useDistrictTextureHeight(district?: District) {
   const nodes = useAppSelector(NodesSelectors.getNodes);
   const tree = useAppSelector(NodesSelectors.getNodesTree);
 
-  if (!district) return 0;
+  return React.useMemo(() => {
+    if (!district) return 0;
 
-  const transforms = getFinalDistrictTransformsFromNodes(district, nodes, tree);
+    const transforms = getFinalDistrictTransformsFromNodes(
+      district,
+      nodes,
+      tree,
+    );
 
-  return calculateHeight(transforms.length);
+    return calculateHeight(transforms.length);
+  }, [district, nodes, tree]);
 }

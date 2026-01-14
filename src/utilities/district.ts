@@ -51,44 +51,39 @@ export function getFinalDistrictTransformsFromNodes(
   tree: NodesTree,
 ): InstancedMeshTransforms[] {
   const baseTransforms = immutableDistrictTransforms.get(district.name) ?? [];
-  const districtTree = tree[district.name];
+  const treeNode = tree[district.name];
 
-  if (!districtTree) return baseTransforms;
+  if (!treeNode) return baseTransforms;
 
   invariant(
-    districtTree.type === "district",
+    treeNode.type === "district",
     "District tree must have a district type.",
   );
-  const additions = districtTree.create;
-  const updates = districtTree.update;
-  const deletions = new Set(
-    districtTree.delete.map((treeNode) => nodes[treeNode.id].indexInDistrict),
-  );
+  const additions = projectNodesToDistrict(district, nodes, treeNode.create);
+  const updates = projectNodesToDistrict(district, nodes, treeNode.update);
+  const deletions = projectNodesToDistrict(district, nodes, treeNode.delete);
 
-  const additionTransforms = projectNodesToDistrict(
-    district,
-    nodes,
-    additions,
-  ).filter(isVisible);
-  const updateTransforms = new Map(
-    projectNodesToDistrict(district, nodes, updates)
-      .filter(isVisible)
-      .map((transform) => [transform.index, transform]),
+  const visibleAdditions = additions.filter(isVisible);
+  const visibleUpdatesMap = new Map(
+    updates.filter(isVisible).map((transform) => [transform.index, transform]),
+  );
+  const visibleDeletionsSet = new Set(
+    deletions.filter(isVisible).map((transform) => transform.index),
   );
   const districtTransforms: InstancedMeshTransforms[] = [];
 
   for (let index = 0; index < baseTransforms.length; index++) {
     const transform = baseTransforms[index];
 
-    if (deletions.has(index)) continue;
-    if (updateTransforms.has(index)) {
-      districtTransforms.push(updateTransforms.get(index)!);
+    if (visibleDeletionsSet.has(index)) continue;
+    if (visibleUpdatesMap.has(index)) {
+      districtTransforms.push(visibleUpdatesMap.get(index)!);
       continue;
     }
     districtTransforms.push(transform);
   }
 
-  const result = [...districtTransforms, ...additionTransforms];
+  const result = [...districtTransforms, ...visibleAdditions];
   let padding = 0;
 
   if (district.isCustom) {

@@ -8,7 +8,7 @@ export function toNumber(value: string) {
 }
 
 export function toString(value: number) {
-  return parseFloat(value.toFixed(7)).toString();
+  return parseFloat(value.toFixed(5)).toString();
 }
 
 export function toTuple3<T>(value: T[]) {

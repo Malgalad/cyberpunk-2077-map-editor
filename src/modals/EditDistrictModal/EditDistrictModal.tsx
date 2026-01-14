@@ -56,12 +56,17 @@ function EditDistrictModal(props: ModalProps) {
   const isCustomDistrict = district?.isCustom;
   const isValid = !validationErrors.size;
 
-  const redrawCanvasRefFn = useDrawOnCanvas(ref, [data, setData]);
+  const redrawCanvasRefFn = useDrawOnCanvas(
+    ref,
+    [data, setData],
+    !isCustomDistrict,
+  );
 
   React.useEffect(() => {
+    if (!isCustomDistrict) return;
     redrawCanvasRefFn.current?.(data);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [data]);
+  }, [data, isCustomDistrict]);
 
   const createDistrict = () => {
     const districtProperties: DistrictProperties = {
@@ -159,6 +164,7 @@ function EditDistrictModal(props: ModalProps) {
           <div>Position:</div>
           <div className="flex flex-row gap-2">
             {AXII.map((axis) => (
+              // FIXME update inputs when changing map, currently it uses cached value
               <DraggableInput
                 key={axis}
                 aria-invalid={validationErrors.has(`pos${AXIS_LABELS[axis]}`)}

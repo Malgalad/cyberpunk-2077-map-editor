@@ -80,7 +80,10 @@ export function useLoadProject() {
     const file = await loadFile(".ncmapedits");
     const content = await unzip(file.stream());
     const data = JSON.parse(content);
-    if (data.nodes.nodes[0].indexInDistrict === undefined) {
+    if (
+      Array.isArray(data.nodes.nodes) &&
+      data.nodes.nodes[0].indexInDistrict === undefined
+    ) {
       data.nodes.nodes = reviveNodes(data.nodes.nodes);
       data.nodes.selected = [data.nodes.editingId].filter(Boolean).flat();
     }
