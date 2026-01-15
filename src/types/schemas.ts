@@ -58,38 +58,6 @@ export const PersistentDistrictStateSchema = z.object({
   current: z.union([z.string(), z.null()]),
 });
 
-export const NodeSchema = z.object({
-  id: z.string(),
-  label: z.string(),
-  type: z.union([z.literal("group"), z.literal("instance")]),
-  tag: z.union([z.literal("create"), z.literal("update"), z.literal("delete")]),
-  parent: z.string(),
-  district: z.string().optional(),
-  virtual: z.boolean().optional(),
-  // originId is not serializable
-  index: z.number().optional(),
-  hidden: z.boolean().optional(),
-  position: z.tuple([z.string(), z.string(), z.string()]),
-  rotation: z.tuple([z.string(), z.string(), z.string()]),
-  scale: z.tuple([z.string(), z.string(), z.string()]),
-  pattern: z
-    .object({
-      count: z.number(),
-      mirror: z
-        .union([z.literal("XY"), z.literal("XZ"), z.literal("YZ")])
-        .optional(),
-      position: z.tuple([z.string(), z.string(), z.string()]),
-      rotation: z.tuple([z.string(), z.string(), z.string()]),
-      scale: z.tuple([z.string(), z.string(), z.string()]),
-    })
-    .optional(),
-  errors: z.array(z.string()).optional(),
-});
-export const NodesStateSchema = z.object({
-  nodes: z.array(NodeSchema),
-  editingId: z.union([z.string(), z.array(z.string()), z.null()]),
-});
-
 export const NodeSchemaV2 = z.object({
   id: z.string(),
   label: z.string(),

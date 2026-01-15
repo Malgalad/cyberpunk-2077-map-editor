@@ -97,26 +97,29 @@ function Menu() {
             direction="right"
             align="top"
             trigger={<DropdownItem>Import/Export</DropdownItem>}
-            disabled
           >
-            <DropdownItem
-              onClick={() =>
-                dispatch(ModalsActions.openModal("import-export", "import"))
-              }
-              disabled={!projectName}
-              icon={<FileUp />}
-            >
-              Import nodes to project
-            </DropdownItem>
-            <DropdownItem
-              onClick={() =>
-                dispatch(ModalsActions.openModal("import-export", "export"))
-              }
-              disabled={!projectName}
-              icon={<FileDown />}
-            >
-              Export nodes
-            </DropdownItem>
+            <Tooltip tooltip="Ctrl+Shift+I" flow="right">
+              <DropdownItem
+                onClick={() =>
+                  dispatch(ModalsActions.openModal("import-export", "import"))
+                }
+                disabled={!projectName}
+                icon={<FileUp />}
+              >
+                Import nodes to project
+              </DropdownItem>
+            </Tooltip>
+            <Tooltip tooltip="Ctrl+Shift+E" flow="right">
+              <DropdownItem
+                onClick={() =>
+                  dispatch(ModalsActions.openModal("import-export", "export"))
+                }
+                disabled={!projectName}
+                icon={<FileDown />}
+              >
+                Export nodes
+              </DropdownItem>
+            </Tooltip>
             <DropdownSeparator />
             <DropdownItem
               onClick={() => void importDDS()}

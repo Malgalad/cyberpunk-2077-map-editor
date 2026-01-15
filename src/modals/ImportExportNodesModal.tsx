@@ -1,42 +1,38 @@
-// import {
-//   AlertTriangle,
-//   Square,
-//   SquareCheckBig,
-//   SquareMinus,
-//   SquarePlus,
-// } from "lucide-react";
-// import * as React from "react";
-// import * as z from "zod";
-//
-// import Button from "../components/common/Button.tsx";
-// import Modal from "../components/common/Modal.tsx";
-// import Select from "../components/common/Select.tsx";
-// import { loadFile, saveBlobToFile } from "../helpers.ts";
-// import { useAppDispatch, useAppSelector } from "../hooks/hooks.ts";
-// import { DistrictActions, DistrictSelectors } from "../store/district.ts";
-// import { NodesActions, NodesSelectors } from "../store/nodesV2.ts";
-// import type { ModalProps } from "../types/modals.ts";
-// import { NodeSchema } from "../types/schemas.ts";
-// import type { District, MapNode } from "../types/types.ts";
-// import { getDistrictName } from "../utilities/district.ts";
-// import { cloneNode } from "../utilities/nodes.ts";
-// import { clsx } from "../utilities/utilities.ts";
-//
-export type Tabs = "import" | "export";
-// type Loaded = {
-//   filename: string | null;
-//   nodes: MapNode[] | null;
-//   error: z.ZodError | Error | null;
-// };
-// const tabs: { key: Tabs; label: string }[] = [
-//   { key: "import", label: "Import" },
-//   { key: "export", label: "Export" },
-// ];
-// const NodesSchema = z.array(NodeSchema);
+import { AlertTriangle, Square, SquareCheckBig } from "lucide-react";
+import * as React from "react";
+import * as z from "zod";
 
-function ImportExportNodesModal() {
-  return null;
-  /*
+import Button from "../components/common/Button.tsx";
+import Modal from "../components/common/Modal.tsx";
+import Select from "../components/common/Select.tsx";
+import { loadFile, saveBlobToFile } from "../helpers.ts";
+import { useAppDispatch, useAppSelector } from "../hooks/hooks.ts";
+import { DistrictActions, DistrictSelectors } from "../store/district.ts";
+import { NodesActions, NodesSelectors } from "../store/nodesV2.ts";
+import type { ModalProps } from "../types/modals.ts";
+import { NodeSchemaV2 } from "../types/schemas.ts";
+import type { MapNodeV2 } from "../types/types.ts";
+import { getDistrictName } from "../utilities/district.ts";
+import {
+  buildSupportStructures,
+  cloneNode,
+  transplantNode,
+} from "../utilities/nodes.ts";
+import { clsx } from "../utilities/utilities.ts";
+
+export type Tabs = "import" | "export";
+type Loaded = {
+  filename: string | null;
+  nodes: MapNodeV2[] | null;
+  error: z.ZodError | Error | null;
+};
+const tabs: { key: Tabs; label: string }[] = [
+  { key: "import", label: "Import" },
+  { key: "export", label: "Export" },
+];
+const NodesSchema = z.array(NodeSchemaV2);
+
+function ImportExportNodesModal(props: ModalProps) {
   const { data: defaultTab = "export" } = props as { data?: Tabs };
   const dispatch = useAppDispatch();
   const [tab, setTab] = React.useState<Tabs>(defaultTab);
@@ -47,40 +43,19 @@ function ImportExportNodesModal() {
   });
   const districts = useAppSelector(DistrictSelectors.getAllDistricts);
   const nodes = useAppSelector(NodesSelectors.getNodes);
-  const cache = useAppSelector(NodesSelectors.getChildNodesCache);
-  const nodesMap = React.useMemo(
+  const index = useAppSelector(NodesSelectors.getNodesIndex);
+  const selected = useAppSelector(NodesSelectors.getSelectedNodes);
+  const unIndex = React.useMemo(
     () =>
-      new Map(
-        (tab === "import" ? loaded.nodes || [] : nodes).map((node) => [
-          node.id,
-          node,
-        ]),
-      ),
-    [nodes, tab, loaded],
+      tab === "import"
+        ? loaded.nodes &&
+          buildSupportStructures(
+            Object.fromEntries(loaded.nodes.map((node) => [node.id, node])),
+          ).index
+        : index,
+    [tab, loaded, index],
   );
-  const districtNames = React.useMemo(
-    () => new Set(districts.map((district) => district.name)),
-    [districts],
-  );
-  const cacheCache = React.useMemo(
-    () =>
-      new Map(
-        Object.entries(
-          tab === "import"
-            ? createGroupNodesCache(
-                loaded.nodes?.map((node) => ({ ...node, hasErrors: false })) ??
-                  [],
-              )
-            : cache,
-        ).map(([key, value]) => [
-          key,
-          value.nodes.filter((id) => nodesMap.get(id)!.tag === "create"),
-        ]),
-      ),
-    [cache, tab, nodesMap, loaded],
-  );
-  const [expanded, setExpanded] = React.useState(new Set<string>([]));
-  const [selected, setSelected] = React.useState(new Set<string>([]));
+  const [checked, setChecked] = React.useState(new Set<string>());
   const [district, setDistrict] = React.useState<string>("");
 
   React.useEffect(() => {
@@ -89,46 +64,18 @@ function ImportExportNodesModal() {
       nodes: null,
       error: null,
     });
-    setExpanded(new Set<string>([]));
-    setSelected(new Set<string>([]));
+    setChecked(new Set<string>(tab === "export" ? selected : []));
     setDistrict("");
-  }, [tab]);
+  }, [tab, selected]);
 
-  const toggleCollapseExpand =
-    (district: District) => (event: React.MouseEvent<HTMLButtonElement>) => {
-      event.stopPropagation();
-      setExpanded((expanded) => {
-        const newExpanded = new Set(expanded);
-        if (newExpanded.has(district.name)) newExpanded.delete(district.name);
-        else newExpanded.add(district.name);
-        return newExpanded;
-      });
-    };
   const toggleSelected =
     (id: string) => (event: React.MouseEvent<HTMLDivElement>) => {
       event.stopPropagation();
-      setSelected((selected) => {
+      setChecked((selected) => {
         const newSelected = new Set(selected);
-        const isDistrict = districtNames.has(id);
-        const isGroup = !isDistrict && nodesMap.get(id)!.type === "group";
 
-        if (isDistrict || isGroup) {
-          const children = cacheCache.get(id)?.slice();
-          if (!children) return newSelected;
-          if (isGroup) children.unshift(id);
-          const allSelected = children.every((id) => newSelected.has(id));
-
-          for (const id of children) {
-            if (allSelected) newSelected.delete(id);
-            else newSelected.add(id);
-          }
-        } else {
-          if (newSelected.has(id)) {
-            newSelected.delete(id);
-          } else {
-            newSelected.add(id);
-          }
-        }
+        if (selected.has(id)) newSelected.delete(id);
+        else newSelected.add(id);
 
         return newSelected;
       });
@@ -149,43 +96,44 @@ function ImportExportNodesModal() {
       };
     }
   };
+
   const importExport = async () => {
     if (tab === "export") {
-      const selectedNodes = nodes
-        .filter(
-          (node) => selected.has(node.id) && districtNames.has(node.parent),
-        )
-        .flatMap((node) => cloneNode(nodes, node, ""))
-        .map((node) => ({ ...node, errors: undefined }));
+      const selectedNodes = checked
+        .values()
+        .map((id) => transplantNode(nodes, nodes[id], null, nodes[id].district))
+        .flatMap((node) => cloneNode(nodes, index, node))
+        .toArray();
       const json = JSON.stringify(selectedNodes, null, 2);
       const blob = new Blob([json], { type: "application/json" });
 
       saveBlobToFile(blob, `nodes_${Date.now()}.json`);
     }
     if (tab === "import") {
-      if (!loaded.nodes || !district) return;
+      if (!loaded.nodes || !district || !unIndex) return;
 
-      const map = new Map(
-        loaded.nodes.map((node) => [node.id, parseNode(node)]),
+      const loadedNodes = Object.fromEntries(
+        loaded.nodes.map((node) => [node.id, node]),
       );
       const selectedDistrict = districts.find((dist) => dist.name === district);
 
       if (!selectedDistrict) return;
 
-      const imported = loaded.nodes
-        .filter((node) => selected.has(node.id))
-        .map((node) => {
-          if (node.parent === "") {
-            return {
-              ...node,
-              parent: district,
-            };
-          }
-          return node;
-        })
-        .map((node) => validateNode(node, map, selectedDistrict));
+      const toImport = Object.fromEntries(
+        loaded.nodes
+          .filter((node) => checked.has(node.id))
+          .flatMap((node) => {
+            if (node.type === "instance") return [node];
+            return [
+              node,
+              ...unIndex[node.id].descendantIds.map((id) => loadedNodes[id]),
+            ];
+          })
+          .map((node) => ({ ...node, district }))
+          .map((node) => [node.id, node]),
+      );
 
-      dispatch(NodesActions.replaceNodes([...nodes, ...imported]));
+      dispatch(NodesActions.batchAddNodes(toImport));
       dispatch(DistrictActions.selectDistrict(district));
     }
     props.onClose();
@@ -196,23 +144,42 @@ function ImportExportNodesModal() {
     export: "Export nodes",
   }[tab];
   const footer = (
-    <>
-      {(tab === "export" || loaded.nodes) && (
-        <div className="mr-2 mt-1.5">{selected.size} nodes selected</div>
-      )}
-      <Button
-        className="w-24"
-        onClick={importExport}
-        disabled={
-          tab === "import"
-            ? !(loaded.nodes && selected.size > 0 && district !== "")
-            : selected.size === 0
-        }
-      >
-        {tab === "import" ? "Import" : "Export"}
-      </Button>
-    </>
+    <Button
+      className="w-24"
+      onClick={importExport}
+      disabled={
+        tab === "import"
+          ? !(loaded.nodes && checked.size > 0 && district !== "")
+          : checked.size === 0
+      }
+    >
+      {tab === "import" ? "Import" : "Export"}
+    </Button>
   );
+
+  function renderNode(node: MapNodeV2) {
+    if (!unIndex) return null;
+
+    const parentTree = unIndex[node.parent || node.district].treeNode;
+    const weight = (
+      parentTree?.type === "district"
+        ? parentTree[node.tag]
+        : parentTree.children
+    ).find((n) => n.id === node.id)?.weight;
+
+    return (
+      <div key={node.id} className="flex flex-col gap-1">
+        <div
+          onClick={toggleSelected(node.id)}
+          className="flex flex-row gap-2 items-center cursor-pointer select-none"
+        >
+          {checked.has(node.id) ? <SquareCheckBig /> : <Square />}
+          {node.label}
+          <span className="text-gray-400">({weight})</span>
+        </div>
+      </div>
+    );
+  }
 
   function renderImportNodes() {
     return (
@@ -268,19 +235,8 @@ function ImportExportNodesModal() {
             <div className="border-b-slate-500 border-b" />
             <div className="flex flex-col gap-1">
               {loaded.nodes
-                .filter((node) => node.parent === "")
-                .map((node) => (
-                  <div
-                    key={node.id}
-                    className="flex flex-row gap-2 items-center cursor-pointer select-none"
-                    onClick={toggleSelected(node.id)}
-                  >
-                    <Button className="p-0! min-w-6! w-6 h-6 border-0!">
-                      {selected.has(node.id) ? <SquareCheckBig /> : <Square />}
-                    </Button>
-                    {node.label}
-                  </div>
-                ))}
+                .filter((node) => node.parent === null)
+                .map((node) => renderNode(node))}
             </div>
           </>
         )}
@@ -291,71 +247,12 @@ function ImportExportNodesModal() {
   function renderExportNodes() {
     return (
       <div className="flex flex-col gap-1 overflow-auto max-h-full">
-        {districts
-          .filter(
-            (district) =>
-              cacheCache.has(district.name) &&
-              cacheCache.get(district.name)!.length > 0,
-          )
-          .map((district) => (
-            <div key={district.name} className="flex flex-col gap-0.5">
-              <div
-                className="flex flex-row gap-2 items-center cursor-pointer select-none"
-                onClick={toggleSelected(district.name)}
-              >
-                <Button
-                  className="p-0! min-w-6! w-6 h-6 border-0!"
-                  onClick={toggleCollapseExpand(district)}
-                >
-                  {expanded.has(district.name) ? (
-                    <SquareMinus />
-                  ) : (
-                    <SquarePlus />
-                  )}
-                </Button>
-                <Button className="p-0! min-w-6! w-6 h-6 border-0!">
-                  {cacheCache
-                    .get(district.name)!
-                    .every((node) => selected.has(node)) ? (
-                    <SquareCheckBig />
-                  ) : cacheCache
-                      .get(district.name)!
-                      .some((node) => selected.has(node)) ? (
-                    <SquareMinus />
-                  ) : (
-                    <Square />
-                  )}
-                </Button>
-                {getDistrictName(district)}
-              </div>
-
-              {expanded.has(district.name) && (
-                <div className="flex flex-col gap-0.5 ml-4">
-                  {nodes
-                    .filter(
-                      (node) =>
-                        node.parent === district.name && node.tag === "create",
-                    )
-                    .map((node) => (
-                      <div
-                        key={node.id}
-                        className="flex flex-row gap-2 items-center cursor-pointer select-none"
-                        onClick={toggleSelected(node.id)}
-                      >
-                        <Button className="p-0! min-w-6! w-6 h-6 border-0!">
-                          {selected.has(node.id) ? (
-                            <SquareCheckBig />
-                          ) : (
-                            <Square />
-                          )}
-                        </Button>
-                        <div>{node.label}</div>
-                      </div>
-                    ))}
-                </div>
-              )}
-            </div>
-          ))}
+        {selected.length === 0 && (
+          <div className="w-full text-center italic">
+            Select nodes you want to export
+          </div>
+        )}
+        {selected.length > 0 && selected.map((id) => renderNode(nodes[id]))}
       </div>
     );
   }
@@ -378,14 +275,13 @@ function ImportExportNodesModal() {
             </Button>
           ))}
         </div>
-        <div className="border border-slate-500 w-[475px] h-72 p-4">
+        <div className="border border-slate-500 w-[475px] h-96 p-4">
           {tab === "import" && renderImportNodes()}
           {tab === "export" && renderExportNodes()}
         </div>
       </div>
     </Modal>
   );
-   */
 }
 
 export default ImportExportNodesModal;

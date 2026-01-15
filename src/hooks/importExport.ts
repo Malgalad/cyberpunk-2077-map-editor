@@ -17,6 +17,7 @@ import {
   getFinalDistrictTransformsFromNodes,
 } from "../utilities/district.ts";
 import { getNodeDistrict } from "../utilities/nodes.ts";
+import { clampTransforms, unclampTransform } from "../utilities/transforms.ts";
 import { toNumber, toTuple3 } from "../utilities/utilities.ts";
 import { useAppDispatch, useAppSelector } from "./hooks.ts";
 
@@ -107,13 +108,21 @@ export function useExportDDS() {
     if (!district) return;
 
     try {
-      const data = getFinalDistrictTransformsFromNodes(district, nodes, tree);
+      const transforms = getFinalDistrictTransformsFromNodes(
+        district,
+        nodes,
+        tree,
+      );
       // TODO add validation (every transform [0..1])
-      if (!district.isCustom && calculateHeight(data.length) > district.height)
+      if (
+        !district.isCustom &&
+        calculateHeight(transforms.length) > district.height
+      )
         throw new Error(
           "Total number of transforms is larger than the original. For compatibility reasons the transforms count should be the same.",
         );
-      const imageData = encodeImageData(data);
+      const clampedTransforms = transforms.map(clampTransforms(district));
+      const imageData = encodeImageData(clampedTransforms);
       const blob = new Blob([imageData.buffer], { type: "image/dds" });
 
       const fileName = district.isCustom
@@ -139,12 +148,13 @@ export function useImportDDS() {
     const file = await loadFile(".dds");
     const arrayBuffer = await file.arrayBuffer();
     const transforms = decodeImageData(new Uint16Array(arrayBuffer));
+    const unclampedTransforms = transforms.map(unclampTransform(district));
 
     map3d.reset();
     map3d.setVisibleDistricts([
       {
         district,
-        transforms,
+        transforms: unclampedTransforms,
       },
     ]);
   }, [map3d, district]);

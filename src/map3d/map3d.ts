@@ -509,6 +509,10 @@ export class Map3D extends Map3DBase {
     this.#remove(this.#currentDistrictBoundaries);
     this.#remove(this.#deletions);
     this.#remove(this.#updates);
+    this.#markers = [];
+    this.#uncolorList = [];
+    this.#pointingAt = null;
+    this.#startedPointingAt = null;
 
     for (const object3d of this.#visibleDistricts.children) {
       (object3d as THREE.InstancedMesh).geometry.dispose();

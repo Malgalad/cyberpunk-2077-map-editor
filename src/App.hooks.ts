@@ -17,6 +17,7 @@ import {
 } from "./hooks/nodes.hooks.ts";
 import { Map3D } from "./map3d/map3d.ts";
 import { DistrictSelectors } from "./store/district.ts";
+import { ModalsActions } from "./store/modals.ts";
 import { NodesActions, NodesSelectors } from "./store/nodesV2.ts";
 import { OptionsSelectors } from "./store/options.ts";
 import { ProjectActions, ProjectSelectors } from "./store/project.ts";
@@ -124,6 +125,17 @@ export function useShortcuts(map3d: Map3D | null) {
     !hasFuture,
   );
   useGlobalShortcuts("Control+Shift+KeyS", () => saveProject(), !projectName);
+
+  useGlobalShortcuts(
+    "Control+Shift+KeyE",
+    () => dispatch(ModalsActions.openModal("import-export", "export")),
+    !district,
+  );
+  useGlobalShortcuts(
+    "Control+Shift+KeyI",
+    () => dispatch(ModalsActions.openModal("import-export", "import")),
+    !district,
+  );
 }
 
 export function useDrawAllDistricts(map3d: Map3D | null) {

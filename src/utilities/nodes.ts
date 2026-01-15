@@ -1,17 +1,58 @@
 import { nanoid } from "nanoid";
 import * as THREE from "three";
 
+import { MAX_DEPTH, TEMPLATE_ID } from "../constants.ts";
 import type {
   InstancedMeshTransforms,
   MapNodeV2,
   NodesIndex,
+  NodesIndexIntermediate,
   NodesMap,
+  NodesTree,
+  Optional,
+  TreeNode,
+  TreeRoot,
 } from "../types/types.ts";
 import { applyTransforms } from "./transforms.ts";
 import { toTuple3, unwrapDraft } from "./utilities.ts";
 
 const toQuaternion = (rotation: THREE.Vector3Tuple | THREE.EulerTuple) =>
   new THREE.Quaternion().setFromEuler(new THREE.Euler().fromArray(rotation));
+
+export function initNode(
+  init: Optional<MapNodeV2, "type" | "tag" | "district" | "position">,
+) {
+  const {
+    type,
+    tag,
+    district,
+    position,
+    hidden = false,
+    indexInDistrict = -1,
+    id = nanoid(),
+    label = init.type === "instance" ? "Block" : "Group",
+    mirror = null,
+    parent = null,
+    rotation = [0, 0, 0],
+    scale = type === "instance" ? [100, 100, 100] : [1, 1, 1],
+  } = init;
+  const node: MapNodeV2 = {
+    id,
+    label,
+    type,
+    tag,
+    parent,
+    district,
+    indexInDistrict,
+    hidden,
+    position,
+    rotation,
+    scale,
+    mirror,
+  };
+
+  return node;
+}
 
 export function nodeToTransform(node: MapNodeV2): InstancedMeshTransforms {
   const position = {
@@ -165,4 +206,107 @@ export function transplantNode(
 
 export function getParent(node?: MapNodeV2) {
   return node ? (node.type === "group" ? node.id : node.parent) : null;
+}
+
+const getWeight = (node: MapNodeV2) => 1 + (node.pattern?.count ?? 0);
+
+export function buildSupportStructures(nodes: Record<string, MapNodeV2>) {
+  const tree: NodesTree = {};
+  const indexTemp: NodesIndexIntermediate = {};
+  const processed = new Set<string>();
+
+  const processNode = (node: MapNodeV2) => {
+    const { parent, district } = node;
+
+    if (processed.has(node.id)) return;
+
+    if (parent) {
+      if (!indexTemp[parent]) processNode(nodes[parent]);
+    } else {
+      if (!indexTemp[district]) {
+        const rootNode: TreeRoot =
+          district === TEMPLATE_ID
+            ? {
+                id: TEMPLATE_ID,
+                type: "template",
+                children: [],
+              }
+            : {
+                id: district,
+                type: "district",
+                create: [],
+                update: [],
+                delete: [],
+              };
+        tree[district] = rootNode;
+        indexTemp[district] = {
+          treeNode: rootNode,
+          descendantIds: [],
+          ancestorIds: [],
+        };
+      }
+    }
+
+    const parentIndex = indexTemp[parent || district];
+    const parentTree = parentIndex.treeNode;
+    const treeNode: TreeNode = {
+      id: node.id,
+      type: node.type,
+      children: [],
+      weight: 0,
+    };
+
+    if (parentTree.type === "district") {
+      parentTree[node.tag].push(treeNode);
+    } else {
+      parentTree.children.push(treeNode);
+    }
+
+    if (node.type === "instance") {
+      parentIndex.descendantIds.push(node.id);
+      treeNode.weight = getWeight(node);
+    } else {
+      const nodeIndex: NodesIndexIntermediate[string] = {
+        treeNode,
+        descendantIds: [],
+        ancestorIds: [parentIndex.ancestorIds],
+      };
+      if (parent) nodeIndex.ancestorIds.unshift(parent);
+      parentIndex.descendantIds.push(node.id, nodeIndex.descendantIds);
+      indexTemp[node.id] = nodeIndex;
+    }
+
+    processed.add(node.id);
+  };
+  const weightNode = (node: TreeNode) => {
+    if (node.weight > 0) return;
+    if (node.type === "instance") {
+      node.weight = getWeight(nodes[node.id]);
+    } else {
+      for (const child of node.children) {
+        weightNode(child);
+      }
+      node.weight =
+        node.children.reduce((acc, child) => acc + child.weight, 0) *
+        getWeight(nodes[node.id]);
+    }
+  };
+
+  for (const node of Object.values(nodes)) {
+    processNode(node);
+  }
+
+  const index: NodesIndex = {};
+
+  for (const id of Object.keys(indexTemp)) {
+    index[id] = {
+      treeNode: indexTemp[id].treeNode,
+      descendantIds: indexTemp[id].descendantIds.flat(MAX_DEPTH) as string[],
+      ancestorIds: indexTemp[id].ancestorIds.flat(MAX_DEPTH) as string[],
+    };
+
+    if (index[id].treeNode.type === "group") weightNode(index[id].treeNode);
+  }
+
+  return { tree, index };
 }

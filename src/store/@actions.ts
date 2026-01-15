@@ -3,7 +3,6 @@ import { createAsyncThunk } from "@reduxjs/toolkit";
 import type {
   District,
   DistrictProperties,
-  InstancedMeshTransforms,
   PersistentAppState,
   RevivedAppState,
 } from "../types/types.ts";
@@ -11,31 +10,10 @@ import {
   computeDistrictProperties,
   immutableDistrictTransforms,
 } from "../utilities/district.ts";
-import { getDistrictTransforms } from "../utilities/transforms.ts";
-
-const unclampTransform =
-  (district: District) => (transform: InstancedMeshTransforms) => {
-    const { cubeSize, minMax } = district;
-
-    const position = {
-      x: transform.position.x * minMax.x,
-      y: transform.position.y * minMax.y,
-      z: transform.position.z * minMax.z,
-      w: 1,
-    };
-    const scale = {
-      x: transform.scale.x * cubeSize * 2,
-      y: transform.scale.y * cubeSize * 2,
-      z: transform.scale.z * cubeSize * 2,
-      w: 1,
-    };
-
-    return {
-      ...transform,
-      position,
-      scale,
-    };
-  };
+import {
+  getDistrictTransforms,
+  unclampTransform,
+} from "../utilities/transforms.ts";
 
 const resolveDistrict = async (
   districtProperties: DistrictProperties,

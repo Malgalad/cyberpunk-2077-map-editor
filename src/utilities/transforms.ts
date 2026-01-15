@@ -315,3 +315,51 @@ export function transformToNode(
     mirror,
   } satisfies MapNodeV2 as MapNodeV2;
 }
+
+export const unclampTransform =
+  (district: District) => (transform: InstancedMeshTransforms) => {
+    const { cubeSize, minMax } = district;
+
+    const position = {
+      x: transform.position.x * minMax.x,
+      y: transform.position.y * minMax.y,
+      z: transform.position.z * minMax.z,
+      w: 1,
+    };
+    const scale = {
+      x: transform.scale.x * cubeSize * 2,
+      y: transform.scale.y * cubeSize * 2,
+      z: transform.scale.z * cubeSize * 2,
+      w: 1,
+    };
+
+    return {
+      ...transform,
+      position,
+      scale,
+    };
+  };
+
+export const clampTransforms =
+  (district: District) => (transform: InstancedMeshTransforms) => {
+    const { cubeSize, minMax } = district;
+
+    const position = {
+      x: transform.position.x / minMax.x,
+      y: transform.position.y / minMax.y,
+      z: transform.position.z / minMax.z,
+      w: 1,
+    };
+    const scale = {
+      x: transform.scale.x / cubeSize / 2,
+      y: transform.scale.y / cubeSize / 2,
+      z: transform.scale.z / cubeSize / 2,
+      w: 1,
+    };
+
+    return {
+      ...transform,
+      position,
+      scale,
+    };
+  };
