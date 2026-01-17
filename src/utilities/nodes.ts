@@ -215,13 +215,13 @@ export function buildSupportStructures(nodes: Record<string, MapNodeV2>) {
   const indexTemp: NodesIndexIntermediate = {};
   const processed = new Set<string>();
 
-  const processNode = (node: MapNodeV2) => {
+  const processNode = (node: MapNodeV2, depth: number) => {
     const { parent, district } = node;
 
     if (processed.has(node.id)) return;
 
     if (parent) {
-      if (!indexTemp[parent]) processNode(nodes[parent]);
+      if (!indexTemp[parent]) processNode(nodes[parent], depth);
     } else {
       if (!indexTemp[district]) {
         const rootNode: TreeRoot =
@@ -254,6 +254,7 @@ export function buildSupportStructures(nodes: Record<string, MapNodeV2>) {
       type: node.type,
       children: [],
       weight: 0,
+      depth: parentTree.type === "group" ? parentTree.depth + 1 : depth,
     };
 
     if (parentTree.type === "district") {
@@ -293,7 +294,7 @@ export function buildSupportStructures(nodes: Record<string, MapNodeV2>) {
   };
 
   for (const node of Object.values(nodes)) {
-    processNode(node);
+    processNode(node, 0);
   }
 
   const index: NodesIndex = {};
@@ -307,6 +308,8 @@ export function buildSupportStructures(nodes: Record<string, MapNodeV2>) {
 
     if (index[id].treeNode.type === "group") weightNode(index[id].treeNode);
   }
+
+  console.log(tree);
 
   return { tree, index };
 }

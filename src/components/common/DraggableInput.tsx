@@ -91,7 +91,10 @@ export default function DraggableInput(
   React.useEffect(() => {
     const trimmed = value.trim();
     const notValidNumber =
-      trimmed === "" || trimmed === "-" || trimmed.endsWith(decimalSeparator);
+      trimmed === "" ||
+      trimmed === "-" ||
+      trimmed.endsWith(decimalSeparator) ||
+      trimmed.endsWith("0");
     if (notValidNumber) return;
     if (typeof props.value === "number" && toString(props.value) !== trimmed) {
       setValue(toString(props.value));

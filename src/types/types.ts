@@ -119,6 +119,7 @@ export type TreeNode = {
   type: "group" | "instance";
   children: TreeNode[];
   weight: number;
+  depth: number;
 };
 export type TreeRoot =
   | {

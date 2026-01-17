@@ -1,6 +1,7 @@
 import { EyeOff, SquareMinus, SquarePlus, SquareStack } from "lucide-react";
 import * as React from "react";
 
+import { MAX_DEPTH } from "../constants.ts";
 import { useAppDispatch, useAppSelector } from "../hooks/hooks.ts";
 import { useFocusNode } from "../hooks/nodes.hooks.ts";
 import { NodesActions, NodesSelectors } from "../store/nodesV2.ts";
@@ -24,6 +25,7 @@ function Group({ lookAtNode, node }: GroupProps) {
   const [expanded, setExpanded] = React.useState(false);
   const treeNode = index[node.id].treeNode;
   const children = treeNode.type === "group" ? treeNode.children : [];
+  const depth = treeNode.type === "group" ? treeNode.depth : 0;
   const descendantIds = index[node.id].descendantIds;
   const ref = useFocusNode(node);
 
@@ -46,7 +48,8 @@ function Group({ lookAtNode, node }: GroupProps) {
       )}
     >
       <div
-        className="flex flex-row items-center gap-2 cursor-pointer"
+        className="flex flex-row items-center gap-2 cursor-pointer sticky bg-slate-800"
+        style={{ top: depth * 30, zIndex: 10 * (MAX_DEPTH - depth) }}
         ref={ref}
         role="button"
         tabIndex={-1}
