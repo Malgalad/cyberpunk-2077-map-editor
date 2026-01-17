@@ -2,7 +2,7 @@ import * as THREE from "three";
 import { MapControls } from "three/addons/controls/MapControls.js";
 import { OutlineEffect } from "three/addons/effects/OutlineEffect.js";
 
-import { saveBlobToFile } from "../helpers.ts";
+import { downloadBlob } from "../utilities/fileHelpers.ts";
 
 export const frustumSize = 8_000;
 
@@ -108,7 +108,7 @@ export class Map3DBase {
     this.#render();
     this.canvas.toBlob((blob) => {
       if (!blob) return;
-      saveBlobToFile(blob, "screenshot.png");
+      downloadBlob(blob, "screenshot.png");
     }, "image/png");
   }
 

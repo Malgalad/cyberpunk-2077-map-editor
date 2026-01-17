@@ -5,7 +5,6 @@ import * as z from "zod";
 import Button from "../components/common/Button.tsx";
 import Modal from "../components/common/Modal.tsx";
 import Select from "../components/common/Select.tsx";
-import { loadFile, saveBlobToFile } from "../helpers.ts";
 import { useAppDispatch, useAppSelector } from "../hooks/hooks.ts";
 import { DistrictActions, DistrictSelectors } from "../store/district.ts";
 import { NodesActions, NodesSelectors } from "../store/nodesV2.ts";
@@ -13,6 +12,10 @@ import type { ModalProps } from "../types/modals.ts";
 import { NodeSchemaV2 } from "../types/schemas.ts";
 import type { MapNodeV2 } from "../types/types.ts";
 import { getDistrictName } from "../utilities/district.ts";
+import {
+  downloadBlob,
+  uploadFileByExtensions,
+} from "../utilities/fileHelpers.ts";
 import {
   buildSupportStructures,
   cloneNode,
@@ -81,7 +84,7 @@ function ImportExportNodesModal(props: ModalProps) {
       });
     };
   const loadNodesJSON = async (): Promise<Loaded> => {
-    const file = await loadFile(".json");
+    const file = await uploadFileByExtensions(".json");
     const content = await file.text();
     try {
       const data = JSON.parse(content);
@@ -107,7 +110,7 @@ function ImportExportNodesModal(props: ModalProps) {
       const json = JSON.stringify(selectedNodes, null, 2);
       const blob = new Blob([json], { type: "application/json" });
 
-      saveBlobToFile(blob, `nodes_${Date.now()}.json`);
+      downloadBlob(blob, `nodes_${Date.now()}.json`);
     }
     if (tab === "import") {
       if (!loaded.nodes || !district || !unIndex) return;

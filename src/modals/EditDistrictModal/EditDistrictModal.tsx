@@ -1,7 +1,6 @@
 import { produce } from "immer";
 import { AlertTriangle, LockKeyhole } from "lucide-react";
 import * as React from "react";
-import type * as THREE from "three";
 
 import Button from "../../components/common/Button.tsx";
 import DraggableInput from "../../components/common/DraggableInput.tsx";
@@ -26,8 +25,6 @@ import {
   useDistrictTextureHeight,
   useDrawOnCanvas,
 } from "./editDistrictModal.hooks.ts";
-import type { EditDistrictData } from "./editDistrictModal.types.ts";
-import { toData } from "./editDistrictModal.utils.ts";
 import { useGetErrors } from "./editDistrictModal.validation.ts";
 
 function EditDistrictModal(props: ModalProps) {
@@ -40,24 +37,17 @@ function EditDistrictModal(props: ModalProps) {
   }
 
   const height = useDistrictTextureHeight(district);
-  const ref = React.useRef<HTMLCanvasElement>(null);
-  const [data, setData] = React.useState<EditDistrictData>(
-    isEdit ? toData(district!) : defaultValues,
-  );
-  const [name, setName] = React.useState<string>(
-    isEdit ? getDistrictName(district!) : "my_district",
+  const canvasRef = React.useRef<HTMLCanvasElement>(null);
+  const [data, setData] = React.useState<DistrictProperties>(
+    isEdit ? { ...district!, name: getDistrictName(district!) } : defaultValues,
   );
 
-  const validationErrors = useGetErrors(
-    name.trim(),
-    data,
-    isEdit ? district : undefined,
-  );
+  const validationErrors = useGetErrors(data, isEdit ? district : undefined);
   const isCustomDistrict = district?.isCustom;
   const isValid = !validationErrors.size;
 
   const redrawCanvasRefFn = useDrawOnCanvas(
-    ref,
+    canvasRef,
     [data, setData],
     !isCustomDistrict,
   );
@@ -69,23 +59,8 @@ function EditDistrictModal(props: ModalProps) {
   }, [data, isCustomDistrict]);
 
   const createDistrict = () => {
-    const districtProperties: DistrictProperties = {
-      name,
-      isCustom: true,
-      position: data.pos.slice(0, 3).map(toNumber) as THREE.Vector3Tuple,
-      orientation: [0, 0, 0, 1] as THREE.QuaternionTuple,
-      transMin: [
-        ...data.min.slice(0, 3).map(toNumber),
-        0,
-      ] as THREE.Vector4Tuple,
-      transMax: [
-        ...data.max.slice(0, 3).map(toNumber),
-        1,
-      ] as THREE.Vector4Tuple,
-      cubeSize: toNumber(data.cubeSize),
-    };
     const computedProperties = computeDistrictProperties(
-      districtProperties,
+      data,
       district
         ? (immutableDistrictTransforms.get(district.name)?.length ?? 0)
         : 0,
@@ -97,20 +72,20 @@ function EditDistrictModal(props: ModalProps) {
         DistrictActions.updateDistrict({
           name: district!.name,
           district: {
-            ...districtProperties,
+            ...data,
             ...computedProperties,
           },
         }),
       );
     } else {
-      immutableDistrictTransforms.set(name, []);
+      immutableDistrictTransforms.set(data.name, []);
       dispatch(
         DistrictActions.addDistrict({
-          ...districtProperties,
+          ...data,
           ...computedProperties,
         }),
       );
-      dispatch(DistrictActions.selectDistrict(name));
+      dispatch(DistrictActions.selectDistrict(data.name));
     }
   };
 
@@ -126,7 +101,7 @@ function EditDistrictModal(props: ModalProps) {
       <div className="flex flex-row gap-4">
         <div className="w-[512px] aspect-square shrink-0">
           <canvas
-            ref={ref}
+            ref={canvasRef}
             width={512}
             height={512}
             className="w-full h-full"
@@ -154,9 +129,15 @@ function EditDistrictModal(props: ModalProps) {
             <Input
               aria-invalid={validationErrors.has("name")}
               aria-errormessage={validationErrors.get("name")}
-              value={name}
+              value={data.name}
               maxLength={40}
-              onChange={(event) => setName(event.target.value)}
+              onChange={(event) => {
+                setData(
+                  produce((draft) => {
+                    draft.name = event.target.value;
+                  }),
+                );
+              }}
               readOnly={isEdit && !isCustomDistrict}
             />
           </div>
@@ -164,7 +145,6 @@ function EditDistrictModal(props: ModalProps) {
           <div>Position:</div>
           <div className="flex flex-row gap-2">
             {AXII.map((axis) => (
-              // FIXME update inputs when changing map, currently it uses cached value
               <DraggableInput
                 key={axis}
                 aria-invalid={validationErrors.has(`pos${AXIS_LABELS[axis]}`)}
@@ -172,11 +152,11 @@ function EditDistrictModal(props: ModalProps) {
                   `pos${AXIS_LABELS[axis]}`,
                 )}
                 className="w-20"
-                value={data.pos[axis]}
+                value={data.position[axis]}
                 onChange={(event) => {
                   setData(
                     produce((draft) => {
-                      draft.pos[axis] = event.target.value;
+                      draft.position[axis] = toNumber(event.target.value);
                     }),
                   );
                 }}
@@ -197,11 +177,11 @@ function EditDistrictModal(props: ModalProps) {
                   `min${AXIS_LABELS[axis]}`,
                 )}
                 className="w-20"
-                value={data.min[axis]}
+                value={data.transMin[axis]}
                 onChange={(event) => {
                   setData(
                     produce((draft) => {
-                      draft.min[axis] = event.target.value;
+                      draft.transMin[axis] = toNumber(event.target.value);
                     }),
                   );
                 }}
@@ -220,11 +200,11 @@ function EditDistrictModal(props: ModalProps) {
                   `max${AXIS_LABELS[axis]}`,
                 )}
                 className="w-20"
-                value={data.max[axis]}
+                value={data.transMax[axis]}
                 onChange={(event) => {
                   setData(
                     produce((draft) => {
-                      draft.max[axis] = event.target.value;
+                      draft.transMax[axis] = toNumber(event.target.value);
                     }),
                   );
                 }}
@@ -243,7 +223,7 @@ function EditDistrictModal(props: ModalProps) {
               onChange={(event) => {
                 setData(
                   produce((draft) => {
-                    draft.cubeSize = event.target.value;
+                    draft.cubeSize = toNumber(event.target.value);
                   }),
                 );
               }}
@@ -277,11 +257,7 @@ function EditDistrictModal(props: ModalProps) {
 
           <div className="flex flex-row gap-2 mt-auto justify-end">
             {isEdit && (
-              <EditDistrictModalClipboard
-                name={name}
-                data={data}
-                height={height}
-              />
+              <EditDistrictModalClipboard data={data} height={height} />
             )}
 
             <Button

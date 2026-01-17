@@ -1,8 +1,6 @@
 import * as React from "react";
-import * as THREE from "three";
+import type * as THREE from "three";
 
-import { KNOWN_MESHES } from "../constants.ts";
-import { loadFile, saveBlobToFile } from "../helpers.ts";
 import { useMap3D } from "../map3d/map3d.context.ts";
 import { decodeImageData, encodeImageData } from "../map3d/processDDS.ts";
 import { getPersistentState } from "../store/@selectors.ts";
@@ -10,18 +8,21 @@ import { DistrictSelectors } from "../store/district.ts";
 import { ModalsActions } from "../store/modals.ts";
 import { NodesSelectors } from "../store/nodesV2.ts";
 import { PersistentStateSchema } from "../types/schemas.ts";
-import type { MapNode, NodesMap, PersistentAppState } from "../types/types.ts";
+import type {
+  InstancedMeshTransforms,
+  PersistentAppState,
+} from "../types/types.ts";
 import { unzip, zip } from "../utilities/compression.ts";
+import { getFinalDistrictTransformsFromNodes } from "../utilities/district.ts";
 import {
-  calculateHeight,
-  getFinalDistrictTransformsFromNodes,
-} from "../utilities/district.ts";
-import { getNodeDistrict } from "../utilities/nodes.ts";
+  downloadBlob,
+  uploadFileByExtensions,
+} from "../utilities/fileHelpers.ts";
 import { clampTransforms, unclampTransform } from "../utilities/transforms.ts";
-import { toNumber, toTuple3 } from "../utilities/utilities.ts";
+import { invariant } from "../utilities/utilities.ts";
 import { useAppDispatch, useAppSelector } from "./hooks.ts";
 
-export function useSaveProject() {
+export function useDownloadProject() {
   const persistentState = useAppSelector(getPersistentState);
 
   return React.useCallback(async () => {
@@ -31,71 +32,42 @@ export function useSaveProject() {
     const stream = zip(JSON.stringify(data));
     const blob = await new Response(stream).blob();
 
-    saveBlobToFile(
+    downloadBlob(
       blob,
       `${persistentState.project.name}_${Date.now()}.ncmapedits`,
     );
   }, [persistentState]);
 }
 
-const reviveNodes = (nodes: MapNode[]): NodesMap => {
-  const revivedNodes: NodesMap = {};
-
-  for (const node of nodes) {
-    revivedNodes[node.id] = {
-      id: node.id,
-      label: node.label,
-      type: node.type,
-      tag: node.tag,
-      parent: node.parent === node.district ? null : node.parent,
-      district: node.district ? node.district : getNodeDistrict(nodes, node),
-      hidden: node.hidden ?? false,
-      indexInDistrict: node.index ?? -1,
-      position: toTuple3(node.position.map(toNumber)),
-      rotation: toTuple3(
-        node.rotation.map(toNumber).map(THREE.MathUtils.degToRad),
-      ),
-      scale: toTuple3(node.scale.map(toNumber)),
-      mirror: null,
-      pattern: node.pattern
-        ? {
-            count: node.pattern.count,
-            mirror: node.pattern.mirror ?? null,
-            position: toTuple3(node.pattern.position.map(toNumber)),
-            rotation: toTuple3(
-              node.pattern.rotation.map(toNumber).map(THREE.MathUtils.degToRad),
-            ),
-            scale: toTuple3(node.pattern.scale.map(toNumber)),
-          }
-        : undefined,
-    };
-  }
-
-  return revivedNodes;
-};
-
-export function useLoadProject() {
+export function useUploadProject() {
   return React.useCallback(async (): Promise<
     [string, PersistentAppState] | undefined
   > => {
-    const file = await loadFile(".ncmapedits");
+    const file = await uploadFileByExtensions(".ncmapedits");
     const content = await unzip(file.stream());
     const data = JSON.parse(content);
-    if (
-      Array.isArray(data.nodes.nodes) &&
-      data.nodes.nodes[0].indexInDistrict === undefined
-    ) {
-      data.nodes.nodes = reviveNodes(data.nodes.nodes);
-      data.nodes.selected = [data.nodes.editingId].filter(Boolean).flat();
-    }
-    if (!data.options.visibleMeshes) {
-      data.options.visibleMeshes = KNOWN_MESHES;
-    }
     const state = PersistentStateSchema.parse(data);
 
     return [file.name, state];
   }, []);
 }
+
+const validateNumber = (number: number, min: number, max: number) =>
+  number >= min && number <= max;
+const validateVector = (vector: THREE.Vector4Like) =>
+  validateNumber(vector.x, 0, 1) &&
+  validateNumber(vector.y, 0, 1) &&
+  validateNumber(vector.z, 0, 1) &&
+  validateNumber(vector.w, 0, 1);
+const validateQuaternion = (vector: THREE.QuaternionLike) =>
+  validateNumber(vector.x, -1, 1) &&
+  validateNumber(vector.y, -1, 1) &&
+  validateNumber(vector.z, -1, 1) &&
+  validateNumber(vector.w, -1, 1);
+const validateTransform = (transform: InstancedMeshTransforms) =>
+  validateVector(transform.position) &&
+  validateQuaternion(transform.orientation) &&
+  validateVector(transform.scale);
 
 // TODO export _m base color texture (?) or use Pacifica
 export function useExportDDS() {
@@ -113,22 +85,25 @@ export function useExportDDS() {
         nodes,
         tree,
       );
-      // TODO add validation (every transform [0..1])
-      if (
-        !district.isCustom &&
-        calculateHeight(transforms.length) > district.height
-      )
-        throw new Error(
-          "Total number of transforms is larger than the original. For compatibility reasons the transforms count should be the same.",
-        );
+
+      invariant(
+        district.isCustom ? true : transforms.length <= district.height ** 2,
+        "District has too many additions. For compatibility reasons there should not be more additions than deletions.",
+      );
+
       const clampedTransforms = transforms.map(clampTransforms(district));
+      invariant(
+        clampedTransforms.every(validateTransform),
+        "Found transforms outside of district boundaries or too large.",
+      );
+
       const imageData = encodeImageData(clampedTransforms);
       const blob = new Blob([imageData.buffer], { type: "image/dds" });
 
       const fileName = district.isCustom
         ? `${district.name.replace(/\s+/g, "_")}.dds`
         : district.texture.replace(".xbm", ".dds");
-      saveBlobToFile(blob, fileName);
+      downloadBlob(blob, fileName);
     } catch (error) {
       if (error instanceof Error) {
         dispatch(ModalsActions.openModal("alert", error.message));
@@ -145,7 +120,7 @@ export function useImportDDS() {
   return React.useCallback(async () => {
     if (!map3d || !district) return;
 
-    const file = await loadFile(".dds");
+    const file = await uploadFileByExtensions(".dds");
     const arrayBuffer = await file.arrayBuffer();
     const transforms = decodeImageData(new Uint16Array(arrayBuffer));
     const unclampedTransforms = transforms.map(unclampTransform(district));

@@ -1,9 +1,3 @@
-export async function loadURLAsArrayBuffer(url: string): Promise<ArrayBuffer> {
-  const response = await fetch(url);
-  const blob = await response.blob();
-  return blob.arrayBuffer();
-}
-
 function createInput(
   accept: string,
   onchange: (file: File) => void,
@@ -23,7 +17,7 @@ function createInput(
   input.click();
 }
 
-export function loadFile(accept: string) {
+export function uploadFileByExtensions(accept: string) {
   const deferred = Promise.withResolvers<File>();
   createInput(
     accept,
@@ -33,27 +27,11 @@ export function loadFile(accept: string) {
   return deferred.promise;
 }
 
-export function loadFileAsText(accept: string) {
-  const deferred = Promise.withResolvers<string>();
-  const reader = new FileReader();
-  reader.onload = (event) => {
-    deferred.resolve(event.target?.result as string);
-  };
-
-  createInput(
-    accept,
-    (file) => reader.readAsText(file),
-    () => deferred.reject(),
-  );
-
-  return deferred.promise;
-}
-
-export function saveBlobToFile(blob: Blob, name: string) {
+export function downloadBlob(blob: Blob, filename: string) {
   const url = URL.createObjectURL(blob);
   const anchorElement = document.createElement("a");
   anchorElement.href = url;
-  anchorElement.download = name;
+  anchorElement.download = filename;
   anchorElement.click();
   URL.revokeObjectURL(url);
 }

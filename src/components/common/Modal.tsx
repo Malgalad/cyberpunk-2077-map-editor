@@ -42,7 +42,7 @@ function Modal(props: ModalProps) {
           "flex flex-col gap-4 p-4 border border-slate-600 rounded-lg",
           "bg-slate-900 text-white pointer-events-auto",
           "drop-shadow-lg drop-shadow-slate-900/50 relative",
-          !props.className?.match(/w-\d+/) && "w-96",
+          !props.className?.match(/w-.+\s/) && "w-96",
           ping && "animate-[wiggle_0.2s_ease-in-out_infinite]",
           props.className,
         )}

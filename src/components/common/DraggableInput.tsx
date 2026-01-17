@@ -1,6 +1,6 @@
 import * as React from "react";
 
-import { clsx } from "../../utilities/utilities.ts";
+import { clsx, toString } from "../../utilities/utilities.ts";
 
 // keep the number of digits after floating point constant
 const toPrecision = (value: number) =>
@@ -13,6 +13,9 @@ const toPrecision = (value: number) =>
           ? 6
           : 5,
   );
+const decimalSeparator = new Intl.NumberFormat(navigator.language)
+  .formatToParts(1.5)
+  .find((part) => part.type === "decimal")!.value;
 
 export default function DraggableInput(
   props: React.InputHTMLAttributes<HTMLInputElement>,
@@ -84,6 +87,16 @@ export default function DraggableInput(
       window.removeEventListener("mouseup", handleMouseUp);
     };
   }, [isDragging, handleMouseMove, handleMouseUp]);
+
+  React.useEffect(() => {
+    const trimmed = value.trim();
+    const notValidNumber =
+      trimmed === "" || trimmed === "-" || trimmed.endsWith(decimalSeparator);
+    if (notValidNumber) return;
+    if (typeof props.value === "number" && toString(props.value) !== trimmed) {
+      setValue(toString(props.value));
+    }
+  }, [props.value, value]);
 
   return (
     <div

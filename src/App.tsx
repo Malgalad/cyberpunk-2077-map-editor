@@ -1,4 +1,3 @@
-import { BoxIcon } from "lucide-react";
 import * as React from "react";
 
 import {
@@ -12,15 +11,17 @@ import {
   useMap3DEvents,
   useShortcuts,
 } from "./App.hooks.ts";
-import Button from "./components/common/Button.tsx";
-import Tooltip from "./components/common/Tooltip.tsx";
 import { useAppSelector } from "./hooks/hooks.ts";
 import { Map3DContext } from "./map3d/map3d.context.ts";
 import { ProjectSelectors } from "./store/project.ts";
 import Menu from "./ui/Menu.tsx";
+import ResetButton from "./ui/ResetButton.tsx";
 import Tabs from "./ui/Tabs.tsx";
 import ToolSelection from "./ui/ToolSelection.tsx";
 import { clsx } from "./utilities/utilities.ts";
+
+const centerDotClassname =
+  "before:absolute before:left-1/2 before:top-1/2 before:transform before:-translate-x-1/2 before:-translate-y-1/2 before:content-['⋅']";
 
 function App() {
   const canvasRef = React.useRef<HTMLCanvasElement>(null);
@@ -45,20 +46,12 @@ function App() {
           <div
             className={clsx(
               "grow relative",
-              "before:absolute before:left-1/2 before:top-1/2 before:transform before:-translate-x-1/2 before:-translate-y-1/2 before:content-['⋅']",
+              centerDotClassname,
               tool === "move" && "cursor-move",
             )}
           >
             <canvas className="w-full h-full block" ref={canvasRef} />
-            <Tooltip tooltip="Reset camera [R]" flow="right">
-              <Button
-                className="absolute! bg-slate-800 left-4 top-4"
-                onClick={() => map3d?.resetCamera()}
-              >
-                <BoxIcon />
-              </Button>
-            </Tooltip>
-
+            <ResetButton map3d={map3d} />
             <ToolSelection />
           </div>
         </div>

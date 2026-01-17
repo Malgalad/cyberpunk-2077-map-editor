@@ -6,7 +6,7 @@ import { AXII, PLANES } from "../constants.ts";
 import { useAppDispatch } from "../hooks/hooks.ts";
 import { useInvalidateTransformsCache } from "../hooks/nodes.hooks.ts";
 import { NodesActions } from "../store/nodesV2.ts";
-import type { Axis, MapNodeV2, Plane, Transform } from "../types/types.ts";
+import type { Axis, MapNodeV2, Plane, TransformV2 } from "../types/types.ts";
 import { clsx, toNumber } from "../utilities/utilities.ts";
 import Button from "./common/Button.tsx";
 import DraggableInput from "./common/DraggableInput.tsx";
@@ -60,9 +60,9 @@ function EditNodePattern({ node }: EditNodePatternProps) {
     );
   };
   const changeProperty =
-    (property: keyof Transform, index: number) =>
+    (property: keyof TransformV2, index: number) =>
     (event: React.ChangeEvent<HTMLInputElement>) => {
-      if (!node.pattern) return;
+      if (!node.pattern || property === "mirror") return;
 
       invalidate([node.id]);
       dispatch(

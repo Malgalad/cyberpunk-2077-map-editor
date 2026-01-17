@@ -7,15 +7,19 @@ import Input from "../components/common/Input.tsx";
 import Modal from "../components/common/Modal.tsx";
 import { DEFAULT_DISTRICT_DATA } from "../constants.ts";
 import { useAppDispatch, useFilesList } from "../hooks/hooks.ts";
-import { useLoadProject } from "../hooks/importExport.ts";
+import { useUploadProject } from "../hooks/importExport.ts";
 import { useMap3D } from "../map3d/map3d.context.ts";
-import { loadJSON, removeEntry, saveJSON } from "../opfs.ts";
 import { hydrateState } from "../store/@actions.ts";
 import { getInitialState } from "../store/@selectors.ts";
 import { ModalsActions } from "../store/modals.ts";
 import type { ModalProps } from "../types/modals.ts";
 import { PersistentStateSchema } from "../types/schemas.ts";
 import type { PersistentAppState } from "../types/types.ts";
+import {
+  loadFileAsJSON,
+  removeFileOrDirectory,
+  saveJSONToFile,
+} from "../utilities/opfs.ts";
 import { clsx } from "../utilities/utilities.ts";
 
 export type Tabs = "open" | "new" | "load";
@@ -41,7 +45,7 @@ function ProjectModal(props: ModalProps) {
   >(undefined);
 
   const projects = useFilesList("projects");
-  const loadProject = useLoadProject();
+  const loadProject = useUploadProject();
 
   const validationError = (() => {
     if (tab === "open") {
@@ -77,7 +81,7 @@ function ProjectModal(props: ModalProps) {
     let state: PersistentAppState | undefined = undefined;
 
     if (tab === "open") {
-      const maybeProject = await loadJSON(`projects/${selectedProject}`);
+      const maybeProject = await loadFileAsJSON(`projects/${selectedProject}`);
       state = PersistentStateSchema.parse(maybeProject);
 
       if (rememberProjectName) persistent.project = selectedProject;
@@ -86,7 +90,7 @@ function ProjectModal(props: ModalProps) {
         draft.district.districts = DEFAULT_DISTRICT_DATA;
         draft.project.name = name;
       });
-      await saveJSON(`projects/${name}`, state);
+      await saveJSONToFile(`projects/${name}`, state);
       if (rememberProjectName) persistent.project = name;
     } else if (tab === "load") {
       if (!loadedProject) return;
@@ -98,7 +102,7 @@ function ProjectModal(props: ModalProps) {
 
     if (state) {
       dispatch(ModalsActions.openModal("loading"));
-      await saveJSON("persistentData", persistent);
+      await saveJSONToFile("persistentData", persistent);
       await dispatch(hydrateState(state)).unwrap();
       props.onClose();
     }
@@ -114,8 +118,8 @@ function ProjectModal(props: ModalProps) {
       dispatch(ModalsActions.openModal("loading"));
       dispatch(hydrateState(getInitialState(undefined)));
       map3d?.render();
-      await saveJSON("persistentData", { project: undefined });
-      await removeEntry(`projects/${selectedProject}`);
+      await saveJSONToFile("persistentData", { project: undefined });
+      await removeFileOrDirectory(`projects/${selectedProject}`);
     }
     dispatch(ModalsActions.openModal("project", "open"));
   };

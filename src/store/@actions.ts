@@ -11,14 +11,14 @@ import {
   immutableDistrictTransforms,
 } from "../utilities/district.ts";
 import {
-  getDistrictTransforms,
+  fetchDistrictTransforms,
   unclampTransform,
 } from "../utilities/transforms.ts";
 
 const resolveDistrict = async (
   districtProperties: DistrictProperties,
 ): Promise<District> => {
-  const transforms = await getDistrictTransforms(districtProperties);
+  const transforms = await fetchDistrictTransforms(districtProperties);
   const computedProperties = computeDistrictProperties(
     districtProperties,
     transforms.length,

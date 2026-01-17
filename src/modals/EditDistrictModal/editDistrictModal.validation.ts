@@ -2,21 +2,16 @@ import * as React from "react";
 
 import { useAppSelector } from "../../hooks/hooks.ts";
 import { DistrictSelectors } from "../../store/district.ts";
-import type { District } from "../../types/types.ts";
+import type { District, DistrictProperties } from "../../types/types.ts";
 import { getDistrictName } from "../../utilities/district.ts";
 import { mapSize } from "./editDistrictModal.constants.ts";
-import type {
-  EditDistrictData,
-  ErrorSlots,
-} from "./editDistrictModal.types.ts";
-import { fromData } from "./editDistrictModal.utils.ts";
+import type { ErrorSlots } from "./editDistrictModal.types.ts";
 
 const halfSize = mapSize / 2;
 const ceiling = 1024;
 
 export function useGetErrors(
-  name: string,
-  data: EditDistrictData,
+  data: DistrictProperties,
   district: District | undefined,
 ) {
   const districts = useAppSelector(DistrictSelectors.getAllDistricts);
@@ -25,12 +20,8 @@ export function useGetErrors(
     [districts],
   );
   const isEdit = !!district;
-  const {
-    position: pos,
-    cubeSize,
-    transMax: max,
-    transMin: min,
-  } = fromData(data);
+  const { position: pos, cubeSize, transMax: max, transMin: min } = data;
+  const name = data.name.trim();
 
   const errors = new Map<ErrorSlots, string>();
 

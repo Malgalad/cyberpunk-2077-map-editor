@@ -1,6 +1,7 @@
 import mapData from "./mapData.min.json";
 import type {
   DefaultDistrictNames,
+  DefaultMeshNames,
   DistrictProperties,
   InstancedMeshTransforms,
   Plane,
@@ -35,7 +36,7 @@ export const DEFAULT_DISTRICT_DATA: DistrictProperties[] = Object.entries(
     }) as DistrictProperties,
 );
 
-export const KNOWN_MESHES: Array<keyof (typeof mapData)["meshes"]> = [
+export const KNOWN_MESHES: Array<DefaultMeshNames> = [
   "3dmap_roads",
   "3dmap_roads_borders",
   "3dmap_metro",
@@ -51,6 +52,24 @@ export const KNOWN_MESHES: Array<keyof (typeof mapData)["meshes"]> = [
   "obelisk",
   "statue_splash_a",
 ];
+export const KNOWN_MESH_NAMES: Record<DefaultMeshNames, string> = {
+  "3dmap_roads": "Roads",
+  "3dmap_roads_borders": "Borders",
+  "3dmap_metro": "Metro",
+  "3dmap_cliffs": "Terra Cognita Cliffs",
+  terrain_mesh: "Terrain",
+  water_mesh: "Water",
+  cz_cz_building_h_icosphere: "Icosphere",
+  ext_monument_av_building_b: "Brainporium",
+  ferris_wheel_collapsed: "Ferris Wheel | Santo Domingo",
+  ferris_wheel_pacifica: "Ferris Wheel | Pacifica",
+  monument_ave_pyramid: "Heavy Hearts club",
+  northoak_sign_a: "North Oak sign",
+  obelisk: "Obelisk",
+  statue_splash_a: "De-votion",
+  mappin_geo: "mappin_geo",
+  "HACK_CYB-554585": "HACK_CYB-554585",
+};
 
 export const DEFAULT_TRANSFORM: InstancedMeshTransforms = {
   id: "-1",

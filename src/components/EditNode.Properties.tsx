@@ -78,7 +78,7 @@ function EditNodeProperties({ selected, mode }: EditNodePropertiesProps) {
           value={node.label}
           onChange={(event) => {
             dispatch(
-              NodesActions.editNodes([{ ...node, label: event.target.value }]),
+              NodesActions.editNode({ id: node.id, label: event.target.value }),
             );
           }}
         />
@@ -111,7 +111,7 @@ function EditNodeProperties({ selected, mode }: EditNodePropertiesProps) {
         <span className="underline">H</span>idden:
       </div>
       <div>
-        <Toggle enabled={node.hidden} onChange={() => onHide()} />
+        <Toggle enabled={node.hidden} onChange={onHide} />
       </div>
     </>
   );

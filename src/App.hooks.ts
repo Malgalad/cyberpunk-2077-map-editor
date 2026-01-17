@@ -8,7 +8,7 @@ import {
   useAppStore,
   useGlobalShortcuts,
 } from "./hooks/hooks.ts";
-import { useSaveProject } from "./hooks/importExport.ts";
+import { useDownloadProject } from "./hooks/importExport.ts";
 import {
   useDeleteNode,
   useDeselectNode,
@@ -17,7 +17,7 @@ import {
 } from "./hooks/nodes.hooks.ts";
 import { Map3D } from "./map3d/map3d.ts";
 import { DistrictSelectors } from "./store/district.ts";
-import { ModalsActions } from "./store/modals.ts";
+import { ModalsActions, ModalsSelectors } from "./store/modals.ts";
 import { NodesActions, NodesSelectors } from "./store/nodesV2.ts";
 import { OptionsSelectors } from "./store/options.ts";
 import { ProjectActions, ProjectSelectors } from "./store/project.ts";
@@ -66,6 +66,7 @@ export function useShortcuts(map3d: Map3D | null) {
   const projectName = useAppSelector(ProjectSelectors.getProjectName);
   const district = useAppSelector(DistrictSelectors.getDistrict);
   const selected = useAppSelector(NodesSelectors.getSelectedNodes);
+  const modal = useAppSelector(ModalsSelectors.getModal);
   const hasPast = useAppSelector((state) => state.past.length > 0);
   const hasFuture = useAppSelector((state) => state.future.length > 0);
   const invalidate = useInvalidateTransformsCache();
@@ -73,7 +74,7 @@ export function useShortcuts(map3d: Map3D | null) {
   const deselectNode = useDeselectNode();
   const hideNode = useHideNode(selected);
   const deleteNode = useDeleteNode(selected);
-  const saveProject = useSaveProject();
+  const saveProject = useDownloadProject();
 
   useGlobalShortcuts("KeyW", () => dispatch(ProjectActions.setTool("move")));
   useGlobalShortcuts("KeyS", () => dispatch(ProjectActions.setTool("select")));
@@ -102,7 +103,10 @@ export function useShortcuts(map3d: Map3D | null) {
   useGlobalShortcuts("KeyR", () => map3d?.resetCamera());
   useGlobalShortcuts("Shift+KeyR", () => map3d?.lookAtCurrentDistrict());
 
-  useGlobalShortcuts("Escape", () => deselectNode(), !selected.length);
+  useGlobalShortcuts("Escape", () => {
+    if (modal) return dispatch(ModalsActions.closeModal());
+    if (selected.length) return deselectNode();
+  });
   useGlobalShortcuts("KeyH", () => hideNode(), !selected.length);
   useGlobalShortcuts("Delete", () => deleteNode(), !selected.length);
 
@@ -127,12 +131,12 @@ export function useShortcuts(map3d: Map3D | null) {
   useGlobalShortcuts("Control+Shift+KeyS", () => saveProject(), !projectName);
 
   useGlobalShortcuts(
-    "Control+Shift+KeyE",
+    "Alt+Control+KeyE",
     () => dispatch(ModalsActions.openModal("import-export", "export")),
     !district,
   );
   useGlobalShortcuts(
-    "Control+Shift+KeyI",
+    "Alt+Control+KeyI",
     () => dispatch(ModalsActions.openModal("import-export", "import")),
     !district,
   );

@@ -1,6 +1,5 @@
 import * as THREE from "three";
 
-import { loadURLAsArrayBuffer } from "../helpers.ts";
 import { STATIC_ASSETS } from "../map3d/constants.ts";
 import { decodeImageData } from "../map3d/processDDS.ts";
 import type {
@@ -263,12 +262,12 @@ export const projectNodesToDistrict = (
   return transforms;
 };
 
-export async function getDistrictTransforms(district: DistrictProperties) {
+export async function fetchDistrictTransforms(district: DistrictProperties) {
   if (district.isCustom) return [];
 
-  const arrayBuffer = await loadURLAsArrayBuffer(
+  const arrayBuffer = await fetch(
     `${STATIC_ASSETS}/textures/${district.texture.replace(".xbm", ".dds")}`,
-  );
+  ).then((res) => res.arrayBuffer());
 
   return decodeImageData(new Uint16Array(arrayBuffer));
 }

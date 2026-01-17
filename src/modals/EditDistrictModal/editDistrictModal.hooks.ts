@@ -2,26 +2,24 @@ import * as React from "react";
 
 import { useAppSelector } from "../../hooks/hooks.ts";
 import { NodesSelectors } from "../../store/nodesV2.ts";
-import type { District } from "../../types/types.ts";
+import type { District, DistrictProperties } from "../../types/types.ts";
 import {
   calculateHeight,
   getFinalDistrictTransformsFromNodes,
 } from "../../utilities/district.ts";
-import { toNumber, toString } from "../../utilities/utilities.ts";
 import { mapSize } from "./editDistrictModal.constants.ts";
-import type { EditDistrictData } from "./editDistrictModal.types.ts";
 
 export function useDrawOnCanvas(
   canvasRef: React.RefObject<HTMLCanvasElement | null>,
   [data, setData]: [
-    EditDistrictData,
-    React.Dispatch<React.SetStateAction<EditDistrictData>>,
+    DistrictProperties,
+    React.Dispatch<React.SetStateAction<DistrictProperties>>,
   ],
   disabled: boolean,
 ) {
-  const renderRef = React.useRef<((current: EditDistrictData) => void) | null>(
-    null,
-  );
+  const renderRef = React.useRef<
+    ((current: DistrictProperties) => void) | null
+  >(null);
 
   React.useEffect(() => {
     const canvas = canvasRef.current;
@@ -46,12 +44,12 @@ export function useDrawOnCanvas(
     ctx.imageSmoothingQuality = "high";
     let isDrawing = false;
     let start = mapToCanvas(
-      toNumber(data.pos[0]) + toNumber(data.min[0]),
-      -toNumber(data.pos[1]) - toNumber(data.min[1]),
+      data.position[0] + data.transMin[0],
+      -data.position[1] - data.transMin[1],
     );
     let end = mapToCanvas(
-      toNumber(data.pos[0]) + toNumber(data.max[0]),
-      -toNumber(data.pos[1]) - toNumber(data.max[1]),
+      data.position[0] + data.transMax[0],
+      -data.position[1] - data.transMax[1],
     );
 
     const image = new Image();
@@ -90,23 +88,25 @@ export function useDrawOnCanvas(
       const transMax = [center[0] - bottomLeft[0], center[1] - bottomLeft[1]];
       const transMin = [center[0] - topRight[0], center[1] - topRight[1]];
 
-      setData((rect) => ({
-        pos: [
-          toString(Math.round(center[0])),
-          toString(Math.round(-center[1])),
-          rect.pos[2],
+      setData((properties) => ({
+        ...properties,
+        position: [
+          Math.round(center[0]),
+          Math.round(-center[1]),
+          properties.position[2],
         ],
-        min: [
-          toString(Math.round(transMin[0])),
-          toString(Math.round(-transMin[1])),
-          rect.min[2],
+        transMin: [
+          Math.round(transMin[0]),
+          Math.round(-transMin[1]),
+          properties.transMin[2],
+          properties.transMin[3],
         ],
-        max: [
-          toString(Math.round(transMax[0])),
-          toString(Math.round(-transMax[1])),
-          rect.max[2],
+        transMax: [
+          Math.round(transMax[0]),
+          Math.round(-transMax[1]),
+          properties.transMax[2],
+          properties.transMax[3],
         ],
-        cubeSize: rect.cubeSize,
       }));
     };
 
@@ -118,12 +118,12 @@ export function useDrawOnCanvas(
       if (!canvas || !ctx) return;
 
       const start = mapToCanvas(
-        toNumber(current.pos[0]) + toNumber(current.min[0]),
-        -toNumber(current.pos[1]) - toNumber(current.min[1]),
+        current.position[0] + current.transMin[0],
+        -current.position[1] - current.transMin[1],
       );
       const end = mapToCanvas(
-        toNumber(current.pos[0]) + toNumber(current.max[0]),
-        -toNumber(current.pos[1]) - toNumber(current.max[1]),
+        current.position[0] + current.transMax[0],
+        -current.position[1] - current.transMax[1],
       );
 
       ctx.clearRect(0, 0, canvas.width, canvas.height);

@@ -18,12 +18,12 @@ import DropdownItem from "../components/common/Dropdown/Dropdown.Item.tsx";
 import DropdownSeparator from "../components/common/Dropdown/Dropdown.Separator.tsx";
 import Dropdown from "../components/common/Dropdown/Dropdown.tsx";
 import Tooltip from "../components/common/Tooltip.tsx";
-import { KNOWN_MESHES } from "../constants.ts";
+import { KNOWN_MESH_NAMES, KNOWN_MESHES } from "../constants.ts";
 import { useAppDispatch, useAppSelector } from "../hooks/hooks.ts";
 import {
+  useDownloadProject,
   useExportDDS,
   useImportDDS,
-  useSaveProject,
 } from "../hooks/importExport.ts";
 import { DistrictSelectors } from "../store/district.ts";
 import { ModalsActions } from "../store/modals.ts";
@@ -43,7 +43,7 @@ function Menu() {
   const visibleMeshes = useAppSelector(OptionsSelectors.getVisibleMeshes);
   const exportDDS = useExportDDS();
   const importDDS = useImportDDS();
-  const saveProject = useSaveProject();
+  const saveProject = useDownloadProject();
   const hasPast = useAppSelector((state) => state.past.length > 0);
   const hasFuture = useAppSelector((state) => state.future.length > 0);
 
@@ -260,7 +260,7 @@ function Menu() {
                   dispatch(OptionsActions.toggleMeshVisibility(id))
                 }
               >
-                {id}
+                {KNOWN_MESH_NAMES[id]}
               </DropdownItem>
             ))}
           </Dropdown>

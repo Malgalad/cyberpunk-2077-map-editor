@@ -13,6 +13,7 @@ export type Axis = "X" | "Y" | "Z";
 export type Plane = "XY" | "XZ" | "YZ";
 
 export type DefaultDistrictNames = keyof (typeof mapData)["soup"];
+export type DefaultMeshNames = keyof (typeof mapData)["meshes"];
 export type DistrictProperties = {
   name: string;
   position: THREE.Vector3Tuple;
@@ -36,30 +37,7 @@ export type ComputedDistrictProperties = {
 };
 export type District = DistrictProperties & ComputedDistrictProperties;
 
-export type Transform = {
-  position: [string, string, string];
-  rotation: [string, string, string];
-  scale: [string, string, string];
-};
-type PatternProperties = {
-  count: number;
-  mirror?: Plane;
-};
-export type MapNode = Transform & {
-  id: string;
-  label: string;
-  type: "group" | "instance";
-  tag: "create" | "update" | "delete";
-  parent: string;
-  district?: string;
-  virtual?: boolean;
-  originId?: string;
-  index?: number;
-  hidden?: boolean;
-  pattern?: Transform & PatternProperties;
-  errors?: string[];
-};
-
+// InstancedMeshTransforms are relative to to district position
 export type InstancedMeshTransforms = {
   id: string;
   virtual: boolean;
@@ -118,6 +96,7 @@ export type TransformV2 = {
   scale: Vector3;
   mirror: Plane | null;
 };
+// MapNodes use absolute position
 export type MapNodeV2 = TransformV2 & {
   id: string;
   label: string;

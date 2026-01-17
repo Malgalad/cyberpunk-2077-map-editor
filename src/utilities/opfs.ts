@@ -1,6 +1,6 @@
-import { ModalsActions } from "./store/modals.ts";
-import store from "./store/store.ts";
-import { unzip, zip } from "./utilities/compression.ts";
+import { ModalsActions } from "../store/modals.ts";
+import store from "../store/store.ts";
+import { unzip, zip } from "./compression.ts";
 
 let root: FileSystemDirectoryHandle;
 
@@ -24,7 +24,7 @@ try {
   }
 }
 
-async function resolve(
+async function resolvePath(
   parent: FileSystemDirectoryHandle,
   path: string[],
   create = false,
@@ -33,7 +33,7 @@ async function resolve(
   const [name, ...rest] = path;
   try {
     const handle = await parent.getDirectoryHandle(name, { create });
-    return resolve(handle, rest);
+    return resolvePath(handle, rest);
   } catch (error) {
     if (
       error instanceof DOMException &&
@@ -50,10 +50,13 @@ async function resolve(
 export async function listFiles(pathname: string = "") {
   const files: string[] = [];
   const path = pathname.split("/").filter(Boolean);
-  const parent = await resolve(root, path, false);
+  const parent = await resolvePath(root, path, false);
 
   if (parent.kind === "file")
-    throw new DOMException("Not a directory", "TypeMismatchError");
+    throw new DOMException(
+      "Parent entry is not a directory",
+      "TypeMismatchError",
+    );
 
   for await (const filename of parent.keys()) {
     files.push(filename);
@@ -62,49 +65,61 @@ export async function listFiles(pathname: string = "") {
   return files;
 }
 
-export async function loadJSON(pathname: string) {
+export async function loadFileAsJSON(pathname: string) {
   const path = pathname.split("/").filter(Boolean);
   if (!path.length) return;
 
-  const parent = await resolve(root, path.slice(0, -1), false);
+  const parent = await resolvePath(root, path.slice(0, -1), false);
 
   if (parent.kind === "file")
-    throw new DOMException("Not a directory", "TypeMismatchError");
+    throw new DOMException(
+      "Parent entry is not a directory",
+      "TypeMismatchError",
+    );
 
   const handle = await parent.getFileHandle(path.at(-1)!, { create: false });
   const file = await handle.getFile();
+  const data = await unzip(file.stream());
 
-  return JSON.parse(await unzip(file.stream()));
+  return JSON.parse(data);
 }
 
-export async function saveJSON(pathname: string, data: unknown) {
+export async function saveJSONToFile(pathname: string, data: unknown) {
   const path = pathname.split("/").filter(Boolean);
   if (!path.length) return;
 
-  const parent = await resolve(root, path.slice(0, -1), true);
+  const parent = await resolvePath(root, path.slice(0, -1), true);
 
   if (parent.kind === "file")
-    throw new DOMException("Not a directory", "TypeMismatchError");
+    throw new DOMException(
+      "Parent entry is not a directory",
+      "TypeMismatchError",
+    );
 
   const handle = await parent.getFileHandle(path.at(-1)!, { create: true });
   const stream = await handle.createWritable();
-  await zip(JSON.stringify(data)).pipeTo(stream);
+  const json = JSON.stringify(data);
+
+  await zip(json).pipeTo(stream);
 }
 
-export async function removeEntry(pathname: string) {
+export async function removeFileOrDirectory(pathname: string) {
   const path = pathname.split("/").filter(Boolean);
   if (!path.length) return;
 
-  const parent = await resolve(root, path.slice(0, -1), false);
+  const parent = await resolvePath(root, path.slice(0, -1), false);
 
   if (parent.kind === "file")
-    throw new DOMException("Not a directory", "TypeMismatchError");
+    throw new DOMException(
+      "Parent entry is not a directory",
+      "TypeMismatchError",
+    );
 
   await parent.removeEntry(path.at(-1)!);
 }
 
 async function nuke() {
-  await removeEntry("persistentData");
+  await removeFileOrDirectory("persistentData");
 }
 
 Object.defineProperties(window, {
@@ -114,9 +129,9 @@ Object.defineProperties(window, {
     writable: false,
     value: {
       listFiles,
-      loadJSON,
-      saveJSON,
-      removeEntry,
+      loadFileAsJSON,
+      saveJSONToFile,
+      removeFileOrDirectory,
       nuke,
     },
   },
