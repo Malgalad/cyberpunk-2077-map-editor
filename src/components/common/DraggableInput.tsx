@@ -95,7 +95,7 @@ export default function DraggableInput(
       trimmed === "-" ||
       trimmed.endsWith(decimalSeparator) ||
       trimmed.endsWith("0");
-    if (notValidNumber) return;
+    if (notValidNumber && document.activeElement === inputRef.current) return;
     if (typeof props.value === "number" && toString(props.value) !== trimmed) {
       setValue(toString(props.value));
     }

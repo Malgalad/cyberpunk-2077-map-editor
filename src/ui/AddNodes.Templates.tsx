@@ -17,10 +17,7 @@ import { useMap3D } from "../map3d/map3d.context.ts";
 import { DistrictSelectors } from "../store/district.ts";
 import { ModalsActions } from "../store/modals.ts";
 import { NodesActions, NodesSelectors } from "../store/nodesV2.ts";
-import {
-  getParent,
-  getPositionFromPointAndParent,
-} from "../utilities/nodes.ts";
+import { getFutureParent, transplantPoint } from "../utilities/nodes.ts";
 import { toTuple3 } from "../utilities/utilities.ts";
 
 function AddNodesTemplates() {
@@ -42,13 +39,9 @@ function AddNodesTemplates() {
   const onInsert = (id: string) => () => {
     const template = nodes[id];
     if (!map3d) return;
-    const parent = getParent(nodes[selected[0]]);
+    const parent = getFutureParent(nodes[selected[0]]);
     const center = toTuple3(map3d.getCenter());
-    const position = getPositionFromPointAndParent(
-      nodes,
-      parent !== null ? nodes[parent] : null,
-      center,
-    );
+    const position = transplantPoint(nodes, center, parent);
     const label = template.label.replace(/TEMPLATE <(.+?)>/, "$1");
 
     if (parent) invalidate([parent]);

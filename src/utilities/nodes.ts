@@ -15,10 +15,17 @@ import type {
   Tuple3,
 } from "../types/types.ts";
 import { applyTransforms } from "./transforms.ts";
-import { toTuple3, unwrapDraft } from "./utilities.ts";
+import { invariant, toTuple3, unwrapDraft } from "./utilities.ts";
 
+const toVector3 = (tuple: Tuple3<number>) =>
+  new THREE.Vector3().fromArray(tuple);
+const fromVector3 = (vector: THREE.Vector3) => toTuple3(vector.toArray());
 const toQuaternion = (rotation: THREE.Vector3Tuple | THREE.EulerTuple) =>
   new THREE.Quaternion().setFromEuler(new THREE.Euler().fromArray(rotation));
+const fromQuaternion = (quaternion: THREE.Quaternion) =>
+  toTuple3(
+    new THREE.Euler().setFromQuaternion(quaternion).toArray() as number[],
+  );
 
 export function initNode(
   init: Optional<MapNodeV2, "type" | "tag" | "district" | "position">,
@@ -101,12 +108,11 @@ export function cloneNode(
   const clones: MapNodeV2[] = [clone];
 
   if (node.type === "group") {
-    const branch = index[node.id].treeNode;
-    if (branch.type === "district") throw new Error("Trying to clone district");
-    const leaves = branch.children;
+    const treeNode = index[node.id].treeNode;
+    invariant(treeNode.type !== "district", "Unexpected treeNode type");
 
-    for (const childLeaf of leaves) {
-      const child = nodes[childLeaf.id];
+    for (const childTreeNode of treeNode.children) {
+      const child = nodes[childTreeNode.id];
       clones.push(...cloneNode(nodes, index, child, clone.id));
     }
   }
@@ -114,101 +120,26 @@ export function cloneNode(
   return clones;
 }
 
-// export function transformCoordinates(
-//   transform: TransformParsed,
-//   fromSystem: TransformParsed,
-//   toSystem: TransformParsed,
-// ): TransformParsed {
-//   const object = new THREE.Object3D();
-//   const quaternion = toQuaternion(transform.rotation);
-//   const fromQuaternion = toQuaternion(fromSystem.rotation);
-//   const targetQuaternion = toQuaternion(toSystem.rotation).invert();
-//
-//   object.position.fromArray(transform.position);
-//   object.position.sub(toVector3(fromSystem.position));
-//   object.position.applyQuaternion(fromQuaternion);
-//   object.position.applyQuaternion(targetQuaternion);
-//   object.position.add(toVector3(toSystem.position));
-//
-//   object.quaternion
-//     .copy(quaternion)
-//     .multiply(fromQuaternion)
-//     .multiply(targetQuaternion);
-//   object.scale.fromArray(transform.scale);
-//
-//   return {
-//     position: object.position.toArray() as THREE.Vector3Tuple,
-//     rotation: fromEuler(object.rotation),
-//     scale: object.scale.toArray() as THREE.Vector3Tuple,
-//   };
-// }
-
-export function getNodeDistrict<T extends { id: string; parent: string }>(
-  nodes: T[],
-  node: T,
-) {
-  const map = new Map(nodes.map((node) => [node.id, node]));
-  let current = node;
-
-  while (current.parent) {
-    current = map.get(current.parent)!;
-  }
-
-  return current.parent;
+export function getFutureParent(selected?: MapNodeV2) {
+  return selected
+    ? selected.type === "group"
+      ? selected.id
+      : selected.parent
+    : null;
 }
 
-// const zeroTransforms: TransformParsed = {
-//   position: [0, 0, 0],
-//   rotation: [0, 0, 0],
-//   scale: [1, 1, 1],
-// };
-export function transplantNode(
-  nodes: NodesMap,
-  node: MapNodeV2,
-  parentId: string | null,
-  district: string,
-): MapNodeV2 {
-  const nodeApplied = applyTransforms(nodes, node);
-
-  if (!parentId) {
-    return {
-      ...nodeApplied,
-      parent: null,
-      district,
-    };
-  }
-
-  const parent = nodes[parentId];
-  const negateRotation = parent.rotation.map(
-    (n) => n * -1,
-  ) as THREE.Vector3Tuple;
-  const parentRotation = toQuaternion(negateRotation);
-  const parentTransforms = applyTransforms(nodes, parent);
-  const position = [
-    nodeApplied.position[0] - parentTransforms.position[0],
-    nodeApplied.position[1] - parentTransforms.position[1],
-    nodeApplied.position[2] - parentTransforms.position[2],
-  ] as THREE.Vector3Tuple;
-  const object = new THREE.Object3D();
-  object.rotation.setFromQuaternion(
-    toQuaternion(node.rotation).multiply(parentRotation),
-  );
-  object.position.fromArray(position);
-  object.position.applyQuaternion(parentRotation);
-
-  return {
-    ...nodeApplied,
-    parent: parentId,
-    district,
-    position: object.position.toArray(),
-    rotation: toTuple3(object.rotation.toArray() as number[]),
-  };
-}
-
-export function getParent(node?: MapNodeV2) {
-  return node ? (node.type === "group" ? node.id : node.parent) : null;
-}
-
+const createTemplateRoot = (): TreeRoot => ({
+  id: TEMPLATE_ID,
+  type: "template",
+  children: [],
+});
+const createDistrictRoot = (district: string): TreeRoot => ({
+  id: district,
+  type: "district",
+  create: [],
+  update: [],
+  delete: [],
+});
 const getWeight = (node: MapNodeV2) => 1 + (node.pattern?.count ?? 0);
 
 export function buildSupportStructures(nodes: NodesMap) {
@@ -227,18 +158,8 @@ export function buildSupportStructures(nodes: NodesMap) {
       if (!indexTemp[district]) {
         const rootNode: TreeRoot =
           district === TEMPLATE_ID
-            ? {
-                id: TEMPLATE_ID,
-                type: "template",
-                children: [],
-              }
-            : {
-                id: district,
-                type: "district",
-                create: [],
-                update: [],
-                delete: [],
-              };
+            ? createTemplateRoot()
+            : createDistrictRoot(district);
         tree[district] = rootNode;
         indexTemp[district] = {
           treeNode: rootNode,
@@ -280,13 +201,13 @@ export function buildSupportStructures(nodes: NodesMap) {
 
     processed.add(node.id);
   };
-  const weightNode = (node: TreeNode) => {
+  const weighNode = (node: TreeNode) => {
     if (node.weight > 0) return;
     if (node.type === "instance") {
       node.weight = getWeight(nodes[node.id]);
     } else {
       for (const child of node.children) {
-        weightNode(child);
+        weighNode(child);
       }
       node.weight =
         node.children.reduce((acc, child) => acc + child.weight, 0) *
@@ -307,29 +228,62 @@ export function buildSupportStructures(nodes: NodesMap) {
       ancestorIds: indexTemp[id].ancestorIds.flat(MAX_DEPTH) as string[],
     };
 
-    if (index[id].treeNode.type === "group") weightNode(index[id].treeNode);
+    if (index[id].treeNode.type === "group") weighNode(index[id].treeNode);
   }
 
   return { tree, index };
 }
 
-export function getPositionFromPointAndParent(
+export function transplantPoint(
   nodes: NodesMap,
-  parent: MapNodeV2 | null,
   point: Tuple3<number>,
-) {
-  if (!parent) return point;
+  parentId: string | null,
+): Tuple3<number> {
+  if (!parentId) return point;
 
-  const { position: parentPosition } = applyTransforms(nodes, parent);
-  const rotation = new THREE.Quaternion().setFromEuler(
-    new THREE.Euler().fromArray(parent.rotation),
-  );
+  const resolvedParent = applyTransforms(nodes, nodes[parentId]);
+  const invertedParentRotation = toQuaternion(resolvedParent.rotation).invert();
 
   const position = new THREE.Vector3()
-    .sub(new THREE.Vector3().fromArray(parentPosition))
-    .add(new THREE.Vector3().fromArray(point))
-    .applyQuaternion(rotation.clone().invert())
-    .toArray();
+    .sub(toVector3(resolvedParent.position))
+    .add(toVector3(point))
+    .applyQuaternion(invertedParentRotation);
 
-  return toTuple3(position);
+  return toTuple3(position.toArray());
+}
+
+export function transplantNode(
+  nodes: NodesMap,
+  node: MapNodeV2,
+  parentId: string | null,
+  district: string,
+): MapNodeV2 {
+  const resolvedNode = applyTransforms(nodes, node);
+
+  if (!parentId)
+    return {
+      ...resolvedNode,
+      parent: null,
+      district,
+    };
+
+  const resolvedParent = applyTransforms(nodes, nodes[parentId]);
+  const invertedParentRotation = toQuaternion(resolvedParent.rotation).invert();
+
+  const position = new THREE.Vector3()
+    .sub(toVector3(resolvedParent.position))
+    .add(toVector3(resolvedNode.position))
+    .applyQuaternion(invertedParentRotation);
+
+  const rotation = toQuaternion(resolvedNode.rotation).premultiply(
+    invertedParentRotation,
+  );
+
+  return {
+    ...node,
+    parent: parentId,
+    district,
+    position: fromVector3(position),
+    rotation: fromQuaternion(rotation),
+  };
 }

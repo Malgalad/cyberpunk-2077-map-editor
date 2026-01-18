@@ -12,10 +12,7 @@ import type {
   TreeNode,
 } from "../types/types.ts";
 import { nodeToTransform } from "./nodes.ts";
-import { pipe } from "./utilities.ts";
-
-type Tuple3<T> = [T, T, T];
-const toTuple3 = <T>(array: T[]) => array.slice(0, 3) as Tuple3<T>;
+import { pipe, toTuple3 } from "./utilities.ts";
 
 const toQuaternion = (rotation: THREE.Vector3Tuple | THREE.EulerTuple) =>
   new THREE.Quaternion().setFromEuler(new THREE.Euler().fromArray(rotation));

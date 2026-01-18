@@ -32,7 +32,7 @@ import {
   getFinalDistrictTransformsFromNodes,
   immutableDistrictTransforms,
 } from "./utilities/district.ts";
-import { getParent, transplantNode } from "./utilities/nodes.ts";
+import { getFutureParent, transplantNode } from "./utilities/nodes.ts";
 import {
   applyTransforms,
   projectNodesToDistrict,
@@ -362,7 +362,7 @@ export function useMap3DEvents(map3d: Map3D | null) {
       const nodes = NodesSelectors.getNodes(state);
       const tree = NodesSelectors.getNodesTree(state);
 
-      const parent = getParent(nodes[selected[0]]);
+      const parent = getFutureParent(nodes[selected[0]]);
       const id = nanoid();
 
       // If the user clicks twice without moving mouse, the highlighted block
