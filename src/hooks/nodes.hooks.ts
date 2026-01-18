@@ -6,7 +6,10 @@ import { ModalsActions } from "../store/modals.ts";
 import { NodesActions, NodesSelectors } from "../store/nodesV2.ts";
 import { ProjectActions } from "../store/project.ts";
 import type { MapNodeV2, Modes, NodesIndex, Plane } from "../types/types.ts";
-import { getParent } from "../utilities/nodes.ts";
+import {
+  getParent,
+  getPositionFromPointAndParent,
+} from "../utilities/nodes.ts";
 import { invalidateCachedTransforms } from "../utilities/transforms.ts";
 import { toTuple3 } from "../utilities/utilities.ts";
 import { useAppDispatch, useAppSelector, useAppStore } from "./hooks.ts";
@@ -111,8 +114,12 @@ export function useAddNode(type: MapNodeV2["type"], tag: MapNodeV2["tag"]) {
     if (selectedNodes.length > 1 || !selectedDistrict || !map3d) return;
 
     const parent = getParent(nodes[selectedNodes[0]]);
-    const center = map3d.getCenter();
-    const position = toTuple3(parent ? [0, 0, 0] : center);
+    const center = toTuple3(map3d.getCenter());
+    const position = getPositionFromPointAndParent(
+      nodes,
+      parent !== null ? nodes[parent] : null,
+      center,
+    );
 
     if (parent) invalidate([parent]);
     dispatch(

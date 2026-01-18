@@ -32,7 +32,7 @@ function RemoveNodes() {
   return (
     <>
       <div className="flex flex-col gap-2 grow overflow-auto bg-slate-800 relative">
-        <div className="grow p-2 flex flex-col" onClick={onDeselect}>
+        <div className="grow flex flex-col" onClick={onDeselect}>
           {!branches.length && (
             <div className="grow flex items-center justify-center italic bg-slate-800">
               Pick block using "Select" tool on the map
@@ -44,7 +44,7 @@ function RemoveNodes() {
           ))}
         </div>
 
-        <div className="flex flex-row gap-2 sticky pr-1 bottom-0 justify-end border-t border-slate-900 bg-slate-800">
+        <div className="flex flex-row gap-2 sticky pr-1 bottom-0 justify-end border-t border-slate-900 bg-slate-800 z-[1000]">
           {selected.length > 0 && (
             <>
               <Tooltip tooltip="Update block">
@@ -58,7 +58,11 @@ function RemoveNodes() {
               </Tooltip>
 
               <Tooltip
-                tooltip={selected.length > 1 ? "Delete nodes" : "Delete node"}
+                tooltip={
+                  selected.length > 1
+                    ? "Delete nodes\n[Delete]"
+                    : "Delete node\n[Delete]"
+                }
                 flow="top"
               >
                 <Button className="border-none" onClick={onDelete}>

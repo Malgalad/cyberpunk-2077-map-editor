@@ -21,7 +21,7 @@ function Instance({ lookAtNode, node }: InstanceProps) {
   return (
     <div
       className={clsx(
-        "flex flex-row items-center gap-2 border-2 -m-0.5",
+        "flex flex-row items-center gap-2 border-2",
         "border-dotted border-transparent cursor-pointer",
         selected.includes(node.id) && "border-slate-100!",
       )}
@@ -42,7 +42,7 @@ function Instance({ lookAtNode, node }: InstanceProps) {
         lookAtNode();
       }}
     >
-      <div className="grow flex flex-row justify-between items-center select-none">
+      <div className="grow flex flex-row gap-2 justify-between items-center select-none px-2 py-0.5  bg-slate-800">
         <span>
           {node.label}
           {node.pattern && (

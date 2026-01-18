@@ -10,6 +10,7 @@ import {
 } from "./hooks/hooks.ts";
 import { useDownloadProject } from "./hooks/importExport.ts";
 import {
+  useCloneNode,
   useDeleteNode,
   useDeselectNode,
   useHideNode,
@@ -65,6 +66,7 @@ export function useShortcuts(map3d: Map3D | null) {
   const dispatch = useAppDispatch();
   const projectName = useAppSelector(ProjectSelectors.getProjectName);
   const district = useAppSelector(DistrictSelectors.getDistrict);
+  const nodes = useAppSelector(NodesSelectors.getNodes);
   const selected = useAppSelector(NodesSelectors.getSelectedNodes);
   const modal = useAppSelector(ModalsSelectors.getModal);
   const hasPast = useAppSelector((state) => state.past.length > 0);
@@ -75,6 +77,7 @@ export function useShortcuts(map3d: Map3D | null) {
   const hideNode = useHideNode(selected);
   const deleteNode = useDeleteNode(selected);
   const saveProject = useDownloadProject();
+  const cloneNode = useCloneNode(nodes[selected[0]]);
 
   useGlobalShortcuts("KeyW", () => dispatch(ProjectActions.setTool("move")));
   useGlobalShortcuts("KeyS", () => dispatch(ProjectActions.setTool("select")));
@@ -109,6 +112,11 @@ export function useShortcuts(map3d: Map3D | null) {
   });
   useGlobalShortcuts("KeyH", () => hideNode(), !selected.length);
   useGlobalShortcuts("Delete", () => deleteNode(), !selected.length);
+  useGlobalShortcuts(
+    "Alt+Control+KeyC",
+    () => cloneNode(),
+    selected.length !== 1,
+  );
 
   useGlobalShortcuts(
     "Control+KeyZ",

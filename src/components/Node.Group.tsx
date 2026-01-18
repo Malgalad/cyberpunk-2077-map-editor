@@ -43,13 +43,13 @@ function Group({ lookAtNode, node }: GroupProps) {
     <div
       className={clsx(
         "flex flex-col gap-1.5",
-        "border-2 -m-0.5 border-dotted border-transparent",
+        "border-2 border-dotted border-transparent",
         selected.includes(node.id) && "border-slate-100!",
       )}
     >
       <div
-        className="flex flex-row items-center gap-2 cursor-pointer sticky bg-slate-800"
-        style={{ top: depth * 30, zIndex: 10 * (MAX_DEPTH - depth) }}
+        className="flex flex-row items-center gap-2 px-2 py-0.5 cursor-pointer sticky bg-slate-800"
+        style={{ top: depth * 28, zIndex: 10 * (MAX_DEPTH - depth) }}
         ref={ref}
         role="button"
         tabIndex={-1}
@@ -104,7 +104,7 @@ function Group({ lookAtNode, node }: GroupProps) {
         </div>
       </div>
       {expanded && children.length > 0 && (
-        <div className="pl-8 flex flex-col gap-1.5">
+        <div className="pl-8 flex flex-col">
           {children.map((treeNode) => (
             <Node key={treeNode.id} node={nodes[treeNode.id]} />
           ))}

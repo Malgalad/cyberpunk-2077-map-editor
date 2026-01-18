@@ -60,6 +60,45 @@ function UpdateNodeParentModal(props: ModalProps) {
     disabled: node.district === district.name && !node.parent,
   }));
 
+  const updateNodeParent = () => {
+    const updates: MapNodeV2[] = [];
+    const toInvalidate: string[] = [];
+
+    if (currentParent) toInvalidate.push(currentParent);
+
+    for (const id of selected) {
+      const node = nodes[id];
+      const twig = transplantNode(nodes, node, currentParent, currentDistrict);
+
+      toInvalidate.push(id);
+      updates.push(twig);
+
+      if (node.type === "group" && node.district !== currentDistrict) {
+        const children = index[node.id].descendantIds;
+
+        for (const childId of children) {
+          const child = nodes[childId];
+
+          toInvalidate.push(childId);
+          updates.push({
+            ...child,
+            district: twig.district,
+          });
+        }
+      }
+    }
+
+    invalidate(toInvalidate);
+    dispatch(NodesActions.editNodes(updates));
+    if (currentDistrict !== node.district) {
+      setTimeout(() => {
+        dispatch(DistrictActions.selectDistrict(currentDistrict));
+        dispatch(NodesActions.selectNodes(selected));
+      }, 0);
+    }
+    props.onClose();
+  };
+
   const toggleExpanded =
     (id: string): React.MouseEventHandler<SVGSVGElement> =>
     (event) => {
@@ -129,45 +168,6 @@ function UpdateNodeParentModal(props: ModalProps) {
         )}
       </React.Fragment>
     );
-  };
-
-  const updateNodeParent = () => {
-    const updates: MapNodeV2[] = [];
-    const toInvalidate: string[] = [];
-
-    if (currentParent) toInvalidate.push(currentParent);
-
-    for (const id of selected) {
-      const node = nodes[id];
-      const twig = transplantNode(nodes, node, currentParent, currentDistrict);
-
-      toInvalidate.push(id);
-      updates.push(twig);
-
-      if (node.type === "group" && node.district !== currentDistrict) {
-        const children = index[node.id].descendantIds;
-
-        for (const childId of children) {
-          const child = nodes[childId];
-
-          toInvalidate.push(childId);
-          updates.push({
-            ...child,
-            district: twig.district,
-          });
-        }
-      }
-    }
-
-    invalidate(toInvalidate);
-    dispatch(NodesActions.editNodes(updates));
-    if (currentDistrict !== node.district) {
-      setTimeout(() => {
-        dispatch(DistrictActions.selectDistrict(currentDistrict));
-        dispatch(NodesActions.selectNodes(selected));
-      }, 0);
-    }
-    props.onClose();
   };
 
   return (

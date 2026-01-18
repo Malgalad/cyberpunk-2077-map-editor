@@ -45,10 +45,7 @@ function AddNodes() {
   return (
     <>
       <div className="flex flex-col gap-2 grow max-h-[calc(100%_-_320px)] bg-slate-800 relative">
-        <div
-          className="grow p-2 flex flex-col overflow-auto"
-          onClick={onDeselect}
-        >
+        <div className="grow flex flex-col overflow-auto" onClick={onDeselect}>
           {branches.length === 0 && (
             <div className="grow flex items-center justify-center italic">
               Add new nodes
@@ -60,7 +57,7 @@ function AddNodes() {
           ))}
         </div>
 
-        <div className="flex flex-row gap-2 px-1 bottom-0 justify-end border-t border-slate-900 bg-slate-800">
+        <div className="flex flex-row gap-2 px-1 bottom-0 justify-end border-t border-slate-900 bg-slate-800 z-[1000]">
           <AddNodesTemplates />
 
           {selected.length > 0 && (
@@ -95,10 +92,10 @@ function AddNodes() {
                 </DropdownItem>
               </Dropdown>
 
-              <Tooltip tooltip="Clone node" tooltip2="Cloned!">
+              <Tooltip tooltip={"Clone node\n[Alt+Ctrl+C]"} tooltip2="Cloned!">
                 <Button
                   className="border-none"
-                  onClick={() => void onClone()}
+                  onClick={() => onClone()}
                   disabled={selected.length !== 1}
                 >
                   <CopyPlus />
@@ -107,7 +104,9 @@ function AddNodes() {
 
               <Tooltip
                 tooltip={
-                  selected.length > 1 ? "[Delete] nodes" : "[Delete] node"
+                  selected.length > 1
+                    ? "Delete nodes\n[Delete]"
+                    : "Delete node\n[Delete]"
                 }
               >
                 <Button className="border-none" onClick={onDelete}>

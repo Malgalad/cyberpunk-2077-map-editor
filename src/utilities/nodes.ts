@@ -12,6 +12,7 @@ import type {
   Optional,
   TreeNode,
   TreeRoot,
+  Tuple3,
 } from "../types/types.ts";
 import { applyTransforms } from "./transforms.ts";
 import { toTuple3, unwrapDraft } from "./utilities.ts";
@@ -210,7 +211,7 @@ export function getParent(node?: MapNodeV2) {
 
 const getWeight = (node: MapNodeV2) => 1 + (node.pattern?.count ?? 0);
 
-export function buildSupportStructures(nodes: Record<string, MapNodeV2>) {
+export function buildSupportStructures(nodes: NodesMap) {
   const tree: NodesTree = {};
   const indexTemp: NodesIndexIntermediate = {};
   const processed = new Set<string>();
@@ -309,7 +310,26 @@ export function buildSupportStructures(nodes: Record<string, MapNodeV2>) {
     if (index[id].treeNode.type === "group") weightNode(index[id].treeNode);
   }
 
-  console.log(tree);
-
   return { tree, index };
+}
+
+export function getPositionFromPointAndParent(
+  nodes: NodesMap,
+  parent: MapNodeV2 | null,
+  point: Tuple3<number>,
+) {
+  if (!parent) return point;
+
+  const { position: parentPosition } = applyTransforms(nodes, parent);
+  const rotation = new THREE.Quaternion().setFromEuler(
+    new THREE.Euler().fromArray(parent.rotation),
+  );
+
+  const position = new THREE.Vector3()
+    .sub(new THREE.Vector3().fromArray(parentPosition))
+    .add(new THREE.Vector3().fromArray(point))
+    .applyQuaternion(rotation.clone().invert())
+    .toArray();
+
+  return toTuple3(position);
 }

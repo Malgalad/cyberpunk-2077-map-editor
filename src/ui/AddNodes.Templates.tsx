@@ -12,11 +12,15 @@ import Dropdown from "../components/common/Dropdown/Dropdown.tsx";
 import Tooltip from "../components/common/Tooltip.tsx";
 import { TEMPLATE_ID } from "../constants.ts";
 import { useAppDispatch, useAppSelector } from "../hooks/hooks.ts";
+import { useInvalidateTransformsCache } from "../hooks/nodes.hooks.ts";
 import { useMap3D } from "../map3d/map3d.context.ts";
 import { DistrictSelectors } from "../store/district.ts";
 import { ModalsActions } from "../store/modals.ts";
 import { NodesActions, NodesSelectors } from "../store/nodesV2.ts";
-import { getParent } from "../utilities/nodes.ts";
+import {
+  getParent,
+  getPositionFromPointAndParent,
+} from "../utilities/nodes.ts";
 import { toTuple3 } from "../utilities/utilities.ts";
 
 function AddNodesTemplates() {
@@ -26,6 +30,7 @@ function AddNodesTemplates() {
   const district = useAppSelector(DistrictSelectors.getDistrict);
   const selected = useAppSelector(NodesSelectors.getSelectedNodes);
   const tree = useAppSelector(NodesSelectors.getNodesTree);
+  const invalidate = useInvalidateTransformsCache();
   const templatesTree = tree[TEMPLATE_ID];
   const templates =
     templatesTree && templatesTree.type === "template"
@@ -37,12 +42,16 @@ function AddNodesTemplates() {
   const onInsert = (id: string) => () => {
     const template = nodes[id];
     if (!map3d) return;
-    const center = map3d.getCenter();
-    if (!center) return;
     const parent = getParent(nodes[selected[0]]);
-    const position = toTuple3(center);
+    const center = toTuple3(map3d.getCenter());
+    const position = getPositionFromPointAndParent(
+      nodes,
+      parent !== null ? nodes[parent] : null,
+      center,
+    );
     const label = template.label.replace(/TEMPLATE <(.+?)>/, "$1");
 
+    if (parent) invalidate([parent]);
     dispatch(
       NodesActions.cloneNode({
         id: template.id,

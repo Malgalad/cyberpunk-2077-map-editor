@@ -98,7 +98,7 @@ function Menu() {
             align="top"
             trigger={<DropdownItem>Import/Export</DropdownItem>}
           >
-            <Tooltip tooltip="Ctrl+Shift+I" flow="right">
+            <Tooltip tooltip="Alt+Ctrl+I" flow="right">
               <DropdownItem
                 onClick={() =>
                   dispatch(ModalsActions.openModal("import-export", "import"))
@@ -109,7 +109,7 @@ function Menu() {
                 Import nodes to project
               </DropdownItem>
             </Tooltip>
-            <Tooltip tooltip="Ctrl+Shift+E" flow="right">
+            <Tooltip tooltip="Alt+Ctrl+E" flow="right">
               <DropdownItem
                 onClick={() =>
                   dispatch(ModalsActions.openModal("import-export", "export"))

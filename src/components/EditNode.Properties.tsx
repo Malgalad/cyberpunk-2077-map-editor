@@ -29,6 +29,7 @@ interface EditNodePropertiesProps {
   selected: string[];
   mode: "create" | "update" | "delete";
 }
+type Axis = (typeof AXII)[number];
 
 const axiiColors = [
   "border-red-500!",
@@ -53,6 +54,60 @@ function EditNodeProperties({ selected, mode }: EditNodePropertiesProps) {
   const node = nodes[selected[0]];
 
   const onHide = useHideNode(selected);
+  const onChangePosition =
+    (axis: Axis) => (event: React.ChangeEvent<HTMLInputElement>) => {
+      const value = toNumber(event.target.value);
+      invalidate([node.id]);
+      if (useLocal) {
+        const newLocal = updateTuple(local, axis, value);
+
+        setLocal(newLocal);
+
+        const position = new THREE.Vector3()
+          .fromArray(copy)
+          .add(
+            new THREE.Vector3()
+              .fromArray(newLocal)
+              .applyEuler(new THREE.Euler().fromArray(node.rotation)),
+          );
+
+        dispatch(
+          NodesActions.editNode({
+            id: node.id,
+            position: toTuple3(position.toArray()),
+          }),
+        );
+      } else {
+        dispatch(
+          NodesActions.editNode({
+            id: node.id,
+            position: updateTuple(node.position, axis, value),
+          }),
+        );
+      }
+    };
+  const onChangeRotation =
+    (axis: Axis) => (event: React.ChangeEvent<HTMLInputElement>) => {
+      const value = THREE.MathUtils.degToRad(toNumber(event.target.value));
+      invalidate([node.id]);
+      dispatch(
+        NodesActions.editNode({
+          id: node.id,
+          rotation: updateTuple(node.rotation, axis, value),
+        }),
+      );
+    };
+  const onChangeScale =
+    (axis: Axis) => (event: React.ChangeEvent<HTMLInputElement>) => {
+      const value = toNumber(event.target.value);
+      invalidate([node.id]);
+      dispatch(
+        NodesActions.editNode({
+          id: node.id,
+          scale: updateTuple(node.scale, axis, value),
+        }),
+      );
+    };
 
   React.useEffect(() => {
     if (useLocal && !wasLocal) {
@@ -168,39 +223,9 @@ function EditNodeProperties({ selected, mode }: EditNodePropertiesProps) {
             <DraggableInput
               key={`${axis}+${useLocal}`}
               className={clsx("w-20", axiiColors[axis])}
-              step={3 / (map3d?.camera.zoom ?? 1)}
+              step={0.1}
               value={useLocal ? local[axis] : node.position[axis]}
-              onChange={(event) => {
-                const value = toNumber(event.target.value);
-                invalidate([node.id]);
-                if (useLocal) {
-                  const newLocal = updateTuple(local, axis, value);
-
-                  setLocal(newLocal);
-
-                  const position = new THREE.Vector3()
-                    .fromArray(copy)
-                    .add(
-                      new THREE.Vector3()
-                        .fromArray(newLocal)
-                        .applyEuler(new THREE.Euler().fromArray(node.rotation)),
-                    );
-
-                  dispatch(
-                    NodesActions.editNode({
-                      id: node.id,
-                      position: toTuple3(position.toArray()),
-                    }),
-                  );
-                } else {
-                  dispatch(
-                    NodesActions.editNode({
-                      id: node.id,
-                      position: updateTuple(node.position, axis, value),
-                    }),
-                  );
-                }
-              }}
+              onChange={onChangePosition(axis)}
             />
           ))}
         </div>
@@ -211,20 +236,9 @@ function EditNodeProperties({ selected, mode }: EditNodePropertiesProps) {
             <DraggableInput
               key={axis}
               className={clsx("w-20", axiiColors[axis])}
-              step={5 / (map3d?.camera.zoom ?? 1)}
+              step={0.25}
               value={THREE.MathUtils.radToDeg(node.rotation[axis])}
-              onChange={(event) => {
-                const value = THREE.MathUtils.degToRad(
-                  toNumber(event.target.value),
-                );
-                invalidate([node.id]);
-                dispatch(
-                  NodesActions.editNode({
-                    id: node.id,
-                    rotation: updateTuple(node.rotation, axis, value),
-                  }),
-                );
-              }}
+              onChange={onChangeRotation(axis)}
             />
           ))}
         </div>
@@ -234,20 +248,9 @@ function EditNodeProperties({ selected, mode }: EditNodePropertiesProps) {
             <DraggableInput
               key={axis}
               className={clsx("w-20", axiiColors[axis])}
-              step={
-                node.type === "instance" ? 50 / (map3d?.camera.zoom ?? 1) : 0.1
-              }
+              step={0.05}
               value={node.scale[axis]}
-              onChange={(event) => {
-                const value = toNumber(event.target.value);
-                invalidate([node.id]);
-                dispatch(
-                  NodesActions.editNode({
-                    id: node.id,
-                    scale: updateTuple(node.scale, axis, value),
-                  }),
-                );
-              }}
+              onChange={onChangeScale(axis)}
               min={0}
               max={
                 node.type === "instance" ? (district?.cubeSize ?? 0) * 2 : 100
