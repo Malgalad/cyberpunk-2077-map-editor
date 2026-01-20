@@ -73,9 +73,15 @@ export function applyParentTransform(parent: MapNodeV2 | null) {
 
 export function applyTransforms(nodes: NodesMap, node: MapNodeV2) {
   let current = node;
-  while (current.parent) {
-    current = applyParentTransform(nodes[current.parent])(current);
+  let parentId = current.parent;
+
+  while (parentId) {
+    const parent = nodes[parentId];
+
+    current = applyParentTransform(parent)(current);
+    parentId = parent.parent;
   }
+
   return current;
 }
 
