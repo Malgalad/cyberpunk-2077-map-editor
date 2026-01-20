@@ -3,125 +3,48 @@ import * as React from "react";
 import * as THREE from "three";
 
 import { AXII } from "../constants.ts";
-import {
-  useAppDispatch,
-  useAppSelector,
-  useForceUpdate,
-  usePreviousValue,
-} from "../hooks/hooks.ts";
-import {
-  useHideNode,
-  useInvalidateTransformsCache,
-} from "../hooks/nodes.hooks.ts";
-import { useMap3D } from "../map3d/map3d.context.ts";
+import { useAppSelector } from "../hooks/hooks.ts";
+import { useHideNode } from "../hooks/nodes.hooks.ts";
 import { DistrictSelectors } from "../store/district.ts";
-import { ModalsActions } from "../store/modals.ts";
-import { NodesActions, NodesSelectors } from "../store/nodesV2.ts";
-import type { MapNodeV2 } from "../types/types.ts";
-import { clsx, toNumber, toTuple3 } from "../utilities/utilities.ts";
+import { NodesSelectors } from "../store/nodesV2.ts";
+import { clsx } from "../utilities/utilities.ts";
 import Button from "./common/Button.tsx";
 import DraggableInput from "./common/DraggableInput.tsx";
 import Input from "./common/Input.tsx";
 import Toggle from "./common/Toggle.tsx";
 import Tooltip from "./common/Tooltip.tsx";
+import {
+  useChangeLabel,
+  useChangeParent,
+  useChangePosition,
+  useChangeRotation,
+  useChangeScale,
+} from "./EditNode.Properties.hooks.ts";
 
 interface EditNodePropertiesProps {
   selected: string[];
   mode: "create" | "update" | "delete";
 }
-type Axis = (typeof AXII)[number];
 
 const axiiColors = [
   "border-red-500!",
   "border-green-500!",
   "border-blue-500!",
 ] as const;
-const updateTuple = <T,>(tuple: T[], index: number, value: T) =>
-  toTuple3(tuple.toSpliced(index, 1, value));
 
 function EditNodeProperties({ selected, mode }: EditNodePropertiesProps) {
-  const isMultiple = selected.length > 1;
-  const dispatch = useAppDispatch();
-  const forceUpdate = useForceUpdate();
-  const invalidate = useInvalidateTransformsCache();
-  const map3d = useMap3D();
   const nodes = useAppSelector(NodesSelectors.getNodes);
   const district = useAppSelector(DistrictSelectors.getDistrict);
   const [useLocal, setUseLocal] = React.useState(false);
-  const wasLocal = usePreviousValue(useLocal);
-  const [local, setLocal] = React.useState([0, 0, 0]);
-  const [copy, setCopy] = React.useState<MapNodeV2["position"]>([0, 0, 0]);
   const node = nodes[selected[0]];
+  const isMultiple = selected.length > 1;
 
-  const onHide = useHideNode(selected);
-  const onChangePosition =
-    (axis: Axis) => (event: React.ChangeEvent<HTMLInputElement>) => {
-      const value = toNumber(event.target.value);
-      invalidate([node.id]);
-      if (useLocal) {
-        const newLocal = updateTuple(local, axis, value);
-
-        setLocal(newLocal);
-
-        const position = new THREE.Vector3()
-          .fromArray(copy)
-          .add(
-            new THREE.Vector3()
-              .fromArray(newLocal)
-              .applyEuler(new THREE.Euler().fromArray(node.rotation)),
-          );
-
-        dispatch(
-          NodesActions.editNode({
-            id: node.id,
-            position: toTuple3(position.toArray()),
-          }),
-        );
-      } else {
-        dispatch(
-          NodesActions.editNode({
-            id: node.id,
-            position: updateTuple(node.position, axis, value),
-          }),
-        );
-      }
-    };
-  const onChangeRotation =
-    (axis: Axis) => (event: React.ChangeEvent<HTMLInputElement>) => {
-      const value = THREE.MathUtils.degToRad(toNumber(event.target.value));
-      invalidate([node.id]);
-      dispatch(
-        NodesActions.editNode({
-          id: node.id,
-          rotation: updateTuple(node.rotation, axis, value),
-        }),
-      );
-    };
-  const onChangeScale =
-    (axis: Axis) => (event: React.ChangeEvent<HTMLInputElement>) => {
-      const value = toNumber(event.target.value);
-      invalidate([node.id]);
-      dispatch(
-        NodesActions.editNode({
-          id: node.id,
-          scale: updateTuple(node.scale, axis, value),
-        }),
-      );
-    };
-
-  React.useEffect(() => {
-    if (useLocal && !wasLocal) {
-      setCopy(node.position);
-      setLocal([0, 0, 0]);
-    }
-  }, [useLocal, wasLocal, node]);
-
-  React.useEffect(() => {
-    if (!map3d) return;
-
-    // Force update so that input step update
-    return map3d.onZoomChange(forceUpdate);
-  }, [map3d, forceUpdate]);
+  const changeLabel = useChangeLabel(node);
+  const changeParent = useChangeParent();
+  const [position, changePosition] = useChangePosition(node, useLocal);
+  const changeRotation = useChangeRotation(node);
+  const changeScale = useChangeScale(node);
+  const hideNode = useHideNode(selected);
 
   const labelSelector = (
     <>
@@ -131,11 +54,7 @@ function EditNodeProperties({ selected, mode }: EditNodePropertiesProps) {
           type="text"
           className="w-[248px]"
           value={node.label}
-          onChange={(event) => {
-            dispatch(
-              NodesActions.editNode({ id: node.id, label: event.target.value }),
-            );
-          }}
+          onChange={changeLabel}
         />
       </div>
     </>
@@ -151,9 +70,7 @@ function EditNodeProperties({ selected, mode }: EditNodePropertiesProps) {
               (id) => nodes[id].parent === nodes[selected[0]].parent,
             )
           }
-          onClick={() =>
-            dispatch(ModalsActions.openModal("update-node-parent"))
-          }
+          onClick={changeParent}
         >
           Change parent
         </Button>
@@ -166,7 +83,7 @@ function EditNodeProperties({ selected, mode }: EditNodePropertiesProps) {
         <span className="underline">H</span>idden:
       </div>
       <div>
-        <Toggle enabled={node.hidden} onChange={onHide} />
+        <Toggle enabled={node.hidden} onChange={hideNode} />
       </div>
     </>
   );
@@ -224,8 +141,8 @@ function EditNodeProperties({ selected, mode }: EditNodePropertiesProps) {
               key={`${axis}+${useLocal}`}
               className={clsx("w-20", axiiColors[axis])}
               step={0.1}
-              value={useLocal ? local[axis] : node.position[axis]}
-              onChange={onChangePosition(axis)}
+              value={position[axis]}
+              onChange={changePosition(axis)}
             />
           ))}
         </div>
@@ -238,7 +155,7 @@ function EditNodeProperties({ selected, mode }: EditNodePropertiesProps) {
               className={clsx("w-20", axiiColors[axis])}
               step={0.25}
               value={THREE.MathUtils.radToDeg(node.rotation[axis])}
-              onChange={onChangeRotation(axis)}
+              onChange={changeRotation(axis)}
             />
           ))}
         </div>
@@ -250,7 +167,7 @@ function EditNodeProperties({ selected, mode }: EditNodePropertiesProps) {
               className={clsx("w-20", axiiColors[axis])}
               step={0.05}
               value={node.scale[axis]}
-              onChange={onChangeScale(axis)}
+              onChange={changeScale(axis)}
               min={0}
               max={
                 node.type === "instance" ? (district?.cubeSize ?? 0) * 2 : 100

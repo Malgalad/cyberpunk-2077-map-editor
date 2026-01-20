@@ -4,12 +4,13 @@ import * as React from "react";
 import { useGlobalShortcuts } from "../../hooks/hooks.ts";
 import { clsx } from "../../utilities/utilities.ts";
 
-type ButtonProps = React.ButtonHTMLAttributes<HTMLButtonElement> & {
+export interface ButtonProps
+  extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   onClick?: (
     event: React.MouseEvent<HTMLButtonElement, MouseEvent>,
   ) => unknown | Promise<unknown>;
   shortcut?: string;
-};
+}
 
 function Button({ onClick, children, shortcut, ...props }: ButtonProps) {
   const [isLoading, setIsLoading] = React.useState(false);

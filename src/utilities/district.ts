@@ -8,7 +8,7 @@ import type {
   NodesMap,
   NodesTree,
 } from "../types/types.ts";
-import { projectNodesToDistrict } from "./transforms.ts";
+import { getTransformsFromSubtree } from "./getTransformsFromSubtree.ts";
 import { invariant } from "./utilities.ts";
 
 export const getDistrictName = (district: DistrictProperties) =>
@@ -59,9 +59,9 @@ export function getFinalDistrictTransformsFromNodes(
     treeNode.type === "district",
     "District tree must have a district type.",
   );
-  const additions = projectNodesToDistrict(district, nodes, treeNode.create);
-  const updates = projectNodesToDistrict(district, nodes, treeNode.update);
-  const deletions = projectNodesToDistrict(district, nodes, treeNode.delete);
+  const additions = getTransformsFromSubtree(district, nodes, treeNode.create);
+  const updates = getTransformsFromSubtree(district, nodes, treeNode.update);
+  const deletions = getTransformsFromSubtree(district, nodes, treeNode.delete);
 
   const visibleAdditions = additions.filter(isVisible);
   const visibleUpdatesMap = new Map(

@@ -6,12 +6,16 @@ import { ModalsActions } from "../store/modals.ts";
 import { NodesActions, NodesSelectors } from "../store/nodesV2.ts";
 import { ProjectActions } from "../store/project.ts";
 import type { MapNodeV2, Modes, NodesIndex, Plane } from "../types/types.ts";
-import { getFutureParent, transplantPoint } from "../utilities/nodes.ts";
-import { invalidateCachedTransforms } from "../utilities/transforms.ts";
+import {
+  getTransformsFromSubtree,
+  invalidateCachedTransforms,
+} from "../utilities/getTransformsFromSubtree.ts";
+import { lookAtTransform } from "../utilities/map.ts";
+import { resolveParent, transplantPoint } from "../utilities/nodes.ts";
 import { toTuple3 } from "../utilities/utilities.ts";
 import { useAppDispatch, useAppSelector, useAppStore } from "./hooks.ts";
 
-export function useFocusNode(node: MapNodeV2) {
+export function useFocusNodeOnSelected(node: MapNodeV2) {
   const selected = useAppSelector(NodesSelectors.getSelectedNodes);
   const ref = React.useRef<HTMLDivElement | null>(null);
 
@@ -22,6 +26,63 @@ export function useFocusNode(node: MapNodeV2) {
   }, [selected, node]);
 
   return ref;
+}
+
+export function useLookAtNode(node: MapNodeV2) {
+  const map3D = useMap3D();
+  const store = useAppStore();
+
+  return React.useCallback(
+    (event: React.MouseEvent<HTMLElement>) => {
+      if (!map3D) return;
+
+      event.preventDefault();
+      const state = store.getState();
+      const district = DistrictSelectors.getDistrict(state);
+      if (!district) return;
+      const nodes = NodesSelectors.getNodes(state);
+      const tree = NodesSelectors.getNodesTree(state);
+      const index = NodesSelectors.getNodesIndex(state);
+      const districtTree = tree[district.name];
+      if (!districtTree || districtTree.type !== "district") return;
+      const transforms = getTransformsFromSubtree(
+        district,
+        nodes,
+        districtTree[node.tag],
+      );
+
+      const transformId =
+        node.type === "instance"
+          ? node.id
+          : index[node.id].descendantIds.find(
+              (id) => nodes[id].type === "instance",
+            );
+      const transform = transforms.find(({ id }) => id === transformId);
+
+      if (transform) {
+        const [position, zoom] = lookAtTransform(transform, district);
+        map3D.lookAt(position, zoom);
+      }
+    },
+    [map3D, store, node],
+  );
+}
+
+export function useSelectNode(node: MapNodeV2) {
+  const dispatch = useAppDispatch();
+
+  return React.useCallback(
+    (event: React.MouseEvent<HTMLElement>) => {
+      event.stopPropagation();
+      const modifier = event.getModifierState("Control")
+        ? "ctrl"
+        : event.getModifierState("Shift")
+          ? "shift"
+          : undefined;
+      dispatch(NodesActions.selectNode({ id: node.id, modifier }));
+    },
+    [node, dispatch],
+  );
 }
 
 export function useDeselectNode() {
@@ -110,7 +171,7 @@ export function useAddNode(type: MapNodeV2["type"], tag: MapNodeV2["tag"]) {
   return React.useCallback(() => {
     if (selectedNodes.length > 1 || !selectedDistrict || !map3d) return;
 
-    const parent = getFutureParent(nodes[selectedNodes[0]]);
+    const parent = resolveParent(nodes[selectedNodes[0]]);
     const center = toTuple3(map3d.getCenter());
     const position = transplantPoint(nodes, center, parent);
 

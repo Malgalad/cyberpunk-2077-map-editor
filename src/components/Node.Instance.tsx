@@ -1,22 +1,27 @@
 import { EyeOff, SquareStack } from "lucide-react";
 
-import { useAppDispatch, useAppSelector } from "../hooks/hooks.ts";
-import { useFocusNode } from "../hooks/nodes.hooks.ts";
-import { NodesActions, NodesSelectors } from "../store/nodesV2.ts";
+import { useAppSelector } from "../hooks/hooks.ts";
+import {
+  useFocusNodeOnSelected,
+  useLookAtNode,
+  useSelectNode,
+} from "../hooks/nodes.hooks.ts";
+import { NodesSelectors } from "../store/nodesV2.ts";
 import type { MapNodeV2 } from "../types/types.ts";
 import { clsx } from "../utilities/utilities.ts";
 import Button from "./common/Button.tsx";
 import Tooltip from "./common/Tooltip.tsx";
 
 interface InstanceProps {
-  lookAtNode: () => void;
   node: MapNodeV2;
 }
 
-function Instance({ lookAtNode, node }: InstanceProps) {
-  const dispatch = useAppDispatch();
+function Instance({ node }: InstanceProps) {
   const selected = useAppSelector(NodesSelectors.getSelectedNodes);
-  const ref = useFocusNode(node);
+
+  const ref = useFocusNodeOnSelected(node);
+  const lookAtNode = useLookAtNode(node);
+  const selectNode = useSelectNode(node);
 
   return (
     <div
@@ -27,20 +32,9 @@ function Instance({ lookAtNode, node }: InstanceProps) {
       )}
       ref={ref}
       role="button"
-      tabIndex={-1}
-      onClick={(event) => {
-        event.stopPropagation();
-        const modifier = event.getModifierState("Control")
-          ? "ctrl"
-          : event.getModifierState("Shift")
-            ? "shift"
-            : undefined;
-        dispatch(NodesActions.selectNode({ id: node.id, modifier }));
-      }}
-      onDoubleClick={(event) => {
-        event.preventDefault();
-        lookAtNode();
-      }}
+      tabIndex={0}
+      onClick={selectNode}
+      onDoubleClick={lookAtNode}
     >
       <div className="grow flex flex-row gap-2 justify-between items-center select-none px-2 py-0.5  bg-slate-800">
         <span>

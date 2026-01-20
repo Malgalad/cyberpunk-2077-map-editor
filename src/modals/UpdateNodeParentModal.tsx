@@ -1,9 +1,9 @@
 import {
   Square,
   SquareCheck,
+  SquareDashed,
   SquareMinus,
   SquarePlus,
-  SquareSlash,
 } from "lucide-react";
 import * as React from "react";
 
@@ -155,7 +155,7 @@ function UpdateNodeParentModal(props: ModalProps) {
           {expanded.has(mapNode.id) ? (
             <SquareMinus onClick={toggleExpanded(mapNode.id)} />
           ) : disabled || !hasChildren ? (
-            <SquareSlash />
+            <SquareDashed />
           ) : (
             <SquarePlus onClick={toggleExpanded(mapNode.id)} />
           )}

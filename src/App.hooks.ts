@@ -32,13 +32,13 @@ import {
   getFinalDistrictTransformsFromNodes,
   immutableDistrictTransforms,
 } from "./utilities/district.ts";
-import { getFutureParent, transplantNode } from "./utilities/nodes.ts";
 import {
   applyTransforms,
-  projectNodesToDistrict,
-  transformToNode,
-} from "./utilities/transforms.ts";
-import { partition } from "./utilities/utilities.ts";
+  getTransformsFromSubtree,
+} from "./utilities/getTransformsFromSubtree.ts";
+import { resolveParent, transplantNode } from "./utilities/nodes.ts";
+import { transformToNode } from "./utilities/transforms.ts";
+import { invariant, partition } from "./utilities/utilities.ts";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const emptyArray: any[] = [];
@@ -249,14 +249,17 @@ export function useDrawAdditions(map3d: Map3D | null) {
   const district = useAppSelector(DistrictSelectors.getDistrict);
   const nodes = useAppSelector(NodesSelectors.getNodes);
   const tree = useAppSelector(NodesSelectors.getNodesTree);
-  const root = tree[district?.name ?? ""] ?? {};
-  const additions =
-    root && root.type === "district" ? root.create : (emptyArray as TreeNode[]);
+  const additions = React.useMemo<TreeNode[]>(() => {
+    if (!district || !tree[district.name]) return emptyArray;
+    const root = tree[district.name];
+    invariant(root.type === "district", "Unexpected tree node type");
+    return root.create;
+  }, [district, tree]);
 
   React.useEffect(() => {
     if (!map3d || !district) return;
 
-    const transforms = projectNodesToDistrict(district, nodes, additions);
+    const transforms = getTransformsFromSubtree(district, nodes, additions);
 
     map3d.setAdditions({ district, transforms });
   }, [map3d, district, nodes, additions]);
@@ -266,14 +269,17 @@ export function useDrawUpdates(map3d: Map3D | null) {
   const district = useAppSelector(DistrictSelectors.getDistrict);
   const nodes = useAppSelector(NodesSelectors.getNodes);
   const tree = useAppSelector(NodesSelectors.getNodesTree);
-  const root = tree[district?.name ?? ""] ?? {};
-  const updates =
-    root && root.type === "district" ? root.update : (emptyArray as TreeNode[]);
+  const updates = React.useMemo<TreeNode[]>(() => {
+    if (!district || !tree[district.name]) return emptyArray;
+    const root = tree[district.name];
+    invariant(root.type === "district", "Unexpected tree node type");
+    return root.update;
+  }, [district, tree]);
 
   React.useEffect(() => {
     if (!map3d || !district) return;
 
-    const transforms = projectNodesToDistrict(district, nodes, updates);
+    const transforms = getTransformsFromSubtree(district, nodes, updates);
 
     map3d.setUpdates({ district, transforms });
   }, [map3d, district, nodes, updates]);
@@ -283,14 +289,17 @@ export function useDrawDeletions(map3d: Map3D | null) {
   const district = useAppSelector(DistrictSelectors.getDistrict);
   const nodes = useAppSelector(NodesSelectors.getNodes);
   const tree = useAppSelector(NodesSelectors.getNodesTree);
-  const root = tree[district?.name ?? ""] ?? {};
-  const deletions =
-    root && root.type === "district" ? root.delete : (emptyArray as TreeNode[]);
+  const deletions = React.useMemo<TreeNode[]>(() => {
+    if (!district || !tree[district.name]) return emptyArray;
+    const root = tree[district.name];
+    invariant(root.type === "district", "Unexpected tree node type");
+    return root.delete;
+  }, [district, tree]);
 
   React.useEffect(() => {
     if (!map3d || !district) return;
 
-    const transforms = projectNodesToDistrict(district, nodes, deletions);
+    const transforms = getTransformsFromSubtree(district, nodes, deletions);
 
     map3d.setDeletions({ district, transforms });
   }, [map3d, district, nodes, deletions]);
@@ -362,7 +371,7 @@ export function useMap3DEvents(map3d: Map3D | null) {
       const nodes = NodesSelectors.getNodes(state);
       const tree = NodesSelectors.getNodesTree(state);
 
-      const parent = getFutureParent(nodes[selected[0]]);
+      const parent = resolveParent(nodes[selected[0]]);
       const id = nanoid();
 
       // If the user clicks twice without moving mouse, the highlighted block
