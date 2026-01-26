@@ -45,19 +45,20 @@ function AddNodesTemplates() {
     const label = template.label.replace(/TEMPLATE <(.+?)>/, "$1");
 
     if (parent) invalidate([parent]);
-    dispatch(
-      NodesActions.cloneNode({
-        id: template.id,
-        updates: {
+    const [clone] = dispatch(
+      NodesActions.cloneNodeDeep(
+        template.id,
+        {
           parent,
           label,
           position,
         },
-        globalUpdates: {
+        {
           district: district.name,
         },
-      }),
+      ),
     );
+    dispatch(NodesActions.selectNode(clone.id));
   };
 
   const onDelete = (id: string) => async () => {
@@ -77,18 +78,17 @@ function AddNodesTemplates() {
   const onCreate = () => {
     if (selected.length !== 1) return;
     dispatch(
-      NodesActions.cloneNode({
-        id: selected[0],
-        updates: {
+      NodesActions.cloneNodeDeep(
+        selected[0],
+        {
           label: `TEMPLATE <${nodes[selected[0]].label}>`,
           parent: null,
           position: [0, 0, 0],
         },
-        globalUpdates: {
+        {
           district: TEMPLATE_ID,
         },
-        selectAfterClone: false,
-      }),
+      ),
     );
   };
 

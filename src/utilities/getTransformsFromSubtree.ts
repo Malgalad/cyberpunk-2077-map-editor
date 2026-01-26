@@ -8,7 +8,7 @@ import type {
   Plane,
   TreeNode,
 } from "../types/types.ts";
-import { toQuaternion } from "./math.ts";
+import { fromVector3, toQuaternion, toVector3 } from "./math.ts";
 import { nodeToTransform } from "./nodes.ts";
 import { pipe, toTuple3 } from "./utilities.ts";
 
@@ -42,7 +42,7 @@ export function applyParentTransform(parent: MapNodeV2 | null) {
   return (node: MapNodeV2): MapNodeV2 => {
     if (!parent) return node;
 
-    const parentPosition = new THREE.Vector3().fromArray(parent.position);
+    const parentPosition = toVector3(parent.position);
     const parentRotation = toQuaternion(parent.rotation);
 
     const object = new THREE.Object3D();
@@ -64,9 +64,9 @@ export function applyParentTransform(parent: MapNodeV2 | null) {
 
     return {
       ...node,
-      position: object.position.toArray(),
+      position: fromVector3(object.position),
       rotation: toTuple3(object.rotation.toArray() as number[]),
-      scale: object.scale.toArray(),
+      scale: fromVector3(object.scale),
     };
   };
 }

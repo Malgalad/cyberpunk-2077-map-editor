@@ -403,11 +403,11 @@ export function useMap3DEvents(map3d: Map3D | null) {
           district.name,
         );
         invalidate([parent]);
-        dispatch(NodesActions.addNode(nodeWithCorrectParent));
+        dispatch(NodesActions.createNode(nodeWithCorrectParent));
       } else {
-        dispatch(NodesActions.addNode(node));
+        dispatch(NodesActions.createNode(node));
       }
-      dispatch(NodesActions.selectNode({ id }));
+      dispatch(NodesActions.selectNode(id));
     },
     [district, selected, dispatch, store, invalidate],
   );
@@ -420,7 +420,7 @@ export function useMap3DEvents(map3d: Map3D | null) {
         const { id } = event.detail;
 
         if (id != null) {
-          dispatch(NodesActions.selectNode({ id }));
+          dispatch(NodesActions.selectNode(id));
         } else {
           dispatch(NodesActions.selectNode(null));
         }

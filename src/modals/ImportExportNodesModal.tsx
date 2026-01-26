@@ -136,7 +136,7 @@ function ImportExportNodesModal(props: ModalProps) {
           .map((node) => [node.id, node]),
       );
 
-      dispatch(NodesActions.batchAddNodes(toImport));
+      dispatch(NodesActions.batchUpsertNodes(toImport));
       dispatch(DistrictActions.selectDistrict(district));
     }
     props.onClose();

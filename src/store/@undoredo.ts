@@ -42,7 +42,7 @@ const filter = combineFilters(
   excludeEmptySelect,
 );
 const groupBy = (action: UnknownAction) => {
-  if (!nodesSlice.actions.editNode.match(action)) return null;
+  if (!nodesSlice.actions.updateNode.match(action)) return null;
 
   return `${getAllPaths(action.payload).join("+")}`;
 };

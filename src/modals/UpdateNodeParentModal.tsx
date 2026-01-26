@@ -15,7 +15,7 @@ import { useInvalidateTransformsCache } from "../hooks/nodes.hooks.ts";
 import { DistrictActions, DistrictSelectors } from "../store/district.ts";
 import { NodesActions, NodesSelectors } from "../store/nodesV2.ts";
 import type { ModalProps } from "../types/modals.ts";
-import type { MapNodeV2, TreeNode } from "../types/types.ts";
+import type { NodesMap, TreeNode } from "../types/types.ts";
 import type { SelectItem } from "../types/ui.types.ts";
 import { getDistrictName } from "../utilities/district.ts";
 import { transplantNode } from "../utilities/nodes.ts";
@@ -61,7 +61,7 @@ function UpdateNodeParentModal(props: ModalProps) {
   }));
 
   const updateNodeParent = () => {
-    const updates: MapNodeV2[] = [];
+    const updates: NodesMap = {};
     const toInvalidate: string[] = [];
 
     if (currentParent) toInvalidate.push(currentParent);
@@ -71,7 +71,7 @@ function UpdateNodeParentModal(props: ModalProps) {
       const twig = transplantNode(nodes, node, currentParent, currentDistrict);
 
       toInvalidate.push(id);
-      updates.push(twig);
+      updates[id] = twig;
 
       if (node.type === "group" && node.district !== currentDistrict) {
         const children = index[node.id].descendantIds;
@@ -80,16 +80,13 @@ function UpdateNodeParentModal(props: ModalProps) {
           const child = nodes[childId];
 
           toInvalidate.push(childId);
-          updates.push({
-            ...child,
-            district: twig.district,
-          });
+          updates[childId] = { ...child, district: twig.district };
         }
       }
     }
 
     invalidate(toInvalidate);
-    dispatch(NodesActions.editNodes(updates));
+    dispatch(NodesActions.batchUpsertNodes(updates));
     if (currentDistrict !== node.district) {
       setTimeout(() => {
         dispatch(DistrictActions.selectDistrict(currentDistrict));

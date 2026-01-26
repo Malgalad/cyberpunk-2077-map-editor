@@ -35,7 +35,7 @@ const nodesSlice = createSlice({
   name: "nodes",
   initialState,
   reducers: (create) => ({
-    addNode: create.preparedReducer(
+    createNode: create.preparedReducer(
       (
         prepare: Optional<MapNodeV2, "type" | "tag" | "district" | "position">,
       ) => {
@@ -47,33 +47,11 @@ const nodesSlice = createSlice({
         state.selected = [action.payload.id];
       },
     ),
-    batchAddNodes: create.reducer<NodesMap>((state, action) => {
+    batchUpsertNodes: create.reducer<NodesMap>((state, action) => {
       Object.assign(state.nodes, action.payload);
       Object.assign(state, buildSupportStructures(state.nodes));
     }),
-    cloneNode: create.reducer<{
-      id: string;
-      selectAfterClone?: boolean;
-      updates?: Partial<MapNodeV2>;
-      globalUpdates?: Partial<MapNodeV2>;
-    }>((state, action) => {
-      const {
-        id,
-        selectAfterClone = true,
-        updates,
-        globalUpdates,
-      } = action.payload;
-      const node = state.nodes[id];
-      const clones = cloneNode(state.nodes, state.index, node);
-      if (updates) Object.assign(clones[0], updates);
-      for (const clone of clones) {
-        if (globalUpdates) Object.assign(clone, globalUpdates);
-        state.nodes[clone.id] = clone;
-      }
-      Object.assign(state, buildSupportStructures(state.nodes));
-      if (selectAfterClone) state.selected = [clones[0].id];
-    }),
-    editNode: create.reducer<Optional<MapNodeV2, "id">>((state, action) => {
+    updateNode: create.reducer<Optional<MapNodeV2, "id">>((state, action) => {
       const update = action.payload;
       const current = state.nodes[update.id];
 
@@ -87,77 +65,14 @@ const nodesSlice = createSlice({
         Object.assign(state, buildSupportStructures(state.nodes));
       }
     }),
-    editNodes: create.reducer<Optional<MapNodeV2, "id">[]>((state, action) => {
-      let shouldRebuildSupport = false;
-      for (const update of action.payload) {
-        const current = state.nodes[update.id];
-        const parentChanged = update.parent !== current.parent;
-        const districtChanged = update.district !== current.district;
-        const tagChanged = update.tag !== current.tag;
-        shouldRebuildSupport =
-          shouldRebuildSupport ||
-          parentChanged ||
-          districtChanged ||
-          tagChanged;
-        Object.assign(state.nodes[update.id], update);
-      }
-      if (shouldRebuildSupport) {
-        Object.assign(state, buildSupportStructures(state.nodes));
-      }
-    }),
-    deleteNodes: create.reducer<string[]>((state, action) => {
+    deleteNodesById: create.reducer<string[]>((state, action) => {
       for (const id of action.payload) {
         delete state.nodes[id];
       }
       state.selected = [];
       Object.assign(state, buildSupportStructures(state.nodes));
     }),
-    selectNode: create.reducer<null | {
-      id: string;
-      modifier?: "shift" | "ctrl" | "alt";
-    }>((state, action) => {
-      if (action.payload == null) {
-        state.selected = [];
-        return;
-      }
-
-      const { id, modifier } = action.payload;
-      const set = new Set<string>(state.selected || []);
-      if (!modifier) {
-        state.selected = [id];
-      } else if (modifier === "ctrl") {
-        void (set.has(id) ? set.delete(id) : set.add(id));
-        state.selected = [...set.values()];
-      } else if (modifier === "shift") {
-        if (!set.size) {
-          state.selected = [id];
-        } else {
-          const startId = [...set.values()].at(0)!;
-          const start = state.nodes[startId];
-          const end = state.nodes[id];
-
-          if (start.parent !== end.parent) return;
-
-          const parentTree = start.parent
-            ? state.index[start.parent].treeNode
-            : state.index[start.district].treeNode;
-          const siblings =
-            parentTree.type === "district"
-              ? parentTree[start.tag]
-              : parentTree.children;
-          const startIndex = siblings.findIndex((leaf) => leaf.id === startId);
-          const endIndex = siblings.findIndex((leaf) => leaf.id === id);
-
-          state.selected = siblings
-            .slice(
-              Math.min(startIndex, endIndex),
-              Math.max(startIndex, endIndex) + 1,
-            )
-            .map((leaf) => leaf.id);
-        }
-      }
-    }),
-    selectNodes: create.reducer<NodesState["selected"]>((state, action) => {
+    selectNodes: create.reducer<string[]>((state, action) => {
       state.selected = action.payload;
     }),
   }),
@@ -183,6 +98,27 @@ const nodesSlice = createSlice({
       }),
 });
 
+const cloneNodeDeep =
+  (
+    id: string,
+    nodeUpdates?: Partial<MapNodeV2>,
+    allNodesUpdates?: Partial<MapNodeV2>,
+  ): AppThunkAction<MapNodeV2[]> =>
+  (dispatch, getState) => {
+    const state = getState();
+    const nodes = NodesSelectors.getNodes(state);
+    const index = NodesSelectors.getNodesIndex(state);
+    const node = nodes[id];
+    const clones = cloneNode(nodes, index, node);
+    const clonesMap: NodesMap = {};
+    if (nodeUpdates) Object.assign(clones[0], nodeUpdates);
+    for (const clone of clones) {
+      if (allNodesUpdates) Object.assign(clone, allNodesUpdates);
+      clonesMap[clone.id] = clone;
+    }
+    dispatch(NodesActions.batchUpsertNodes(clonesMap));
+    return clones;
+  };
 const deleteNodesDeep =
   (selected: string[]): AppThunkAction =>
   (dispatch, getState) => {
@@ -199,13 +135,62 @@ const deleteNodesDeep =
       nodeIds.push(...index[id].descendantIds);
     }
 
-    dispatch(nodesSlice.actions.deleteNodes(nodeIds));
+    dispatch(nodesSlice.actions.deleteNodesById(nodeIds));
+  };
+const selectNode =
+  (id: null | string, modifier?: "shift" | "ctrl" | "alt"): AppThunkAction =>
+  (dispatch, getState) => {
+    const state = getState();
+    const nodes = NodesSelectors.getNodes(state);
+    const index = NodesSelectors.getNodesIndex(state);
+    const selected = new Set(NodesSelectors.getSelectedNodes(state));
+
+    if (id === null) {
+      dispatch(nodesSlice.actions.selectNodes([]));
+    } else if (!modifier) {
+      dispatch(nodesSlice.actions.selectNodes([id]));
+    } else if (modifier === "ctrl") {
+      void (selected.has(id) ? selected.delete(id) : selected.add(id));
+      dispatch(nodesSlice.actions.selectNodes([...selected]));
+    } else if (modifier === "shift") {
+      if (!selected.size) {
+        dispatch(nodesSlice.actions.selectNodes([id]));
+      } else {
+        const startId = [...selected][0];
+        const start = nodes[startId];
+        const end = nodes[id];
+
+        if (start.parent !== end.parent) return;
+
+        const parentTree = start.parent
+          ? index[start.parent].treeNode
+          : index[start.district].treeNode;
+        const siblings =
+          parentTree.type === "district"
+            ? parentTree[start.tag]
+            : parentTree.children;
+        const startIndex = siblings.findIndex((leaf) => leaf.id === startId);
+        const endIndex = siblings.findIndex((leaf) => leaf.id === id);
+
+        const set = new Set(
+          siblings
+            .slice(
+              Math.min(startIndex, endIndex),
+              Math.max(startIndex, endIndex) + 1,
+            )
+            .map((leaf) => leaf.id),
+        );
+        dispatch(nodesSlice.actions.selectNodes([...set]));
+      }
+    }
   };
 
 const getSlice = (state: AppState) => state.present[nodesSlice.reducerPath];
 export const NodesActions = {
   ...nodesSlice.actions,
+  cloneNodeDeep,
   deleteNodesDeep,
+  selectNode,
 };
 export const NodesSelectors = {
   getNodes: (state: AppState) => getSlice(state).nodes,

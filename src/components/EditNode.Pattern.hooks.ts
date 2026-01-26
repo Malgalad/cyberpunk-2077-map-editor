@@ -15,7 +15,7 @@ function useUpdatePattern(node: MapNodeV2) {
     (pattern: MapNodeV2["pattern"]) => {
       invalidate([node.id]);
       dispatch(
-        NodesActions.editNode({
+        NodesActions.updateNode({
           id: node.id,
           pattern,
         }),

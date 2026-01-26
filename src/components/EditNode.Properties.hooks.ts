@@ -19,7 +19,7 @@ function useUpdateNode(node: MapNodeV2, shouldInvalidate = true) {
     <T extends keyof MapNodeV2>(property: T, value: MapNodeV2[T]) => {
       if (shouldInvalidate) invalidate([node.id]);
       dispatch(
-        NodesActions.editNode({
+        NodesActions.updateNode({
           id: node.id,
           [property]: value,
         }),

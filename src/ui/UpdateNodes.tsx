@@ -13,14 +13,12 @@ import { useAppSelector } from "../hooks/hooks.ts";
 import {
   useAddNode,
   useChangeNodeTag,
-  useCloneNode,
   useDeleteNode,
   useDeselectNode,
+  useEditNodeAsAddition,
 } from "../hooks/nodes.hooks.ts";
 import { DistrictSelectors } from "../store/district.ts";
 import { NodesSelectors } from "../store/nodesV2.ts";
-import type { MapNodeV2 } from "../types/types.ts";
-import { toTuple3 } from "../utilities/utilities.ts";
 
 function UpdateNodes() {
   const nodes = useAppSelector(NodesSelectors.getNodes);
@@ -32,18 +30,9 @@ function UpdateNodes() {
 
   const onDeselect = useDeselectNode();
   const onDelete = useDeleteNode(selected);
-  const onClone = useCloneNode(nodes[selected[0]]);
   const onAddGroup = useAddNode("group", "update");
   const onTransfer = useChangeNodeTag(nodes[selected[0]]);
-
-  const onEditAsNew = () => {
-    if (selected.length !== 1) return;
-
-    const position = offsetPosition(nodes[selected[0]]);
-
-    onTransfer("delete", "create");
-    onClone({ position, indexInDistrict: -1 }, { tag: "create" });
-  };
+  const onEditAsNew = useEditNodeAsAddition(nodes[selected[0]]);
 
   if (!district) return null;
 
@@ -130,13 +119,5 @@ function UpdateNodes() {
     </>
   );
 }
-
-const offsetPosition = (node: MapNodeV2) => {
-  return toTuple3([
-    node.position[0],
-    node.position[1],
-    node.position[2] - node.scale[2] / 2,
-  ]);
-};
 
 export default UpdateNodes;

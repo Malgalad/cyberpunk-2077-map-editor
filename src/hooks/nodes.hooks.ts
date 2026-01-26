@@ -5,13 +5,23 @@ import { DistrictSelectors } from "../store/district.ts";
 import { ModalsActions } from "../store/modals.ts";
 import { NodesActions, NodesSelectors } from "../store/nodesV2.ts";
 import { ProjectActions } from "../store/project.ts";
-import type { MapNodeV2, Modes, NodesIndex, Plane } from "../types/types.ts";
+import type {
+  MapNodeV2,
+  Modes,
+  NodesIndex,
+  NodesMap,
+  Plane,
+} from "../types/types.ts";
 import {
   getTransformsFromSubtree,
   invalidateCachedTransforms,
 } from "../utilities/getTransformsFromSubtree.ts";
 import { lookAtTransform } from "../utilities/map.ts";
-import { resolveParent, transplantPoint } from "../utilities/nodes.ts";
+import {
+  cloneNode,
+  resolveParent,
+  transplantPoint,
+} from "../utilities/nodes.ts";
 import { toTuple3 } from "../utilities/utilities.ts";
 import { useAppDispatch, useAppSelector, useAppStore } from "./hooks.ts";
 
@@ -79,7 +89,7 @@ export function useSelectNode(node: MapNodeV2) {
         : event.getModifierState("Shift")
           ? "shift"
           : undefined;
-      dispatch(NodesActions.selectNode({ id: node.id, modifier }));
+      dispatch(NodesActions.selectNode(node.id, modifier));
     },
     [node, dispatch],
   );
@@ -98,20 +108,12 @@ export function useCloneNode(node?: MapNodeV2) {
   const dispatch = useAppDispatch();
   const invalidate = useInvalidateTransformsCache();
 
-  return React.useCallback(
-    (updates?: Partial<MapNodeV2>, globalUpdates?: Partial<MapNodeV2>) => {
-      if (!node) return;
-      if (node.parent) invalidate([node.parent]);
-      dispatch(
-        NodesActions.cloneNode({
-          id: node.id,
-          updates,
-          globalUpdates,
-        }),
-      );
-    },
-    [dispatch, node, invalidate],
-  );
+  return React.useCallback(() => {
+    if (!node) return;
+    if (node.parent) invalidate([node.parent]);
+    const [clone] = dispatch(NodesActions.cloneNodeDeep(node.id));
+    dispatch(NodesActions.selectNode(clone.id));
+  }, [dispatch, node, invalidate]);
 }
 
 export function useChangeNodeTag(node?: MapNodeV2) {
@@ -124,13 +126,15 @@ export function useChangeNodeTag(node?: MapNodeV2) {
     (tag: MapNodeV2["tag"], mode: Modes = tag) => {
       if (!node) return;
       if (node.parent) invalidate([node.parent]);
-      const updates: MapNodeV2[] = [{ ...node, tag }];
+      const updates: NodesMap = {
+        [node.id]: { ...node, tag },
+      };
       if (node.type === "group") {
         for (const id of index[node.id].descendantIds) {
-          updates.push({ ...nodes[id], tag });
+          updates[id] = { ...nodes[id], tag };
         }
       }
-      dispatch(NodesActions.editNodes(updates));
+      dispatch(NodesActions.batchUpsertNodes(updates));
       dispatch(ProjectActions.setMode(mode));
     },
     [dispatch, node, invalidate, nodes, index],
@@ -177,7 +181,7 @@ export function useAddNode(type: MapNodeV2["type"], tag: MapNodeV2["tag"]) {
 
     if (parent) invalidate([parent]);
     dispatch(
-      NodesActions.addNode({
+      NodesActions.createNode({
         type,
         tag,
         parent,
@@ -207,7 +211,7 @@ export function useMirrorNode(node?: MapNodeV2) {
 
       invalidate([node.id]);
       dispatch(
-        NodesActions.editNode({
+        NodesActions.updateNode({
           id: node.id,
           mirror: node.mirror === plane ? null : plane,
         }),
@@ -224,18 +228,50 @@ export function useHideNode(selected: string[]) {
 
   return React.useCallback(() => {
     if (!selected.length) return;
-    const updates: MapNodeV2[] = [];
+    const updates: NodesMap = {};
     for (const id of selected) {
       const node = nodes[id];
 
-      updates.push({
-        ...node,
-        hidden: !node.hidden,
-      });
+      updates[id] = { ...node, hidden: !node.hidden };
     }
     invalidate(selected);
-    dispatch(NodesActions.editNodes(updates));
+    dispatch(NodesActions.batchUpsertNodes(updates));
   }, [dispatch, invalidate, selected, nodes]);
+}
+
+const offsetPosition = (node: MapNodeV2) => {
+  return toTuple3([
+    node.position[0],
+    node.position[1],
+    node.position[2] - node.scale[2] / 2,
+  ]);
+};
+
+export function useEditNodeAsAddition(node?: MapNodeV2) {
+  const dispatch = useAppDispatch();
+  const nodes = useAppSelector(NodesSelectors.getNodes);
+  const index = useAppSelector(NodesSelectors.getNodesIndex);
+  const invalidate = useInvalidateTransformsCache();
+  const onTransfer = useChangeNodeTag(node);
+
+  return React.useCallback(() => {
+    if (!node) return;
+
+    if (node.parent) invalidate([node.parent]);
+    const clones = cloneNode(nodes, index, node);
+    const clonesMap: NodesMap = {};
+
+    for (const clone of clones) {
+      clonesMap[clone.id] = clone;
+      clone.tag = "create";
+      clone.indexInDistrict = -1;
+      clone.position = offsetPosition(clone);
+    }
+
+    dispatch(NodesActions.batchUpsertNodes(clonesMap));
+    onTransfer("delete", "create");
+    dispatch(NodesActions.selectNode(clones[0].id));
+  }, [dispatch, invalidate, nodes, index, node, onTransfer]);
 }
 
 const getNodeAncestors = (index: NodesIndex, node: MapNodeV2) => {
