@@ -21,7 +21,7 @@ import ToolSelection from "./ui/ToolSelection.tsx";
 import { clsx } from "./utilities/utilities.ts";
 
 const centerDotClassname =
-  "before:absolute before:left-1/2 before:top-1/2 before:transform before:-translate-x-1/2 before:-translate-y-1/2 before:content-['⋅']";
+  "before:absolute before:left-1/2 before:top-1/2 before:transform before:-translate-x-1/2 before:-translate-y-1/2 before:content-['+'] before:mix-blend-difference";
 
 function App() {
   const canvasRef = React.useRef<HTMLCanvasElement>(null);
