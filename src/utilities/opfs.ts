@@ -33,8 +33,16 @@ async function resolvePath(
   const [name, ...rest] = path;
   try {
     const handle = await parent.getDirectoryHandle(name, { create });
-    return resolvePath(handle, rest);
+    return resolvePath(handle, rest, create);
   } catch (error) {
+    if (
+      error instanceof DOMException &&
+      error.name === "NotFoundError" &&
+      create &&
+      rest.length === 0
+    ) {
+      return parent.getFileHandle(name, { create });
+    }
     if (
       error instanceof DOMException &&
       error.name === "TypeMismatchError" &&
@@ -118,6 +126,24 @@ export async function removeFileOrDirectory(pathname: string) {
   await parent.removeEntry(path.at(-1)!);
 }
 
+export async function moveFile(from: string, to: string) {
+  const fromPath = from.split("/").filter(Boolean);
+  const toPath = to.split("/").filter(Boolean);
+
+  const fromHandle = await resolvePath(root, fromPath, false);
+  const toHandle = await resolvePath(root, toPath, true);
+
+  if (fromHandle.kind === "directory")
+    throw new DOMException("From is not a file", "TypeMismatchError");
+  if (toHandle.kind === "directory")
+    throw new DOMException("To is not a file", "TypeMismatchError");
+
+  const output = await toHandle.createWritable();
+  const input = await fromHandle.getFile().then((file) => file.stream());
+
+  await input.pipeTo(output);
+}
+
 async function nuke() {
   await removeFileOrDirectory("persistentData");
 }
@@ -132,6 +158,7 @@ Object.defineProperties(window, {
       loadFileAsJSON,
       saveJSONToFile,
       removeFileOrDirectory,
+      moveFile,
       nuke,
     },
   },

@@ -7,6 +7,7 @@ import { PersistentStateSchema } from "./types/schemas.ts";
 import {
   listFiles,
   loadFileAsJSON,
+  moveFile,
   removeFileOrDirectory,
   saveJSONToFile,
 } from "./utilities/opfs.ts";
@@ -30,7 +31,25 @@ export default async function initProject() {
     }
   } catch (error) {
     console.error(error);
-    store.dispatch(ModalsActions.openModal("project"));
+    if (error instanceof DOMException && error.name === "NotFoundError") {
+      const backups = await listFiles("backups/");
+      const confirm = await store.dispatch(
+        ModalsActions.openModal(
+          "confirm",
+          "Could not load the project. Attempt restoring from backup?",
+        ),
+      );
+      if (confirm) {
+        const lastBackup = backups.at(-1)!;
+        const projectName = lastBackup.match(/(.+?)_backup/)![1];
+
+        console.log(confirm, lastBackup, projectName);
+        await moveFile(`backups/${lastBackup}`, `projects/${projectName}`);
+        return initProject();
+      }
+    } else {
+      store.dispatch(ModalsActions.openModal("project"));
+    }
   }
 
   void (async () => {
