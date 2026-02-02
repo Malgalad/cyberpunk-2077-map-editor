@@ -43,7 +43,7 @@ function EditDistrictModal(props: ModalProps) {
   );
 
   const validationErrors = useGetErrors(data, isEdit ? district : undefined);
-  const isCustomDistrict = district?.isCustom;
+  const isCustomDistrict = isEdit ? district?.isCustom : true;
   const isValid = !validationErrors.size;
 
   const redrawCanvasRefFn = useDrawOnCanvas(
