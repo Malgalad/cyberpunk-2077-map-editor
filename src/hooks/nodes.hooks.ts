@@ -127,7 +127,7 @@ export function useChangeNodeTag(node?: MapNodeV2) {
       if (!node) return;
       if (node.parent) invalidate([node.parent]);
       const updates: NodesMap = {
-        [node.id]: { ...node, tag },
+        [node.id]: { ...node, tag, parent: null },
       };
       if (node.type === "group") {
         for (const id of index[node.id].descendantIds) {
@@ -261,6 +261,7 @@ export function useEditNodeAsAddition(node?: MapNodeV2) {
     const clones = cloneNode(nodes, index, node);
     const clonesMap: NodesMap = {};
 
+    clones[0].parent = null;
     for (const clone of clones) {
       clonesMap[clone.id] = clone;
       clone.tag = "create";
