@@ -16,9 +16,9 @@ import type { ModalProps } from "../types/modals.ts";
 import { PersistentStateSchema } from "../types/schemas.ts";
 import type { PersistentAppState } from "../types/types.ts";
 import {
-  loadFileAsJSON,
-  removeFileOrDirectory,
-  saveJSONToFile,
+  fs,
+  loadCompressedJSON,
+  saveCompressedJSON,
 } from "../utilities/opfs.ts";
 import { clsx } from "../utilities/utilities.ts";
 
@@ -44,7 +44,7 @@ function ProjectModal(props: ModalProps) {
     [string, PersistentAppState] | undefined
   >(undefined);
 
-  const projects = useFilesList("projects");
+  const projects = useFilesList("/projects/");
   const loadProject = useUploadProject();
 
   const validationError = (() => {
@@ -59,6 +59,8 @@ function ProjectModal(props: ModalProps) {
         return "Project name cannot be longer than 40 characters";
       if (projects.includes(name))
         return "Project with this name already exists";
+      if (name.trim().includes("/"))
+        return 'Project name cannot contain "/" characters';
     }
 
     if (tab === "load") {
@@ -70,6 +72,8 @@ function ProjectModal(props: ModalProps) {
         return "Project name cannot be longer than 40 characters";
       if (projects.includes(name))
         return "Project with this name already exists";
+      if (name.trim().includes("/"))
+        return 'Project name cannot contain "/" characters';
     }
 
     return "";
@@ -81,7 +85,9 @@ function ProjectModal(props: ModalProps) {
     let state: PersistentAppState | undefined = undefined;
 
     if (tab === "open") {
-      const maybeProject = await loadFileAsJSON(`projects/${selectedProject}`);
+      const maybeProject = await loadCompressedJSON(
+        `/projects/${selectedProject}`,
+      );
       state = PersistentStateSchema.parse(maybeProject);
 
       if (rememberProjectName) persistent.project = selectedProject;
@@ -90,7 +96,7 @@ function ProjectModal(props: ModalProps) {
         draft.district.districts = DEFAULT_DISTRICT_DATA;
         draft.project.name = name;
       });
-      await saveJSONToFile(`projects/${name}`, state);
+      await saveCompressedJSON(`/projects/${name}`, state);
       if (rememberProjectName) persistent.project = name;
     } else if (tab === "load") {
       if (!loadedProject) return;
@@ -102,7 +108,7 @@ function ProjectModal(props: ModalProps) {
 
     if (state) {
       dispatch(ModalsActions.openModal("loading"));
-      await saveJSONToFile("persistentData", persistent);
+      await saveCompressedJSON("/persistentData", persistent);
       await dispatch(hydrateState(state)).unwrap();
       props.onClose();
     }
@@ -118,8 +124,8 @@ function ProjectModal(props: ModalProps) {
       dispatch(ModalsActions.openModal("loading"));
       dispatch(hydrateState(getInitialState(undefined)));
       map3d?.render();
-      await saveJSONToFile("persistentData", { project: undefined });
-      await removeFileOrDirectory(`projects/${selectedProject}`);
+      await saveCompressedJSON("/persistentData", { project: undefined });
+      await fs.remove(`/projects/${selectedProject}`);
     }
     dispatch(ModalsActions.openModal("project", "open"));
   };

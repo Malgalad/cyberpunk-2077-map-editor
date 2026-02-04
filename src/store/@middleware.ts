@@ -1,7 +1,7 @@
 import type { Middleware, MiddlewareAPI } from "redux";
 
 import type { AppDispatch, AppState } from "../types/types.ts";
-import { saveJSONToFile } from "../utilities/opfs.ts";
+import { saveCompressedJSON } from "../utilities/opfs.ts";
 import { getPersistentState } from "./@selectors.ts";
 import { ProjectSelectors } from "./project.ts";
 
@@ -17,8 +17,8 @@ export const persistMiddleware: Middleware =
       const persistentState = getPersistentState(afterState);
 
       if (ProjectSelectors.getProjectName(afterState)) {
-        void saveJSONToFile(
-          `projects/${ProjectSelectors.getProjectName(afterState)}`,
+        void saveCompressedJSON(
+          `/projects/${ProjectSelectors.getProjectName(afterState)}`,
           persistentState,
         );
       }

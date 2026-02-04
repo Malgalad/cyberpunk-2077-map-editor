@@ -5,72 +5,101 @@ import { ProjectSelectors } from "./store/project.ts";
 import store from "./store/store.ts";
 import { PersistentStateSchema } from "./types/schemas.ts";
 import {
-  listFiles,
-  loadFileAsJSON,
-  moveFile,
-  removeFileOrDirectory,
-  saveJSONToFile,
+  fs,
+  loadCompressedJSON,
+  saveCompressedJSON,
 } from "./utilities/opfs.ts";
 import { partition } from "./utilities/utilities.ts";
 
 let backupId: number | undefined;
 
-export default async function initProject() {
-  try {
-    store.dispatch(ModalsActions.openModal("loading"));
-    const persistent = await loadFileAsJSON("persistentData");
+const notFound = (pathname: string) =>
+  fs.exists(pathname).then((exists) => !exists);
 
-    if (persistent.project) {
-      const data = await loadFileAsJSON(`projects/${persistent.project}`);
-      const state = PersistentStateSchema.parse(data);
+async function wakeup() {
+  store.dispatch(ModalsActions.openModal("loading"));
 
-      await store.dispatch(hydrateState(state)).unwrap();
-      store.dispatch(ModalsActions.closeModal());
-    } else {
-      store.dispatch(ModalsActions.openModal("project"));
+  if (await notFound("/persistentData")) {
+    return store.dispatch(ModalsActions.openModal("project", "new"));
+  }
+
+  const persistentData = await loadCompressedJSON("/persistentData");
+
+  if (!persistentData.project) {
+    return store.dispatch(ModalsActions.openModal("project", "new"));
+  }
+
+  if (await notFound(`/projects/${persistentData.project}`)) {
+    if (await notFound("/backups/")) {
+      await fs.mkdir("/backups/");
     }
-  } catch (error) {
-    console.error(error);
-    if (error instanceof DOMException && error.name === "NotFoundError") {
-      const backups = await listFiles("backups/");
-      const confirm = await store.dispatch(
+
+    const backups = await fs.readdir("/backups/");
+
+    if (!backups.length) {
+      await store.dispatch(
         ModalsActions.openModal(
-          "confirm",
-          "Could not load the project. Attempt restoring from backup?",
+          "alert",
+          "Could not load last project and no backups found",
         ),
       );
-      if (confirm) {
-        const lastBackup = backups.at(-1)!;
-        const projectName = lastBackup.match(/(.+?)_backup/)![1];
+      return store.dispatch(ModalsActions.openModal("project", "load"));
+    }
 
-        console.log(confirm, lastBackup, projectName);
-        await moveFile(`backups/${lastBackup}`, `projects/${projectName}`);
-        return initProject();
-      }
+    const confirmed = await store.dispatch(
+      ModalsActions.openModal(
+        "confirm",
+        "Could not load last project. Restore latest backup?",
+      ),
+    );
+
+    if (confirmed) {
+      const lastBackup = backups.at(-1)!.name;
+      const projectName = lastBackup.match(/(.+?)_backup/)![1];
+
+      await saveCompressedJSON(`/persistentData`, { project: projectName });
+      await fs.rename(`/backups/${lastBackup}`, `/projects/${projectName}`);
+      return wakeup();
     } else {
-      store.dispatch(ModalsActions.openModal("project"));
+      return store.dispatch(ModalsActions.openModal("project", "load"));
     }
   }
 
+  const data = await loadCompressedJSON(`/projects/${persistentData.project}`);
+  try {
+    const state = PersistentStateSchema.parse(data);
+
+    await store.dispatch(hydrateState(state));
+    store.dispatch(ModalsActions.closeModal());
+  } catch {
+    await store.dispatch(
+      ModalsActions.openModal("alert", "Error parsing the project data"),
+    );
+    return store.dispatch(ModalsActions.openModal("project", "open"));
+  }
+}
+
+export default async function initProject() {
+  void wakeup().catch(() => {
+    store.dispatch(ModalsActions.openModal("critical", "Unrecoverable error"));
+  });
+
   void (async () => {
-    try {
-      const backups = await listFiles("backups/");
-      const regexp = /(.+?)_backup/;
-      const byProject = partition(backups, (name) =>
-        name.match(regexp) ? name.match(regexp)![1] : "--",
-      );
+    if (await notFound("/backups")) return;
+    const backups = await fs.readdir("/backups/");
+    const regexp = /(.+?)_backup/;
+    const byProject = partition(backups, (dirent) =>
+      dirent.name.match(regexp) ? dirent.name.match(regexp)![1] : "--",
+    );
 
-      for (const project of Object.keys(byProject)) {
-        const backups = byProject[project];
+    for (const project of Object.keys(byProject)) {
+      const backups = byProject[project];
 
-        if (backups.length > 5) {
-          for (const backup of backups.slice(0, -5)) {
-            void removeFileOrDirectory(`backups/${backup}`);
-          }
+      if (backups.length > 5) {
+        for (const backup of backups.slice(0, -5)) {
+          void fs.remove(`/backups/${backup}`);
         }
       }
-    } catch {
-      // noop
     }
   })();
 
@@ -80,8 +109,8 @@ export default async function initProject() {
     const persistentState = getPersistentState(state);
 
     if (ProjectSelectors.getProjectName(state)) {
-      void saveJSONToFile(
-        `backups/${ProjectSelectors.getProjectName(state)}_backup_${Date.now()}`,
+      void saveCompressedJSON(
+        `/backups/${ProjectSelectors.getProjectName(state)}_backup_${Date.now()}`,
         persistentState,
       );
     }

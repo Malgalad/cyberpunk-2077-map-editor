@@ -2,7 +2,7 @@ import * as React from "react";
 import { useDispatch, useSelector, useStore } from "react-redux";
 
 import type { AppDispatch, AppState, AppStore } from "../types/types.ts";
-import { listFiles } from "../utilities/opfs.ts";
+import { fs } from "../utilities/opfs.ts";
 
 export const useAppDispatch = useDispatch.withTypes<AppDispatch>();
 export const useAppSelector = useSelector.withTypes<AppState>();
@@ -23,11 +23,14 @@ export function useForceUpdate() {
   return React.useCallback(() => setTick((tick) => tick + 1), []);
 }
 
-export function useFilesList(directory?: string) {
+export function useFilesList(directory: string = "/") {
   const [files, setFiles] = React.useState<string[]>([]);
 
   React.useEffect(() => {
-    listFiles(directory)
+    fs.readdir(directory)
+      .then((dirent) =>
+        dirent.filter((dirent) => dirent.isFile).map((dirent) => dirent.name),
+      )
       .then(setFiles)
       .catch(() => setFiles([]));
   }, [directory]);
