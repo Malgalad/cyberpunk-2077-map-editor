@@ -154,7 +154,9 @@ export class Map3D extends Map3DBase {
         ? [this.#additions!]
         : mode === "update"
           ? [this.#updates!, this.#currentDistrict!]
-          : [this.#currentDistrict!];
+          : event.shiftKey
+            ? [this.#deletions!, this.#currentDistrict!]
+            : [this.#currentDistrict!];
 
     this.#raycaster.setFromCamera(this.#pointer, this.camera);
     const intersection = this.#raycaster.intersectObjects(meshes);
@@ -200,10 +202,14 @@ export class Map3D extends Map3DBase {
     let eventType: "select-node" | "update-node" | "remove-node";
     let detail: { id: string } | { index: number };
 
-    if (mode === "create" || (mode === "update" && mesh === this.#updates)) {
+    if (
+      mode === "create" ||
+      (mode === "update" && mesh === this.#updates) ||
+      (mode === "delete" && mesh === this.#deletions)
+    ) {
       eventType = "select-node";
       detail = { id };
-    } else if (mode === "delete") {
+    } else if (mode === "delete" && mesh === this.#currentDistrict) {
       eventType = "remove-node";
       detail = { index };
     } else if (mode === "update" && mesh === this.#currentDistrict) {

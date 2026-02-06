@@ -23,6 +23,7 @@ export const UPDATES = {
 
 export const DELETIONS = {
   default: new THREE.Color(0xff00ff),
+  pointingAt: new THREE.Color(0xaaff00),
   selected: new THREE.Color(0xffffff),
 };
 
@@ -39,7 +40,7 @@ export const IDLE_COLORS: Record<Modes, THREE.Color> = {
 export const POINTING_AT_COLORS: Record<Modes, THREE.Color> = {
   create: ADDITIONS.pointingAt,
   update: UPDATES.pointingAt,
-  delete: DELETIONS.default,
+  delete: DELETIONS.pointingAt,
 };
 export const SELECTED_COLORS: Record<Modes, THREE.Color> = {
   create: ADDITIONS.selected,

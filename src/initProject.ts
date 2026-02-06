@@ -97,7 +97,7 @@ export default async function initProject() {
 
       if (backups.length > 5) {
         for (const backup of backups.slice(0, -5)) {
-          void fs.remove(`/backups/${backup}`);
+          void fs.remove(`/backups/${backup.name}`);
         }
       }
     }

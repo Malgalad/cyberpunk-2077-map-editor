@@ -30,7 +30,7 @@ function ToolSelection() {
         aria-selected={tool === "select"}
         className="tooltip"
         onClick={() => void dispatch(ProjectActions.setTool("select"))}
-        data-tooltip="Select [S]"
+        data-tooltip={"Select [S]\nPress [Shift] to select deletion nodes"}
         data-flow="top"
       >
         <MousePointer2 />
