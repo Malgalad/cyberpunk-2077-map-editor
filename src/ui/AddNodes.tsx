@@ -1,14 +1,6 @@
-import {
-  CopyPlus,
-  FilePlus,
-  FlipHorizontal2,
-  FolderPlus,
-  Trash2,
-} from "lucide-react";
+import { CopyPlus, FilePlus, FolderPlus, Trash2 } from "lucide-react";
 
 import Button from "../components/common/Button.tsx";
-import DropdownItem from "../components/common/Dropdown/Dropdown.Item.tsx";
-import Dropdown from "../components/common/Dropdown/Dropdown.tsx";
 import Tooltip from "../components/common/Tooltip.tsx";
 import EditNode from "../components/EditNode.tsx";
 import Node from "../components/Node.tsx";
@@ -19,7 +11,6 @@ import {
   useCloneNode,
   useDeleteNode,
   useDeselectNode,
-  useMirrorNode,
 } from "../hooks/nodes.hooks.ts";
 import { DistrictSelectors } from "../store/district.ts";
 import { NodesSelectors } from "../store/nodesV2.ts";
@@ -30,17 +21,17 @@ function AddNodes() {
   const tree = useAppSelector(NodesSelectors.getNodesTree);
   const selected = useAppSelector(NodesSelectors.getSelectedNodes);
   const district = useAppSelector(DistrictSelectors.getDistrict);
-  const root = tree[district?.name ?? "--"] ?? {};
-  const branches = root && root.type === "district" ? root.create : [];
 
   const onDeselect = useDeselectNode();
   const onDelete = useDeleteNode(selected);
   const onClone = useCloneNode(nodes[selected[0]]);
   const onAddInstance = useAddNode("instance", "create");
   const onAddGroup = useAddNode("group", "create");
-  const onMirror = useMirrorNode(nodes[selected[0]]);
 
   if (!district) return null;
+
+  const root = tree[district.name];
+  const branches = root && root.type === "district" ? root.create : [];
 
   return (
     <>
@@ -63,34 +54,6 @@ function AddNodes() {
           {selected.length > 0 && (
             <>
               <div className="border border-slate-600 w-[1px]" />
-
-              <Dropdown
-                className="min-w-auto!"
-                trigger={
-                  <Tooltip tooltip="Mirror node" flow="bottom">
-                    <Button className="border-none">
-                      <FlipHorizontal2 />
-                    </Button>
-                  </Tooltip>
-                }
-                direction="top"
-                align="center"
-                indent={false}
-                disabled={selected.length !== 1}
-              >
-                <DropdownItem onClick={() => onMirror("XY")}>
-                  <span className="text-red-500">X</span>
-                  <span className="text-green-500">Y</span>
-                </DropdownItem>
-                <DropdownItem onClick={() => onMirror("XZ")}>
-                  <span className="text-red-500">X</span>
-                  <span className="text-blue-500">Z</span>
-                </DropdownItem>
-                <DropdownItem onClick={() => onMirror("YZ")}>
-                  <span className="text-green-500">Y</span>
-                  <span className="text-blue-500">Z</span>
-                </DropdownItem>
-              </Dropdown>
 
               <Tooltip tooltip={"Clone node\n[Alt+Ctrl+C]"} tooltip2="Cloned!">
                 <Button

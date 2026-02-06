@@ -1,17 +1,17 @@
-import { Move3D } from "lucide-react";
+import { CheckIcon, Move3D } from "lucide-react";
 import * as React from "react";
 import * as THREE from "three";
 
-import { AXII } from "../constants.ts";
+import { AXII, PLANES } from "../constants.ts";
 import { useAppSelector } from "../hooks/hooks.ts";
-import { useHideNode } from "../hooks/nodes.hooks.ts";
+import { useMirrorNode } from "../hooks/nodes.hooks.ts";
 import { DistrictSelectors } from "../store/district.ts";
 import { NodesSelectors } from "../store/nodesV2.ts";
+import type { Axis, Plane } from "../types/types.ts";
 import { clsx } from "../utilities/utilities.ts";
 import Button from "./common/Button.tsx";
 import DraggableInput from "./common/DraggableInput.tsx";
 import Input from "./common/Input.tsx";
-import Toggle from "./common/Toggle.tsx";
 import Tooltip from "./common/Tooltip.tsx";
 import {
   useChangeLabel,
@@ -44,7 +44,7 @@ function EditNodeProperties({ selected, mode }: EditNodePropertiesProps) {
   const [position, changePosition] = useChangePosition(node, useLocal);
   const changeRotation = useChangeRotation(node);
   const changeScale = useChangeScale(node);
-  const hideNode = useHideNode(selected);
+  const changeMirror = useMirrorNode(node);
 
   const labelSelector = (
     <>
@@ -77,16 +77,6 @@ function EditNodeProperties({ selected, mode }: EditNodePropertiesProps) {
       </div>
     </>
   );
-  const hiddenSelector = (
-    <>
-      <div>
-        <span className="underline">H</span>idden:
-      </div>
-      <div>
-        <Toggle enabled={node.hidden} onChange={hideNode} />
-      </div>
-    </>
-  );
 
   if (mode === "delete") {
     return (
@@ -94,7 +84,6 @@ function EditNodeProperties({ selected, mode }: EditNodePropertiesProps) {
         <div className="grid grid-cols-[120px_auto] items-center gap-2 p-2">
           {node.type === "group" && labelSelector}
           {parentSelector}
-          {hiddenSelector}
         </div>
       </div>
     );
@@ -105,7 +94,6 @@ function EditNodeProperties({ selected, mode }: EditNodePropertiesProps) {
       <div className="grow bg-slate-800">
         <div className="grid grid-cols-[120px_auto] items-center gap-2 p-2">
           {parentSelector}
-          {hiddenSelector}
         </div>
       </div>
     );
@@ -176,9 +164,42 @@ function EditNodeProperties({ selected, mode }: EditNodePropertiesProps) {
           ))}
         </div>
 
-        {hiddenSelector}
+        <div>Mirror:</div>
+        <div>
+          <div className="flex flex-row gap-1 items-center">
+            {PLANES.map((plane) => (
+              <Button
+                key={plane}
+                className={clsx(
+                  "w-20",
+                  node.mirror === plane && "bg-slate-700",
+                )}
+                onClick={() => changeMirror(plane)}
+              >
+                {node.mirror === plane && <CheckIcon />}
+                {renderPlaneName(plane)}
+              </Button>
+            ))}
+          </div>
+        </div>
       </div>
     </div>
+  );
+}
+
+const colors: Record<Axis, string> = {
+  X: "text-red-500",
+  Y: "text-green-500",
+  Z: "text-blue-500",
+};
+function renderPlaneName(plane: Plane) {
+  // @ts-expect-error string conversion
+  const [a, b]: [Axis, Axis] = plane;
+  return (
+    <>
+      <span className={colors[a]}>{a}</span>
+      <span className={colors[b]}>{b}</span>
+    </>
   );
 }
 

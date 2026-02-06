@@ -1,8 +1,9 @@
-import { EyeOff, SquareStack } from "lucide-react";
+import { Eye, EyeOff, SquareStack } from "lucide-react";
 
 import { useAppSelector } from "../hooks/hooks.ts";
 import {
   useFocusNodeOnSelected,
+  useHideNode,
   useLookAtNode,
   useSelectNode,
 } from "../hooks/nodes.hooks.ts";
@@ -22,6 +23,7 @@ function Instance({ node }: InstanceProps) {
   const ref = useFocusNodeOnSelected(node);
   const lookAtNode = useLookAtNode(node);
   const selectNode = useSelectNode(node);
+  const hideNode = useHideNode([node.id]);
 
   return (
     <div
@@ -47,7 +49,11 @@ function Instance({ node }: InstanceProps) {
           )}
         </span>
         <div className="flex flex-row gap-1">
-          {node.hidden && <EyeOff />}
+          <Tooltip tooltip={node.hidden ? "Show" : "Hide"} flow="left">
+            <Button className="border-none p-0!" onClick={hideNode}>
+              {node.hidden ? <EyeOff /> : <Eye />}
+            </Button>
+          </Tooltip>
           {node.pattern && (
             <Tooltip tooltip="Has pattern" flow="left">
               <Button

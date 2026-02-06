@@ -11,11 +11,17 @@ import type {
 import { getTransformsFromSubtree } from "./getTransformsFromSubtree.ts";
 import { invariant } from "./utilities.ts";
 
+/**
+ * Returns district.name for custom districts or well-known label for default ones
+ */
 export const getDistrictName = (district: DistrictProperties) =>
   district.isCustom
     ? district.name
     : DISTRICT_LABELS[district.name as DefaultDistrictNames];
 
+/**
+ * Calculates district bounds, position, and data texture height
+ */
 export const computeDistrictProperties = (
   district: DistrictProperties,
   count: number,
@@ -38,13 +44,28 @@ export const computeDistrictProperties = (
   };
 };
 
+/**
+ * Immutable Map of transforms for districts that all edits are applied to.
+ */
 export const immutableDistrictTransforms = new Map<
   string,
   InstancedMeshTransforms[]
 >();
 
+/**
+ * When a node is hidden, its transform's scale is set to zeroes,
+ * and for marker nodes scale.w is set to 0.
+ * Filter out hidden nodes AND markers from the final district transforms.
+ */
 const isVisible = ({ scale: { x, y, z, w } }: InstancedMeshTransforms) =>
   !((x === 0 && y === 0 && z === 0) || w === 0);
+
+/**
+ * Converts the district's tree of nodes to a list of instance transforms
+ * relative to the district, and merges with immutable district transforms.
+ * If an update/deletion node is hidden, it means no overrides and the baseline
+ * transform is shown!
+ */
 export function getFinalDistrictTransformsFromNodes(
   district: District,
   nodes: NodesMap,
@@ -103,10 +124,16 @@ export function getFinalDistrictTransformsFromNodes(
   return result;
 }
 
+/**
+ * Calculate data texture height
+ */
 export function calculateHeight(length: number): number {
   return Math.ceil(Math.sqrt(length));
 }
 
+/**
+ * Pad data texture with an extra column - the game skips the first column
+ */
 export function padHeight(length: number, height: number) {
   if (calculateHeight(length + height) === height) return height;
   return padHeight(length + height, calculateHeight(length + height));

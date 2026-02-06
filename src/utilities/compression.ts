@@ -1,10 +1,11 @@
+/**
+ * Compress string using the gzip algorithm
+ */
 export function zip(string: string): ReadableStream {
-  const textEncoder = new TextEncoder();
-  const encodedData = textEncoder.encode(string);
-
+  const encoded = new TextEncoder().encode(string);
   const readableStream = new ReadableStream({
     start(controller) {
-      controller.enqueue(encodedData);
+      controller.enqueue(encoded);
       controller.close();
     },
   });
@@ -12,14 +13,14 @@ export function zip(string: string): ReadableStream {
   return readableStream.pipeThrough(new CompressionStream("gzip"));
 }
 
-export async function unzip(compressedData: ReadableStream): Promise<string> {
-  const decompressedStream = compressedData.pipeThrough(
+/**
+ * Decompress gzipped string
+ */
+export async function unzip(stream: ReadableStream): Promise<string> {
+  const decompressedStream = stream.pipeThrough(
     new DecompressionStream("gzip"),
   );
-  const decompressedBlob = await new Response(decompressedStream).blob();
+  const buffer = await new Response(decompressedStream).arrayBuffer();
 
-  const decompressedArrayBuffer = await decompressedBlob.arrayBuffer();
-  const textDecoder = new TextDecoder();
-
-  return textDecoder.decode(decompressedArrayBuffer);
+  return new TextDecoder().decode(buffer);
 }

@@ -12,7 +12,7 @@ import { fromVector3, toQuaternion, toVector3 } from "./math.ts";
 import { nodeToTransform } from "./nodes.ts";
 import { pipe, toTuple3 } from "./utilities.ts";
 
-const hadamardProduct = (a: number[], b: number[]) =>
+const hadamardProduct = (a: THREE.Vector3Tuple, b: number[]) =>
   a.map((x, i) => x * (b[i] ?? 0));
 const addTuples = (a: THREE.Vector3Tuple, b: number[]) =>
   toTuple3(a.map((_, i) => a[i] + (b[i] ?? 0)));
@@ -38,7 +38,7 @@ const mirrorRotation = (plane: Plane | null, rotation: THREE.Vector3Tuple) => {
   return toTuple3(hadamardProduct(rotation, mirror));
 };
 
-export function applyParentTransform(parent: MapNodeV2 | null) {
+function applyParentTransform(parent: MapNodeV2 | null) {
   return (node: MapNodeV2): MapNodeV2 => {
     if (!parent) return node;
 
@@ -49,13 +49,11 @@ export function applyParentTransform(parent: MapNodeV2 | null) {
 
     object.position.fromArray(
       hadamardProduct(
-        mirrorPosition(node.mirror || parent.mirror, node.position),
+        mirrorPosition(parent.mirror, node.position),
         parent.scale,
       ),
     );
-    object.rotation.fromArray(
-      mirrorRotation(node.mirror || parent.mirror, node.rotation),
-    );
+    object.rotation.fromArray(mirrorRotation(parent.mirror, node.rotation));
     object.scale.fromArray(hadamardProduct(node.scale, parent.scale));
 
     object.applyQuaternion(parentRotation);
@@ -100,7 +98,6 @@ function applyCloned(parents: MapNodeV2[]) {
 
 function applyOffset(node: MapNodeV2): MapNodeV2 {
   // set node Z transform origin to bottom instead of center
-  // TODO take rotation into consideration
   if (node.tag === "create")
     return {
       ...node,
@@ -165,7 +162,7 @@ const cache = new Map<string, InstancedMeshTransforms[]>();
 const extraKeys = new Map<string, string[]>();
 const getKey = <T extends { id: string }>(node: T, parents: T[]) =>
   `${node.id}+${parents.map((p) => p.id).join("+")}`;
-export const addTransformsToCache = (
+const addTransformsToCache = (
   id: string,
   key: string,
   transforms: InstancedMeshTransforms[],
@@ -175,8 +172,11 @@ export const addTransformsToCache = (
   extraKeys.set(id, keys);
   cache.set(key, transforms);
 };
-export const invalidateCachedTransforms = (ids: string[]) => {
-  for (const id of ids) {
+/**
+ * Invalidate cached transforms for specified node ids
+ */
+export const invalidateCachedTransforms = (nodeIds: string[]) => {
+  for (const id of nodeIds) {
     const keys = extraKeys.get(id) ?? [];
     extraKeys.set(id, []);
     for (const key of keys) cache.delete(key);

@@ -6,11 +6,11 @@
 
 .tooltip::before {
   @apply absolute w-max max-w-xs content-[attr(data-tooltip)] bg-slate-700
-  text-white px-3 py-2 rounded-lg text-sm hidden z-50 whitespace-pre-line;
+  text-white px-3 py-2 rounded-lg text-sm hidden z-[1000] whitespace-pre-line;
 }
 
 .tooltip::after {
-  @apply absolute w-2 h-2 bg-slate-700 hidden rotate-45 content-[''] z-50;
+  @apply absolute w-2 h-2 bg-slate-700 hidden rotate-45 content-[''] z-[1000];
 }
 
 .tooltip:not(:disabled):hover::before,

@@ -1,4 +1,4 @@
-function createInput(
+function createFileInput(
   accept: string,
   onchange: (file: File) => void,
   oncancel?: () => void,
@@ -16,10 +16,13 @@ function createInput(
   };
   input.click();
 }
-
+/**
+ * Open the browser's open file modal window and return a promise that resolves
+ * with the selected file
+ */
 export function uploadFileByExtensions(accept: string) {
   const deferred = Promise.withResolvers<File>();
-  createInput(
+  createFileInput(
     accept,
     (file) => deferred.resolve(file),
     () => deferred.reject(),
@@ -27,6 +30,9 @@ export function uploadFileByExtensions(accept: string) {
   return deferred.promise;
 }
 
+/**
+ * Use browser's download to save the blob to a file
+ */
 export function downloadBlob(blob: Blob, filename: string) {
   const url = URL.createObjectURL(blob);
   const anchorElement = document.createElement("a");

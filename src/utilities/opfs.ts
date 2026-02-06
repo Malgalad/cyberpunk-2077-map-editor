@@ -13,10 +13,7 @@ export async function loadCompressedJSON(pathname: string) {
 
 export async function saveCompressedJSON(pathname: string, data: unknown) {
   const stream = zip(JSON.stringify(data));
-  const response = new Response(stream, {
-    headers: { "Content-Type": "application/octet-stream" },
-  });
-  const buffer = await response.arrayBuffer();
+  const buffer = await new Response(stream).arrayBuffer();
   await fs.writeFile(pathname, buffer);
 }
 

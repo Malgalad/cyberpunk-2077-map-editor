@@ -345,7 +345,7 @@ export function useDrawSelection(map3d: Map3D | null) {
     } else {
       map3d.setHelper(applyTransforms(nodes, nodes[selected[0]]), true);
     }
-  }, [map3d, mode, selected, nodes, store]);
+  }, [map3d, mode, selected, nodes]);
 
   React.useEffect(() => {
     if (!map3d) return;
