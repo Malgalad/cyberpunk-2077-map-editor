@@ -25,6 +25,7 @@ import Node from "./Node.tsx";
 interface GroupProps {
   node: MapNodeV2;
 }
+const ROW_HEIGHT = 28;
 
 function Group({ node }: GroupProps) {
   const nodes = useAppSelector(NodesSelectors.getNodes);
@@ -58,15 +59,14 @@ function Group({ node }: GroupProps) {
 
   return (
     <div
-      className={clsx(
-        "flex flex-col gap-1.5",
-        "border-2 border-dotted border-transparent",
-        selected.includes(node.id) && "border-slate-100!",
-      )}
+      className={clsx("flex flex-col", {
+        "bg-indigo-800": selected.includes(node.id),
+        "bg-inherit": !selected.includes(node.id),
+      })}
     >
       <div
-        className="flex flex-row items-center gap-2 px-2 py-0.5 cursor-pointer sticky bg-slate-800"
-        style={{ top: depth * 28, zIndex: 10 * (MAX_DEPTH - depth) }}
+        className="flex flex-row items-center gap-2 px-2 py-0.5 cursor-pointer sticky bg-inherit"
+        style={{ top: depth * ROW_HEIGHT, zIndex: 10 * (MAX_DEPTH - depth) }}
         ref={ref}
         role="button"
         tabIndex={0}
@@ -87,15 +87,10 @@ function Group({ node }: GroupProps) {
             </span>
           </span>
           <div className="flex flex-row gap-1">
-            <Tooltip tooltip={node.hidden ? "Show" : "Hide"} flow="left">
-              <Button className="border-none p-0!" onClick={hideNode}>
-                {node.hidden ? <EyeOff /> : <Eye />}
-              </Button>
-            </Tooltip>
             {node.pattern && (
               <Tooltip tooltip="Has pattern" flow="left">
                 <Button
-                  className="border-none p-0!"
+                  className="border-none p-0! opacity-50 hover:opacity-100"
                   onClick={() => {
                     setTimeout(() => {
                       window.dispatchEvent(
@@ -110,11 +105,20 @@ function Group({ node }: GroupProps) {
                 </Button>
               </Tooltip>
             )}
+
+            <Tooltip tooltip={node.hidden ? "Show" : "Hide"} flow="left">
+              <Button
+                className="border-none p-0! opacity-50 hover:opacity-100"
+                onClick={hideNode}
+              >
+                {node.hidden ? <EyeOff /> : <Eye />}
+              </Button>
+            </Tooltip>
           </div>
         </div>
       </div>
       {expanded && children.length > 0 && (
-        <div className="pl-8 flex flex-col">
+        <div className="pl-8 flex flex-col bg-inherit">
           {children.map((treeNode) => (
             <Node key={treeNode.id} node={nodes[treeNode.id]} />
           ))}

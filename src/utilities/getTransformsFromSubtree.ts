@@ -38,6 +38,7 @@ const mirrorRotation = (plane: Plane | null, rotation: THREE.Vector3Tuple) => {
   return toTuple3(hadamardProduct(rotation, mirror));
 };
 
+const mirrorContext: Array<Plane | null> = [];
 function applyParentTransform(parent: MapNodeV2 | null) {
   return (node: MapNodeV2): MapNodeV2 => {
     if (!parent) return node;
@@ -49,11 +50,19 @@ function applyParentTransform(parent: MapNodeV2 | null) {
 
     object.position.fromArray(
       hadamardProduct(
-        mirrorPosition(parent.mirror, node.position),
+        mirrorContext.reduce(
+          (vec3, plane) => mirrorPosition(plane, vec3),
+          node.position,
+        ),
         parent.scale,
       ),
     );
-    object.rotation.fromArray(mirrorRotation(parent.mirror, node.rotation));
+    object.rotation.fromArray(
+      mirrorContext.reduce(
+        (vec3, plane) => mirrorRotation(plane, vec3),
+        node.rotation,
+      ),
+    );
     object.scale.fromArray(hadamardProduct(node.scale, parent.scale));
 
     object.applyQuaternion(parentRotation);
@@ -154,6 +163,23 @@ function applyPattern(node: MapNodeV2): MapNodeV2[] {
   return clones;
 }
 
+/* eslint-disable @typescript-eslint/no-explicit-any */
+type ReturnType<T extends (...args: any) => any> = T extends (
+  ...args: any
+) => infer R
+  ? R
+  : any;
+/* eslint-enable */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function applyMirror<Fn extends (node: MapNodeV2) => any>(fn: Fn) {
+  return (node: MapNodeV2): ReturnType<typeof fn> => {
+    mirrorContext.push(node.mirror);
+    const transform = fn(node);
+    mirrorContext.pop();
+    return transform;
+  };
+}
+
 // key -> InstancedMeshTransform[],
 //   where `key` is node ID + clone index + parent ID + parent clone index + ...
 const cache = new Map<string, InstancedMeshTransforms[]>();
@@ -208,7 +234,7 @@ export const getTransformsFromSubtree = (
         applyCloned(parents),
         applyOffset,
       );
-      const resolvedNodes = [node, ...clones].map(resolveNode);
+      const resolvedNodes = [node, ...clones].map(applyMirror(resolveNode));
 
       transforms = resolvedNodes.map((node) => nodeToTransform(node, district));
     } else {
@@ -221,8 +247,8 @@ export const getTransformsFromSubtree = (
       const resolvedNodes = [node, ...clones].map(resolveNode);
 
       transforms = treeNode.children.flatMap((child) =>
-        resolvedNodes.flatMap((parent) =>
-          processNode(child, [...parents, parent]),
+        resolvedNodes.flatMap(
+          applyMirror((parent) => processNode(child, [...parents, parent])),
         ),
       );
     }

@@ -27,18 +27,17 @@ function Instance({ node }: InstanceProps) {
 
   return (
     <div
-      className={clsx(
-        "flex flex-row items-center gap-2 border-2",
-        "border-dotted border-transparent cursor-pointer",
-        selected.includes(node.id) && "border-slate-100!",
-      )}
+      className={clsx("flex flex-row items-center gap-2 cursor-pointer", {
+        "bg-indigo-800": selected.includes(node.id),
+        "bg-inherit": !selected.includes(node.id),
+      })}
       ref={ref}
       role="button"
       tabIndex={0}
       onClick={selectNode}
       onDoubleClick={lookAtNode}
     >
-      <div className="grow flex flex-row gap-2 justify-between items-center select-none px-2 py-0.5  bg-slate-800">
+      <div className="grow flex flex-row gap-2 justify-between items-center select-none px-2 py-0.5 bg-inherit">
         <span>
           {node.label}
           {node.pattern && (
@@ -49,15 +48,10 @@ function Instance({ node }: InstanceProps) {
           )}
         </span>
         <div className="flex flex-row gap-1">
-          <Tooltip tooltip={node.hidden ? "Show" : "Hide"} flow="left">
-            <Button className="border-none p-0!" onClick={hideNode}>
-              {node.hidden ? <EyeOff /> : <Eye />}
-            </Button>
-          </Tooltip>
           {node.pattern && (
             <Tooltip tooltip="Has pattern" flow="left">
               <Button
-                className="border-none p-0!"
+                className="border-none p-0! opacity-50 hover:opacity-100"
                 onClick={() => {
                   setTimeout(() => {
                     window.dispatchEvent(
@@ -72,6 +66,14 @@ function Instance({ node }: InstanceProps) {
               </Button>
             </Tooltip>
           )}
+          <Tooltip tooltip={node.hidden ? "Show" : "Hide"} flow="left">
+            <Button
+              className="border-none p-0! opacity-50 hover:opacity-100"
+              onClick={hideNode}
+            >
+              {node.hidden ? <EyeOff /> : <Eye />}
+            </Button>
+          </Tooltip>
         </div>
       </div>
     </div>

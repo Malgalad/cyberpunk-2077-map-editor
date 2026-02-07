@@ -36,7 +36,10 @@ function AddNodes() {
   return (
     <>
       <div className="flex flex-col gap-2 grow max-h-[calc(100%_-_320px)] bg-slate-800 relative">
-        <div className="grow flex flex-col overflow-auto" onClick={onDeselect}>
+        <div
+          className="grow flex flex-col overflow-auto bg-inherit"
+          onClick={onDeselect}
+        >
           {branches.length === 0 && (
             <div className="grow flex items-center justify-center italic">
               Add new nodes

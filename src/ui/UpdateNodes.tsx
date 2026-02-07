@@ -39,7 +39,7 @@ function UpdateNodes() {
   return (
     <>
       <div className="flex flex-col gap-2 grow overflow-auto bg-slate-800 relative">
-        <div className="grow flex flex-col" onClick={onDeselect}>
+        <div className="grow flex flex-col bg-inherit" onClick={onDeselect}>
           {branches.length === 0 && (
             <div className="grow flex items-center justify-center italic">
               Pick block using "Select" tool on the map

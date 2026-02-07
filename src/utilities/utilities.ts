@@ -19,8 +19,21 @@ export function unwrapDraft<T>(value: T | WritableDraft<T>): T {
   return isDraft(value) ? (original(value) as T) : (value as T);
 }
 
+const isObject = (value: unknown): value is Record<string, unknown> =>
+  value !== null && typeof value === "object" && !Array.isArray(value);
 export function clsx(...args: unknown[]) {
-  return args.flat().filter(Boolean).join(" ");
+  return args
+    .flat()
+    .filter(Boolean)
+    .map((chunk) =>
+      isObject(chunk)
+        ? Object.entries(chunk)
+            .flatMap(([key, value]) => (value ? key : undefined))
+            .filter(Boolean)
+            .join(" ")
+        : chunk,
+    )
+    .join(" ");
 }
 
 export function invariant(
