@@ -35,14 +35,22 @@ const axiiColors = [
 function EditNodeProperties({ selected, mode }: EditNodePropertiesProps) {
   const nodes = useAppSelector(NodesSelectors.getNodes);
   const district = useAppSelector(DistrictSelectors.getDistrict);
-  const [useLocal, setUseLocal] = React.useState(false);
+  const [useLocal, setUseLocal] = React.useState<
+    "position" | "rotation" | null
+  >(null);
   const node = nodes[selected[0]];
   const isMultiple = selected.length > 1;
 
   const changeLabel = useChangeLabel(node);
   const changeParent = useChangeParent();
-  const [position, changePosition] = useChangePosition(node, useLocal);
-  const changeRotation = useChangeRotation(node);
+  const [position, changePosition] = useChangePosition(
+    node,
+    useLocal === "position",
+  );
+  const [rotation, changeRotation] = useChangeRotation(
+    node,
+    useLocal === "rotation",
+  );
   const changeScale = useChangeScale(node);
   const changeMirror = useMirrorNode(node);
 
@@ -114,8 +122,13 @@ function EditNodeProperties({ selected, mode }: EditNodePropertiesProps) {
             }
           >
             <Button
-              className={clsx("border-none px-0", useLocal && "text-amber-300")}
-              onClick={() => setUseLocal(!useLocal)}
+              className={clsx(
+                "border-none px-0",
+                useLocal === "position" && "text-amber-300",
+              )}
+              onClick={() =>
+                setUseLocal(useLocal === "position" ? null : "position")
+              }
             >
               <span>Position:</span>
               <Move3D />
@@ -135,14 +148,35 @@ function EditNodeProperties({ selected, mode }: EditNodePropertiesProps) {
           ))}
         </div>
 
-        <div>Rotation:</div>
+        <div>
+          <Tooltip
+            tooltip={
+              useLocal
+                ? "Currently changing rotation relative to self. Toggle after changing angle."
+                : "Currently changing rotation relative to parent"
+            }
+          >
+            <Button
+              className={clsx(
+                "border-none px-0",
+                useLocal === "rotation" && "text-amber-300",
+              )}
+              onClick={() =>
+                setUseLocal(useLocal === "rotation" ? null : "rotation")
+              }
+            >
+              <span>Rotation:</span>
+              <Move3D />
+            </Button>
+          </Tooltip>
+        </div>
         <div className="flex flex-row gap-1">
           {AXII.map((axis) => (
             <DraggableInput
               key={axis}
               className={clsx("w-20", axiiColors[axis])}
               step={0.25}
-              value={THREE.MathUtils.radToDeg(node.rotation[axis])}
+              value={THREE.MathUtils.radToDeg(rotation[axis])}
               onChange={changeRotation(axis)}
             />
           ))}

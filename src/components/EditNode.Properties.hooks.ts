@@ -91,16 +91,48 @@ export function useChangePosition(node: MapNodeV2, useLocal: boolean) {
   ] as const;
 }
 
-export function useChangeRotation(node: MapNodeV2) {
+export function useChangeRotation(node: MapNodeV2, useLocal: boolean) {
+  const wasLocal = usePreviousValue(useLocal);
   const updateNode = useUpdateNode(node);
 
-  return React.useCallback(
-    (axis: number) => (event: React.ChangeEvent<HTMLInputElement>) => {
-      const value = THREE.MathUtils.degToRad(toNumber(event.target.value));
-      updateNode("rotation", updateTuple(node.rotation, axis, value));
-    },
-    [node, updateNode],
-  );
+  const [local, setLocal] = React.useState<MapNodeV2["rotation"]>([0, 0, 0]);
+  const [copy, setCopy] = React.useState<MapNodeV2["rotation"]>([0, 0, 0]);
+
+  React.useEffect(() => {
+    if (useLocal && !wasLocal) {
+      setCopy(node.rotation);
+      setLocal([0, 0, 0]);
+    }
+  }, [useLocal, wasLocal, node]);
+
+  return [
+    useLocal ? local : node.rotation,
+    React.useCallback(
+      (axis: number) => (event: React.ChangeEvent<HTMLInputElement>) => {
+        const value = THREE.MathUtils.degToRad(toNumber(event.target.value));
+        if (useLocal) {
+          const newLocal = updateTuple(local, axis, value);
+
+          setLocal(newLocal);
+
+          const object = new THREE.Object3D();
+          object.rotation.fromArray(copy);
+          object.rotateOnAxis(
+            new THREE.Vector3().fromArray([0, 0, 0].toSpliced(axis, 1, 1)),
+            value,
+          );
+
+          updateNode(
+            "rotation",
+            toTuple3(object.rotation.toArray() as number[]),
+          );
+        } else {
+          updateNode("rotation", updateTuple(node.rotation, axis, value));
+        }
+      },
+      [node, updateNode, local, useLocal, copy],
+    ),
+  ] as const;
 }
 
 export function useChangeScale(node: MapNodeV2) {
