@@ -1,6 +1,5 @@
 import * as THREE from "three";
 import { MapControls } from "three/addons/controls/MapControls.js";
-import { OutlineEffect } from "three/addons/effects/OutlineEffect.js";
 
 import { downloadBlob } from "../utilities/fileHelpers.ts";
 
@@ -11,7 +10,6 @@ export class Map3DBase {
   readonly #camera: THREE.OrthographicCamera;
   readonly #renderer: THREE.WebGLRenderer;
   readonly #controls: MapControls;
-  readonly #effect: OutlineEffect;
   #aspect: number = 1;
   #cameraPosition: THREE.Vector3 = new THREE.Vector3(0, 3000, 0);
   #cameraLookAt: THREE.Vector3 = new THREE.Vector3(0, 0, 0);
@@ -50,31 +48,16 @@ export class Map3DBase {
     this.#controls.maxDistance = 10_000;
     this.#controls.maxPolarAngle = Math.PI / 2;
 
+    const ambient = new THREE.AmbientLight(0x404040, 0.33);
+    this.#scene.add(ambient);
+
     const light1 = new THREE.DirectionalLight(0xffffff);
-    light1.position.set(100, -70, 100).normalize();
+    light1.position.set(1, 1, 1);
     this.#scene.add(light1);
 
-    const light2 = new THREE.DirectionalLight(0xffffff);
-    light2.position.set(100, 70, 100).normalize();
+    const light2 = new THREE.DirectionalLight(0xffffff, 0.5);
+    light2.position.set(-1, 1, 1);
     this.#scene.add(light2);
-
-    const light3 = new THREE.DirectionalLight(0xffffff);
-    light3.intensity = 0.5;
-    light3.position.set(-100, 70, 100).normalize();
-    this.#scene.add(light3);
-
-    this.#effect = new OutlineEffect(this.#renderer);
-
-    // const dirLight1 = new THREE.DirectionalLight(0xffffff, 3);
-    // dirLight1.position.set(1, 1, 1);
-    // this.#scene.add(dirLight1);
-    //
-    // const dirLight2 = new THREE.DirectionalLight(0x002288, 3);
-    // dirLight2.position.set(-1, -1, -1);
-    // this.#scene.add(dirLight2);
-    //
-    // const ambientLight = new THREE.AmbientLight(0x555555);
-    // this.#scene.add(ambientLight);
 
     window.addEventListener("resize", this.#onWindowResize);
 
@@ -148,7 +131,7 @@ export class Map3DBase {
   };
 
   #render = () => {
-    this.#effect.render(this.#scene, this.#camera);
+    this.#renderer.render(this.#scene, this.#camera);
 
     this.#cameraPosition.copy(this.#camera.position);
     this.#cameraLookAt.copy(this.#controls.target);

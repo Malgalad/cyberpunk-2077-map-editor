@@ -45,6 +45,7 @@ const emptyArray: any[] = [];
 
 export function useInitMap3D(ref: React.RefObject<HTMLCanvasElement | null>) {
   const [map3d, setMap3D] = React.useState<Map3D | null>(null);
+  const project = useAppSelector(ProjectSelectors.getProjectName);
   const store = useAppStore();
 
   React.useEffect(() => {
@@ -58,6 +59,12 @@ export function useInitMap3D(ref: React.RefObject<HTMLCanvasElement | null>) {
       setMap3D(null);
     };
   }, [ref, store]);
+
+  React.useEffect(() => {
+    if (!map3d) return;
+
+    map3d.reset();
+  }, [map3d, project]);
 
   return map3d;
 }
@@ -202,7 +209,6 @@ export function useDrawAllDistricts(map3d: Map3D | null) {
 
 export function useDrawCurrentDistrict(map3d: Map3D | null) {
   const store = useAppStore();
-  const project = useAppSelector(ProjectSelectors.getProjectName);
   const district = useAppSelector(DistrictSelectors.getDistrict);
   const index = useAppSelector(NodesSelectors.getNodesIndex);
   const root = index[district?.name ?? ""];
@@ -237,12 +243,6 @@ export function useDrawCurrentDistrict(map3d: Map3D | null) {
       map3d.setCurrentDistrict({ district, transforms: baseTransforms });
     }
   }, [map3d, district, store, root]);
-
-  React.useEffect(() => {
-    if (!map3d || project) return;
-
-    map3d.reset();
-  }, [map3d, project]);
 }
 
 export function useDrawAdditions(map3d: Map3D | null) {

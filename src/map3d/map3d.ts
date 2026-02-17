@@ -524,6 +524,7 @@ export class Map3D extends Map3DBase {
       (object3d as THREE.InstancedMesh).geometry.dispose();
     }
     this.#visibleDistricts.remove(...this.#visibleDistricts.children);
+    this.render();
   };
 
   render = () => {

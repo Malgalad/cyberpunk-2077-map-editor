@@ -23,14 +23,14 @@
     "redux": "^5.0.1",
     "redux-undo": "^1.1.0",
     "tailwindcss": "^4.1.13",
-    "three": "^0.180.0",
+    "three": "^0.182.0",
     "zod": "^4.1.12"
   },
   "devDependencies": {
     "@eslint/js": "^9.36.0",
     "@types/react": "^19.1.13",
     "@types/react-dom": "^19.1.9",
-    "@types/three": "^0.180.0",
+    "@types/three": "^0.182.0",
     "@vitejs/plugin-react": "^5.0.3",
     "eslint": "^9.36.0",
     "eslint-import-resolver-typescript": "^4.4.4",
