@@ -6,7 +6,6 @@ export interface SelectItem {
 }
 
 export interface DropdownContext {
-  level: number;
   indent: boolean;
 }
 export interface DropdownTriggerContext {

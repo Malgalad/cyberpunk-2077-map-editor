@@ -6,7 +6,6 @@ import type {
 } from "../../../types/ui.types.ts";
 
 const dropdownContext = React.createContext<DropdownContext>({
-  level: 0,
   indent: true,
 });
 

@@ -281,7 +281,7 @@ function Menu() {
         >
           <div className="flex flex-row gap-2 items-center">
             <ImageDown />
-            <span>Compile</span>
+            <span className="@max-3xl:hidden">Compile</span>
           </div>
         </Button>
       </div>
