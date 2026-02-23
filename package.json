@@ -10,6 +10,8 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@react-three/drei": "^10.7.7",
+    "@react-three/fiber": "^9.5.0",
     "@reduxjs/toolkit": "^2.9.0",
     "@tailwindcss/vite": "^4.1.13",
     "decimal.js": "^10.6.0",
@@ -24,6 +26,7 @@
     "redux-undo": "^1.1.0",
     "tailwindcss": "^4.1.13",
     "three": "^0.182.0",
+    "three-stdlib": "^2.36.1",
     "zod": "^4.1.12"
   },
   "devDependencies": {

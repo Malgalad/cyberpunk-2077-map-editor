@@ -30,7 +30,7 @@ async function importMesh(
   return mesh;
 }
 
-const materialsMap: Record<string, THREE.Material | THREE.Material[]> = {
+export const materialsMap: Record<string, THREE.Material | THREE.Material[]> = {
   terrain_mesh: materials.terrainMaterial,
   "3dmap_cliffs": materials.terrainMaterial,
   "3dmap_roads": [materials.roadsMaterial, materials.roadsMaterial2],
