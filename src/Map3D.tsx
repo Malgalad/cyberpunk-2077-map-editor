@@ -225,7 +225,7 @@ function Map3D() {
     camera.lookAt(0, 0, 0);
     camera.zoom = 1;
     camera.updateProjectionMatrix();
-  }, []);
+  }, [camera]);
 
   return (
     <Canvas
