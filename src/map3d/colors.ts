@@ -29,7 +29,7 @@ export const DELETIONS = {
 
 export const MARKERS = {
   default: new THREE.Color(0x00ffff),
-  selected: new THREE.Color(0xffffff),
+  selected: new THREE.Color(0xff88ff),
 };
 
 export const IDLE_COLORS: Record<Modes, THREE.Color> = {

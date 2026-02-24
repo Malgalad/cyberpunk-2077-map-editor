@@ -96,8 +96,8 @@ export class Map3DBase {
   }
 
   #onWindowResize = () => {
-    const canvas = this.#renderer.domElement;
-    this.#aspect = canvas.clientWidth / canvas.clientHeight;
+    const parent = this.#renderer.domElement.parentElement as HTMLDivElement;
+    this.#aspect = parent.clientWidth / parent.clientHeight;
 
     this.#camera.left = (-frustumSize * this.#aspect) / 2;
     this.#camera.right = (frustumSize * this.#aspect) / 2;
@@ -106,7 +106,7 @@ export class Map3DBase {
 
     this.#camera.updateProjectionMatrix();
 
-    this.#renderer.setSize(canvas.clientWidth, canvas.clientHeight);
+    this.#renderer.setSize(parent.clientWidth, parent.clientHeight);
     this.render();
   };
 
