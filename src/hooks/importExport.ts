@@ -1,8 +1,7 @@
 import * as React from "react";
 import type * as THREE from "three";
 
-import { useMap3D } from "../map3d/map3d.context.ts";
-import { decodeImageData, encodeImageData } from "../map3d/processDDS.ts";
+import { encodeImageData } from "../map3d/processDDS.ts";
 import { getPersistentState } from "../store/@selectors.ts";
 import { DistrictSelectors } from "../store/district.ts";
 import { ModalsActions } from "../store/modals.ts";
@@ -18,7 +17,7 @@ import {
   downloadBlob,
   uploadFileByExtensions,
 } from "../utilities/fileHelpers.ts";
-import { clampTransforms, unclampTransform } from "../utilities/transforms.ts";
+import { clampTransforms } from "../utilities/transforms.ts";
 import { invariant } from "../utilities/utilities.ts";
 import { useAppDispatch, useAppSelector } from "./hooks.ts";
 
@@ -111,26 +110,4 @@ export function useExportDDS() {
       console.error(error);
     }
   }, [district, nodes, tree, dispatch]);
-}
-
-export function useImportDDS() {
-  const district = useAppSelector(DistrictSelectors.getDistrict);
-  const map3d = useMap3D();
-
-  return React.useCallback(async () => {
-    if (!map3d || !district) return;
-
-    const file = await uploadFileByExtensions(".dds");
-    const arrayBuffer = await file.arrayBuffer();
-    const transforms = decodeImageData(new Uint16Array(arrayBuffer));
-    const unclampedTransforms = transforms.map(unclampTransform(district));
-
-    map3d.reset();
-    map3d.setVisibleDistricts([
-      {
-        district,
-        transforms: unclampedTransforms,
-      },
-    ]);
-  }, [map3d, district]);
 }

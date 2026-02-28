@@ -2,11 +2,11 @@ import {
   FileDown,
   FilePlus2,
   FileUp,
+  FolderCog,
   FolderOpen,
   HardDriveDownload,
   HardDriveUpload,
   ImageDown,
-  PackageCheck,
   Redo,
   Settings2,
   Undo,
@@ -20,11 +20,7 @@ import Dropdown from "../components/common/Dropdown/Dropdown.tsx";
 import Tooltip from "../components/common/Tooltip.tsx";
 import { KNOWN_MESH_NAMES, KNOWN_MESHES } from "../constants.ts";
 import { useAppDispatch, useAppSelector } from "../hooks/hooks.ts";
-import {
-  useDownloadProject,
-  useExportDDS,
-  useImportDDS,
-} from "../hooks/importExport.ts";
+import { useDownloadProject, useExportDDS } from "../hooks/importExport.ts";
 import { DistrictSelectors } from "../store/district.ts";
 import { ModalsActions } from "../store/modals.ts";
 import { OptionsActions, OptionsSelectors } from "../store/options.ts";
@@ -42,7 +38,6 @@ function Menu() {
   const visibleDistricts = useAppSelector(OptionsSelectors.getVisibleDistricts);
   const visibleMeshes = useAppSelector(OptionsSelectors.getVisibleMeshes);
   const exportDDS = useExportDDS();
-  const importDDS = useImportDDS();
   const saveProject = useDownloadProject();
   const hasPast = useAppSelector((state) => state.past.length > 0);
   const hasFuture = useAppSelector((state) => state.future.length > 0);
@@ -120,14 +115,6 @@ function Menu() {
                 Export nodes
               </DropdownItem>
             </Tooltip>
-            <DropdownSeparator />
-            <DropdownItem
-              onClick={() => void importDDS()}
-              disabled={!(projectName && district)}
-              icon={<PackageCheck />}
-            >
-              Verify DDS with current district
-            </DropdownItem>
           </Dropdown>
         </Dropdown>
 
@@ -163,6 +150,15 @@ function Menu() {
             }
           >
             District properties
+          </DropdownItem>
+          <DropdownItem
+            icon={<FolderCog />}
+            disabled={!district}
+            onClick={() =>
+              dispatch(ModalsActions.openModal("manage-templates"))
+            }
+          >
+            Manage templates
           </DropdownItem>
         </Dropdown>
 

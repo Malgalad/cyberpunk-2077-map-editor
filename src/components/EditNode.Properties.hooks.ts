@@ -25,7 +25,7 @@ function useUpdateNode(node: MapNodeV2, shouldInvalidate = true) {
         }),
       );
     },
-    [node.id, dispatch, invalidate, shouldInvalidate],
+    [node, dispatch, invalidate, shouldInvalidate],
   );
 }
 
@@ -40,12 +40,12 @@ export function useChangeLabel(node: MapNodeV2) {
   );
 }
 
-export function useChangeParent() {
+export function useChangeParent(selected: string[]) {
   const dispatch = useAppDispatch();
 
   return React.useCallback(
-    () => dispatch(ModalsActions.openModal("update-node-parent")),
-    [dispatch],
+    () => dispatch(ModalsActions.openModal("update-node-parent", selected)),
+    [dispatch, selected],
   );
 }
 

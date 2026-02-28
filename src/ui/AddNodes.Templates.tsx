@@ -2,12 +2,13 @@ import {
   BetweenHorizonalEnd,
   ChevronLeft,
   ClipboardPlus,
+  FolderCog,
   LayoutTemplate,
-  Trash2,
 } from "lucide-react";
 
 import Button from "../components/common/Button.tsx";
 import DropdownItem from "../components/common/Dropdown/Dropdown.Item.tsx";
+import DropdownSeparator from "../components/common/Dropdown/Dropdown.Separator.tsx";
 import Dropdown from "../components/common/Dropdown/Dropdown.tsx";
 import Tooltip from "../components/common/Tooltip.tsx";
 import { TEMPLATE_ID } from "../constants.ts";
@@ -17,6 +18,7 @@ import { useMap3D } from "../map3d/map3d.context.ts";
 import { DistrictSelectors } from "../store/district.ts";
 import { ModalsActions } from "../store/modals.ts";
 import { NodesActions, NodesSelectors } from "../store/nodesV2.ts";
+import type { TreeNode } from "../types/types.ts";
 import { resolveParent, transplantPoint } from "../utilities/nodes.ts";
 import { toTuple3 } from "../utilities/utilities.ts";
 
@@ -61,20 +63,6 @@ function AddNodesTemplates() {
     dispatch(NodesActions.selectNode(clone.id));
   };
 
-  const onDelete = (id: string) => async () => {
-    const template = nodes[id];
-    const confirmed = await dispatch(
-      ModalsActions.openModal(
-        "confirm",
-        `Do you want to delete "${template.label}"?`,
-      ),
-    );
-
-    if (confirmed) {
-      dispatch(NodesActions.deleteNodesDeep([template.id]));
-    }
-  };
-
   const onCreate = () => {
     if (selected.length !== 1) return;
     dispatch(
@@ -89,6 +77,41 @@ function AddNodesTemplates() {
           district: TEMPLATE_ID,
         },
       ),
+    );
+  };
+
+  const renderTemplate = (template: TreeNode) => {
+    const node = nodes[template.id];
+    if (node.label.startsWith("TEMPLATE")) {
+      return (
+        <DropdownItem
+          key={template.id}
+          icon={<BetweenHorizonalEnd />}
+          onClick={onInsert(template.id)}
+        >
+          {node.label}
+        </DropdownItem>
+      );
+    }
+
+    return (
+      <Dropdown
+        key={template.id}
+        trigger={
+          <DropdownItem icon={<ChevronLeft />}>
+            {nodes[template.id].label}
+          </DropdownItem>
+        }
+        className="min-w-auto!"
+        direction="left"
+        align="bottom"
+        indent={false}
+      >
+        {template.children.length === 0 && (
+          <DropdownItem className="italic">No templates</DropdownItem>
+        )}
+        {template.children.length > 0 && template.children.map(renderTemplate)}
+      </Dropdown>
     );
   };
 
@@ -108,31 +131,15 @@ function AddNodesTemplates() {
           <DropdownItem disabled>No templates</DropdownItem>
         )}
 
-        {templates.length > 0 &&
-          templates.map((template) => (
-            <Dropdown
-              key={template.id}
-              trigger={
-                <DropdownItem icon={<ChevronLeft />}>
-                  {nodes[template.id].label}
-                </DropdownItem>
-              }
-              className="min-w-auto!"
-              direction="left"
-              align="bottom"
-              indent={false}
-            >
-              <DropdownItem
-                onClick={onInsert(template.id)}
-                icon={<BetweenHorizonalEnd />}
-              >
-                Insert
-              </DropdownItem>
-              <DropdownItem onClick={onDelete(template.id)} icon={<Trash2 />}>
-                Delete
-              </DropdownItem>
-            </Dropdown>
-          ))}
+        {templates.length > 0 && templates.map(renderTemplate)}
+
+        <DropdownSeparator />
+        <DropdownItem
+          icon={<FolderCog />}
+          onClick={() => dispatch(ModalsActions.openModal("manage-templates"))}
+        >
+          Manage templates
+        </DropdownItem>
       </Dropdown>
 
       {selected.length > 0 && (

@@ -56,7 +56,11 @@ function openModal(
   type: "import-export",
   data?: ImportExportTabs,
 ): AppThunkAction<Promise<void>>;
-function openModal(type: "update-node-parent"): AppThunkAction<Promise<void>>;
+function openModal(
+  type: "update-node-parent",
+  data: string[],
+): AppThunkAction<Promise<void>>;
+function openModal(type: "manage-templates"): AppThunkAction<Promise<void>>;
 function openModal<T>(
   type: ModalType,
   data?: unknown,

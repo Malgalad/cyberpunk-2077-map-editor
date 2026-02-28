@@ -45,6 +45,7 @@ const DistrictPropertiesSchema = z.intersection(
   z.discriminatedUnion("isCustom", [
     z.object({
       isCustom: z.literal(true),
+      texture: z.string().optional(),
     }),
     z.object({
       isCustom: z.literal(false),

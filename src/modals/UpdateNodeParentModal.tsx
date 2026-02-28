@@ -10,6 +10,7 @@ import * as React from "react";
 import Button from "../components/common/Button.tsx";
 import Modal from "../components/common/Modal.tsx";
 import Select from "../components/common/Select.tsx";
+import { TEMPLATE_ID } from "../constants.ts";
 import { useAppDispatch, useAppSelector } from "../hooks/hooks.ts";
 import { useInvalidateTransformsCache } from "../hooks/nodes.hooks.ts";
 import { DistrictActions, DistrictSelectors } from "../store/district.ts";
@@ -27,15 +28,16 @@ const getLabel = (
 ) => clsx(label, current && "(Current)", self && "(Self)");
 
 function UpdateNodeParentModal(props: ModalProps) {
+  const selected = props.data as string[];
   const dispatch = useAppDispatch();
   const invalidate = useInvalidateTransformsCache();
   const nodes = useAppSelector(NodesSelectors.getNodes);
-  const selected = useAppSelector(NodesSelectors.getSelectedNodes);
   const index = useAppSelector(NodesSelectors.getNodesIndex);
   const tree = useAppSelector(NodesSelectors.getNodesTree);
   const districts = useAppSelector(DistrictSelectors.getAllDistricts);
 
   const node = nodes[selected[0]];
+  const isTemplate = node.district === TEMPLATE_ID;
 
   const [currentDistrict, setCurrentDistrict] = React.useState(node.district);
   const [currentParent, setCurrentParent] = React.useState(node.parent);
@@ -50,7 +52,11 @@ function UpdateNodeParentModal(props: ModalProps) {
   );
 
   const root = tree[currentDistrict];
-  const branches = root && root.type === "district" ? root[node.tag] : [];
+  const branches = root
+    ? root.type === "district"
+      ? root[node.tag]
+      : root.children
+    : [];
 
   const districtItems: SelectItem[] = districts.map((district) => ({
     label: getLabel(getDistrictName(district), {
@@ -90,7 +96,9 @@ function UpdateNodeParentModal(props: ModalProps) {
     if (currentDistrict !== node.district) {
       setTimeout(() => {
         dispatch(DistrictActions.selectDistrict(currentDistrict));
-        dispatch(NodesActions.selectNodes(selected));
+        if (!isTemplate) {
+          dispatch(NodesActions.selectNodes(selected));
+        }
       }, 0);
     }
     props.onClose();
@@ -183,14 +191,16 @@ function UpdateNodeParentModal(props: ModalProps) {
       }
     >
       <div className="flex flex-col gap-2">
-        <div className="flex flex-row gap-2 items-center">
-          <div className="w-14">District:</div>
-          <Select
-            items={districtItems}
-            value={currentDistrict}
-            onChange={(event) => setCurrentDistrict(event.target.value)}
-          />
-        </div>
+        {!isTemplate && (
+          <div className="flex flex-row gap-2 items-center">
+            <div className="w-14">District:</div>
+            <Select
+              items={districtItems}
+              value={currentDistrict}
+              onChange={(event) => setCurrentDistrict(event.target.value)}
+            />
+          </div>
+        )}
         <div className="flex flex-row gap-2">
           <div className="w-14 shrink-0">Parent:</div>
           <div className="flex flex-col gap-0.5 w-full max-h-48 overflow-y-auto bg-slate-800 p-1">

@@ -28,6 +28,7 @@ export type DistrictProperties = {
     }
   | {
       isCustom: true;
+      texture?: string;
     }
 );
 export type ComputedDistrictProperties = {

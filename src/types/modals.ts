@@ -7,7 +7,8 @@ export type ModalType =
   | "project"
   | "edit-district"
   | "import-export"
-  | "update-node-parent";
+  | "update-node-parent"
+  | "manage-templates";
 export type Modal = {
   type: ModalType;
   data: unknown;

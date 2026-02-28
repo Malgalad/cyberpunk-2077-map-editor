@@ -42,7 +42,7 @@ function EditNodeProperties({ selected, mode }: EditNodePropertiesProps) {
   const isMultiple = selected.length > 1;
 
   const changeLabel = useChangeLabel(node);
-  const changeParent = useChangeParent();
+  const changeParent = useChangeParent(selected);
   const [position, changePosition] = useChangePosition(
     node,
     useLocal === "position",

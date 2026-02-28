@@ -10,6 +10,7 @@ import CriticalErrorModal from "./CriticalErrorModal.tsx";
 import EditDistrictModal from "./EditDistrictModal/EditDistrictModal.tsx";
 import ImportExportNodesModal from "./ImportExportNodesModal.tsx";
 import LoadingModal from "./LoadingModal.tsx";
+import ManageTemplatesModal from "./ManageTemplatesModal.tsx";
 import ProjectModal from "./ProjectModal.tsx";
 import UpdateNodeParentModal from "./UpdateNodeParentModal.tsx";
 
@@ -23,6 +24,7 @@ const ComponentMap: Record<ModalType, React.FC<ModalProps>> = {
   "edit-district": EditDistrictModal,
   "import-export": ImportExportNodesModal,
   "update-node-parent": UpdateNodeParentModal,
+  "manage-templates": ManageTemplatesModal,
 };
 
 function ModalContainer() {

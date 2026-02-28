@@ -1,5 +1,6 @@
 import { produce } from "immer";
-import { AlertTriangle, LockKeyhole } from "lucide-react";
+import { AlertTriangle, LockKeyhole, XIcon } from "lucide-react";
+import { nanoid } from "nanoid";
 import * as React from "react";
 
 import Button from "../../components/common/Button.tsx";
@@ -9,17 +10,20 @@ import Modal from "../../components/common/Modal.tsx";
 import Tooltip from "../../components/common/Tooltip.tsx";
 import { AXII, AXIS_LABELS } from "../../constants.ts";
 import { useAppDispatch, useAppSelector } from "../../hooks/hooks.ts";
+import { decodeImageData } from "../../map3d/processDDS.ts";
 import { DistrictActions, DistrictSelectors } from "../../store/district.ts";
 import { ModalsActions } from "../../store/modals.ts";
 import type { ModalProps } from "../../types/modals.ts";
-import type { DistrictProperties } from "../../types/types.ts";
+import type { District, DistrictProperties } from "../../types/types.ts";
 import {
   computeDistrictProperties,
   getDistrictName,
   immutableDistrictTransforms,
 } from "../../utilities/district.ts";
+import { uploadFileByExtensions } from "../../utilities/fileHelpers.ts";
+import { fs } from "../../utilities/opfs.ts";
+import { unclampTransform } from "../../utilities/transforms.ts";
 import { invariant, toNumber } from "../../utilities/utilities.ts";
-import EditDistrictModalClipboard from "./EditDistrictModal.Clipboard.tsx";
 import { defaultValues } from "./editDistrictModal.constants.ts";
 import {
   useDistrictTextureHeight,
@@ -41,6 +45,10 @@ function EditDistrictModal(props: ModalProps) {
   const [data, setData] = React.useState<DistrictProperties>(
     isEdit ? { ...district!, name: getDistrictName(district!) } : defaultValues,
   );
+  const [resolvedTextureName, setResolvedTextureName] = React.useState<string>(
+    district?.texture?.replace(".xbm", ".dds") ?? "",
+  );
+  const [textureToUpload, setTextureToUpload] = React.useState<File | null>();
 
   const validationErrors = useGetErrors(data, isEdit ? district : undefined);
   const isCustomDistrict = isEdit ? district?.isCustom : true;
@@ -58,36 +66,80 @@ function EditDistrictModal(props: ModalProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [data, isCustomDistrict]);
 
-  const createDistrict = () => {
+  React.useEffect(() => {
+    if (!isCustomDistrict || !district?.texture) return;
+    fs.readFile(
+      "textures/" + district.texture.replace(".dds", ".info.txt"),
+      "utf-8",
+    ).then((name) => setResolvedTextureName(name));
+  }, [isCustomDistrict, district]);
+
+  const saveTexture = async (district: District, name: string, file: File) => {
+    const arrayBuffer = await file.arrayBuffer();
+    await fs.writeFile(
+      "/textures/" + name.replace(".dds", ".info.txt"),
+      file.name,
+      "utf-8",
+    );
+    await fs.writeFile("/textures/" + name, arrayBuffer, "binary");
+    const transforms = decodeImageData(
+      new Uint16Array<ArrayBufferLike>(arrayBuffer),
+    );
+    const unclampedTransforms = transforms.map(unclampTransform(district));
+
+    immutableDistrictTransforms.set(district.name, unclampedTransforms);
+  };
+
+  const createDistrict = async () => {
     const computedProperties = computeDistrictProperties(
       data,
       district
         ? (immutableDistrictTransforms.get(district.name)?.length ?? 0)
         : 0,
     );
+    const next: District = {
+      ...data,
+      ...computedProperties,
+    };
 
     dispatch(ModalsActions.closeModal());
     if (isEdit) {
+      if (district && isCustomDistrict) {
+        if (data.texture && textureToUpload) {
+          await saveTexture(district, data.texture, textureToUpload);
+        }
+        if (district.texture) {
+          await fs.unlink("/textures/" + district.texture);
+          if (!data.texture) {
+            immutableDistrictTransforms.set(district.name, []);
+          }
+        }
+      }
       dispatch(
         DistrictActions.updateDistrict({
           name: district!.name,
-          district: {
-            ...data,
-            ...computedProperties,
-          },
+          district: next,
         }),
       );
     } else {
-      immutableDistrictTransforms.set(data.name, []);
-      dispatch(
-        DistrictActions.addDistrict({
-          ...data,
-          ...computedProperties,
-        }),
-      );
+      if (data.texture && textureToUpload) {
+        await saveTexture(next, data.texture, textureToUpload);
+      } else {
+        immutableDistrictTransforms.set(data.name, []);
+      }
+      dispatch(DistrictActions.addDistrict(next));
       dispatch(DistrictActions.selectDistrict(data.name));
     }
   };
+
+  const uploadTexture = React.useCallback(async () => {
+    if (!isCustomDistrict || !district) return;
+    const file = await uploadFileByExtensions(".dds");
+    const id = nanoid();
+    setTextureToUpload(file);
+    setData((data) => ({ ...data, texture: id + ".dds" }));
+    setResolvedTextureName(file.name);
+  }, [district, isCustomDistrict]);
 
   return (
     <Modal
@@ -233,6 +285,32 @@ function EditDistrictModal(props: ModalProps) {
             />
           </div>
 
+          <div>Texture:</div>
+          <div className="flex flex-row gap-2 items-center">
+            <Button
+              className="shrink-0"
+              disabled={!isCustomDistrict}
+              onClick={() => uploadTexture()}
+            >
+              Select file
+            </Button>
+            <div className="overflow-hidden overflow-ellipsis">
+              {resolvedTextureName || "None"}
+            </div>
+            {data.texture && (
+              <Button
+                onClick={() => {
+                  setTextureToUpload(null);
+                  setResolvedTextureName("");
+                  if (data.isCustom) setData({ ...data, texture: undefined });
+                }}
+                disabled={!isCustomDistrict}
+              >
+                <XIcon />
+              </Button>
+            )}
+          </div>
+
           {isEdit && (
             <>
               <div>Texture Height:</div>
@@ -256,10 +334,6 @@ function EditDistrictModal(props: ModalProps) {
           )}
 
           <div className="flex flex-row gap-2 mt-auto justify-end">
-            {isEdit && (
-              <EditDistrictModalClipboard data={data} height={height} />
-            )}
-
             <Button
               onClick={() => createDistrict()}
               disabled={!isValid || (isEdit && !isCustomDistrict)}

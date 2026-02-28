@@ -8,10 +8,16 @@ import type {
   InstancedMeshTransforms,
   MapNodeV2,
 } from "../types/types.ts";
+import { fs } from "./opfs.ts";
 import { toTuple3 } from "./utilities.ts";
 
 export async function fetchDistrictTransforms(district: DistrictProperties) {
-  if (district.isCustom) return [];
+  if (district.isCustom) {
+    if (!district.texture) return [];
+
+    const file = await fs.readFile("/textures/" + district.texture, "binary");
+    return decodeImageData(new Uint16Array(file.buffer));
+  }
 
   const arrayBuffer = await fetch(
     `${STATIC_ASSETS}/textures/${district.texture.replace(".xbm", ".dds")}`,
