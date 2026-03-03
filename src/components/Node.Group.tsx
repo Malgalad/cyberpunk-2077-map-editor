@@ -41,6 +41,10 @@ function Group({ node }: GroupProps) {
   );
   const { children, depth } = treeNode;
   const descendantIds = index[node.id].descendantIds;
+  const someHidden = React.useMemo(
+    () => descendantIds.some((id) => nodes[id].hidden),
+    [nodes, descendantIds],
+  );
 
   const ref = useFocusNodeOnSelected(node);
   const lookAtNode = useLookAtNode(node);
@@ -108,7 +112,11 @@ function Group({ node }: GroupProps) {
 
             <Tooltip tooltip={node.hidden ? "Show" : "Hide"} flow="left">
               <Button
-                className="border-none p-0! opacity-50 hover:opacity-100"
+                className={clsx("border-none p-0!", {
+                  "opacity-50 hover:opacity-100": !node.hidden,
+                  "text-amber-500": node.hidden,
+                  "text-orange-500": someHidden && !node.hidden,
+                })}
                 onClick={hideNode}
               >
                 {node.hidden ? <EyeOff /> : <Eye />}

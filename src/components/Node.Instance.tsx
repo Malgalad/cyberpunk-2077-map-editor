@@ -68,7 +68,10 @@ function Instance({ node }: InstanceProps) {
           )}
           <Tooltip tooltip={node.hidden ? "Show" : "Hide"} flow="left">
             <Button
-              className="border-none p-0! opacity-50 hover:opacity-100"
+              className={clsx("border-none p-0!", {
+                "opacity-50 hover:opacity-100": !node.hidden,
+                "text-amber-500": node.hidden,
+              })}
               onClick={hideNode}
             >
               {node.hidden ? <EyeOff /> : <Eye />}
