@@ -1,6 +1,14 @@
-import { CopyPlus, FilePlus, FolderPlus, Trash2 } from "lucide-react";
+import {
+  CopyPlus,
+  FilePlus,
+  FolderOpenDot,
+  FolderPlus,
+  Trash2,
+} from "lucide-react";
 
 import Button from "../components/common/Button.tsx";
+import DropdownItem from "../components/common/Dropdown/Dropdown.Item.tsx";
+import Dropdown from "../components/common/Dropdown/Dropdown.tsx";
 import Tooltip from "../components/common/Tooltip.tsx";
 import EditNode from "../components/EditNode.tsx";
 import Node from "../components/Node.tsx";
@@ -11,6 +19,7 @@ import {
   useCloneNode,
   useDeleteNode,
   useDeselectNode,
+  useWrapNode,
 } from "../hooks/nodes.hooks.ts";
 import { DistrictSelectors } from "../store/district.ts";
 import { NodesSelectors } from "../store/nodesV2.ts";
@@ -27,6 +36,7 @@ function AddNodes() {
   const onClone = useCloneNode(nodes[selected[0]]);
   const onAddInstance = useAddNode("instance", "create");
   const onAddGroup = useAddNode("group", "create");
+  const onWrapNode = useWrapNode(selected);
 
   if (!district) return null;
 
@@ -94,19 +104,37 @@ function AddNodes() {
             </Button>
           </Tooltip>
 
-          <Tooltip tooltip="Add group" flow="left">
-            <Button
-              className="border-none"
-              onClick={onAddGroup}
-              disabled={
-                selected.length > 1 /* ||
+          <Dropdown
+            className="w-[48px]! min-w-0!"
+            trigger={
+              <Button
+                className="border-none tooltip"
+                onClick={onAddGroup}
+                disabled={
+                  selected.length > 1 /* ||
                 (nodes[selected[0]]?.type === "group" &&
                   cache[selected[0].id].level >= MAX_DEPTH - 1)*/
-              }
+                }
+                data-tooltip="Add folder"
+                data-flow="left"
+              >
+                <FolderPlus />
+              </Button>
+            }
+            indent={false}
+            direction="top"
+            align="center"
+          >
+            <DropdownItem
+              className="tooltip"
+              icon={<FolderOpenDot />}
+              data-tooltip="Add wrapper"
+              data-flow="left"
+              onClick={onWrapNode}
             >
-              <FolderPlus />
-            </Button>
-          </Tooltip>
+              {""}
+            </DropdownItem>
+          </Dropdown>
         </div>
       </div>
 

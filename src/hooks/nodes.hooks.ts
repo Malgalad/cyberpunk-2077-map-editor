@@ -20,6 +20,7 @@ import { lookAtTransform } from "../utilities/map.ts";
 import {
   cloneNode,
   resolveParent,
+  transplantNode,
   transplantPoint,
 } from "../utilities/nodes.ts";
 import { toTuple3 } from "../utilities/utilities.ts";
@@ -199,6 +200,34 @@ export function useAddNode(type: MapNodeV2["type"], tag: MapNodeV2["tag"]) {
     type,
     invalidate,
   ]);
+}
+
+export function useWrapNode(selected: string[]) {
+  const invalidate = useInvalidateTransformsCache();
+  const store = useAppStore();
+
+  return React.useCallback(() => {
+    if (selected.length !== 1) return;
+
+    let nodes = NodesSelectors.getNodes(store.getState());
+    const node = nodes[selected[0]];
+
+    const { payload: created } = store.dispatch(
+      NodesActions.createNode({
+        type: "group",
+        tag: node.tag,
+        parent: node.parent,
+        district: node.district,
+        position: node.position,
+        rotation: node.rotation,
+      }),
+    );
+    nodes = NodesSelectors.getNodes(store.getState());
+    const updated = transplantNode(nodes, node, created.id, node.district);
+    invalidate([node.id]);
+    store.dispatch(NodesActions.updateNode(updated));
+    store.dispatch(NodesActions.selectNode(updated.id));
+  }, [selected, invalidate, store]);
 }
 
 export function useMirrorNode(node?: MapNodeV2) {

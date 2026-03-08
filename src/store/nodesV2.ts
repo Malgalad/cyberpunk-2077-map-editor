@@ -53,12 +53,13 @@ const nodesSlice = createSlice({
     }),
     updateNode: create.reducer<Optional<MapNodeV2, "id">>((state, action) => {
       const current = state.nodes[action.payload.id];
+      const previous = { ...current };
       const next = Object.assign(current, action.payload);
 
       if (
-        current.parent !== next.parent ||
-        current.district !== next.district ||
-        current.tag !== next.tag
+        previous.parent !== next.parent ||
+        previous.district !== next.district ||
+        previous.tag !== next.tag
       ) {
         Object.assign(state, buildSupportStructures(state.nodes));
       }
