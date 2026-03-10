@@ -1,19 +1,33 @@
 import * as THREE from "three";
 import { MapControls } from "three/addons/controls/MapControls.js";
+import { EffectComposer } from "three/addons/postprocessing/EffectComposer.js";
+import { RenderPass } from "three/addons/postprocessing/RenderPass.js";
+import { SSAOPass } from "three/addons/postprocessing/SSAOPass.js";
+import { OutputPass } from "three/examples/jsm/postprocessing/OutputPass.js";
 
 import { downloadBlob } from "../utilities/fileHelpers.ts";
 
 export const frustumSize = 8_000;
+const readSS = () => JSON.parse(sessionStorage.getItem("camera") || "null");
+const writeSS = (data: {
+  position: number[];
+  lookAt: number[];
+  zoom: number;
+}) => sessionStorage.setItem("camera", JSON.stringify(data));
+const saved = readSS() || {};
+const startPosition = saved.position || [0, 3000, 0];
+const startLookAt = saved.lookAt || [0, 0, 0];
 
 export class Map3DBase {
   readonly #scene: THREE.Scene;
   readonly #camera: THREE.OrthographicCamera;
   readonly #renderer: THREE.WebGLRenderer;
+  readonly #composer: EffectComposer;
   readonly #controls: MapControls;
   #aspect: number = 1;
-  #cameraPosition: THREE.Vector3 = new THREE.Vector3(0, 3000, 0);
-  #cameraLookAt: THREE.Vector3 = new THREE.Vector3(0, 0, 0);
-  #cameraZoom: number = 1;
+  #cameraPosition: THREE.Vector3 = new THREE.Vector3(...startPosition);
+  #cameraLookAt: THREE.Vector3 = new THREE.Vector3(...startLookAt);
+  #cameraZoom: number = saved.zoom || 1;
   #previousCameraZoom: number = this.#cameraZoom;
   #zoomListeners: (() => void)[] = [];
 
@@ -32,7 +46,7 @@ export class Map3DBase {
       frustumSize / 2,
       frustumSize / -2,
       0.1,
-      20_000,
+      5_000,
     );
     this.#camera.position.copy(this.#cameraPosition);
     this.#camera.lookAt(this.#cameraLookAt);
@@ -42,6 +56,7 @@ export class Map3DBase {
     this.#controls = new MapControls(this.#camera, canvas);
     this.#controls.addEventListener("change", this.#render); // call this only in static scenes (i.e., if there is no animation loop)
     this.#controls.addEventListener("change", this.#zoomChanged);
+    this.#controls.target.copy(this.#cameraLookAt);
 
     this.#controls.zoomToCursor = true;
     this.#controls.minDistance = 1;
@@ -61,6 +76,26 @@ export class Map3DBase {
 
     window.addEventListener("resize", this.#onWindowResize);
 
+    this.#composer = new EffectComposer(this.#renderer);
+
+    const renderPass = new RenderPass(this.#scene, this.#camera);
+    this.#composer.addPass(renderPass);
+
+    const ssaoPass = new SSAOPass(
+      this.#scene,
+      this.#camera,
+      canvas.width,
+      canvas.height,
+    );
+    ssaoPass.minDistance = 0.0001;
+    ssaoPass.maxDistance = 0.5;
+    ssaoPass.ssaoMaterial.defines.PERSPECTIVE_CAMERA = 0;
+    ssaoPass.ssaoMaterial.defines.needsUpdate = true;
+    this.#composer.addPass(ssaoPass);
+
+    this.#composer.addPass(new OutputPass());
+
+    this.#controls.update();
     this.render();
   }
 
@@ -68,6 +103,7 @@ export class Map3DBase {
     window.removeEventListener("resize", this.#onWindowResize);
     this.#controls.dispose();
     this.#renderer.dispose();
+    this.#composer.dispose();
   }
 
   #zoomChanged = () => {
@@ -131,11 +167,18 @@ export class Map3DBase {
   };
 
   #render = () => {
-    this.#renderer.render(this.#scene, this.#camera);
+    this.#composer.render();
 
     this.#cameraPosition.copy(this.#camera.position);
     this.#cameraLookAt.copy(this.#controls.target);
     this.#cameraZoom = this.#camera.zoom;
+    requestIdleCallback(() => {
+      writeSS({
+        position: this.#cameraPosition.toArray(),
+        lookAt: this.#cameraLookAt.toArray(),
+        zoom: this.#cameraZoom,
+      });
+    });
   };
 
   render() {
