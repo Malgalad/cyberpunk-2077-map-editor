@@ -2,6 +2,7 @@ import * as THREE from "three";
 import { MapControls } from "three/addons/controls/MapControls.js";
 import { EffectComposer } from "three/addons/postprocessing/EffectComposer.js";
 import { RenderPass } from "three/addons/postprocessing/RenderPass.js";
+import { SMAAPass } from "three/addons/postprocessing/SMAAPass.js";
 import { SSAOPass } from "three/addons/postprocessing/SSAOPass.js";
 import { OutputPass } from "three/examples/jsm/postprocessing/OutputPass.js";
 
@@ -35,7 +36,7 @@ export class Map3DBase {
     this.#scene = new THREE.Scene();
     this.#scene.background = new THREE.Color(0x0f172b);
 
-    this.#renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+    this.#renderer = new THREE.WebGLRenderer({ canvas });
     this.#renderer.setPixelRatio(window.devicePixelRatio);
     this.#renderer.setSize(canvas.clientWidth, canvas.clientHeight);
 
@@ -77,6 +78,8 @@ export class Map3DBase {
     window.addEventListener("resize", this.#onWindowResize);
 
     this.#composer = new EffectComposer(this.#renderer);
+    this.#composer.setPixelRatio(window.devicePixelRatio);
+    this.#composer.setSize(canvas.clientWidth, canvas.clientHeight);
 
     const renderPass = new RenderPass(this.#scene, this.#camera);
     this.#composer.addPass(renderPass);
@@ -92,6 +95,9 @@ export class Map3DBase {
     ssaoPass.ssaoMaterial.defines.PERSPECTIVE_CAMERA = 0;
     ssaoPass.ssaoMaterial.defines.needsUpdate = true;
     this.#composer.addPass(ssaoPass);
+
+    const smaaPass = new SMAAPass();
+    this.#composer.addPass(smaaPass);
 
     this.#composer.addPass(new OutputPass());
 
@@ -143,6 +149,12 @@ export class Map3DBase {
     this.#camera.updateProjectionMatrix();
 
     this.#renderer.setSize(parent.clientWidth, parent.clientHeight);
+    this.#composer.setSize(parent.clientWidth, parent.clientHeight);
+    this.#composer.passes.forEach((pass) => {
+      if (pass.setSize) {
+        pass.setSize(parent.clientWidth, parent.clientHeight);
+      }
+    });
     this.render();
   };
 
