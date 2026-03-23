@@ -173,9 +173,10 @@ type ReturnType<T extends (...args: any) => any> = T extends (
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function applyMirror<Fn extends (node: MapNodeV2) => any>(fn: Fn) {
   return (node: MapNodeV2): ReturnType<typeof fn> => {
-    mirrorContext.push(node.mirror);
+    const mirror = [node.mirror].flat();
+    mirrorContext.push(...mirror);
     const transform = fn(node);
-    mirrorContext.pop();
+    for (let i = 0; i < mirror.length; i++) mirrorContext.pop();
     return transform;
   };
 }

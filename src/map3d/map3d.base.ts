@@ -92,6 +92,7 @@ export class Map3DBase {
     );
     ssaoPass.minDistance = 0.0001;
     ssaoPass.maxDistance = 0.5;
+    ssaoPass.kernelRadius = (8 / this.#camera.zoom) * 24;
     ssaoPass.ssaoMaterial.defines.PERSPECTIVE_CAMERA = 0;
     ssaoPass.ssaoMaterial.defines.needsUpdate = true;
     this.#composer.addPass(ssaoPass);
@@ -116,6 +117,12 @@ export class Map3DBase {
     if (this.#previousCameraZoom === this.#cameraZoom) return;
     this.#previousCameraZoom = this.#cameraZoom;
     this.#zoomListeners.forEach((callback) => callback());
+
+    const ssaoPass = this.#composer.passes.find(
+      (pass) => pass.constructor === SSAOPass,
+    );
+    if (!ssaoPass) return;
+    (ssaoPass as SSAOPass).kernelRadius = (8 / this.#camera.zoom) * 24;
   };
 
   onZoomChange(callback: () => void) {

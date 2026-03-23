@@ -57,7 +57,7 @@ function EditNodePattern({ node }: EditNodePatternProps) {
                   <DraggableInput
                     key={axis}
                     className="w-20"
-                    step={0.1}
+                    step={0.05}
                     value={node.pattern!.position[axis]}
                     onChange={changeProperty("position", axis)}
                     disabled={hasMirror}

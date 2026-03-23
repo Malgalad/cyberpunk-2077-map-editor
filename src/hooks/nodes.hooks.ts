@@ -126,7 +126,6 @@ export function useChangeNodeTag(node?: MapNodeV2) {
   return React.useCallback(
     (tag: MapNodeV2["tag"], mode: Modes = tag) => {
       if (!node) return;
-      if (node.parent) invalidate([node.parent]);
       const updates: NodesMap = {
         [node.id]: { ...node, tag, parent: null },
       };
@@ -135,6 +134,7 @@ export function useChangeNodeTag(node?: MapNodeV2) {
           updates[id] = { ...nodes[id], tag };
         }
       }
+      invalidate([node.id]);
       dispatch(NodesActions.batchUpsertNodes(updates));
       dispatch(ProjectActions.setMode(mode));
     },
@@ -239,10 +239,16 @@ export function useMirrorNode(node?: MapNodeV2) {
       if (!node) return;
 
       invalidate([node.id]);
+      const planes = node.mirror === null ? [] : [node.mirror].flat();
+      if (planes.includes(plane)) {
+        planes.splice(planes.indexOf(plane), 1);
+      } else {
+        planes.push(plane);
+      }
       dispatch(
         NodesActions.updateNode({
           id: node.id,
-          mirror: node.mirror === plane ? null : plane,
+          mirror: planes.length ? planes : null,
         }),
       );
     },

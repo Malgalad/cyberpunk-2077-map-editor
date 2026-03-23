@@ -141,7 +141,7 @@ function EditNodeProperties({ selected, mode }: EditNodePropertiesProps) {
             <DraggableInput
               key={`${axis}+${useLocal}`}
               className={clsx("w-20", axiiColors[axis])}
-              step={0.1}
+              step={0.05}
               value={position[axis]}
               onChange={changePosition(axis)}
             />
@@ -181,6 +181,7 @@ function EditNodeProperties({ selected, mode }: EditNodePropertiesProps) {
             />
           ))}
         </div>
+
         <div>{node.type === "group" ? "Scale:" : "Size:"}</div>
         <div className="flex flex-row gap-1 items-center">
           {AXII.map((axis) => (
@@ -206,11 +207,16 @@ function EditNodeProperties({ selected, mode }: EditNodePropertiesProps) {
                 key={plane}
                 className={clsx(
                   "w-20",
-                  node.mirror === plane && "bg-slate-700",
+                  (node.mirror === plane ||
+                    (Array.isArray(node.mirror) &&
+                      node.mirror.includes(plane))) &&
+                    "bg-slate-700",
                 )}
                 onClick={() => changeMirror(plane)}
               >
-                {node.mirror === plane && <CheckIcon />}
+                {(node.mirror === plane ||
+                  (Array.isArray(node.mirror) &&
+                    node.mirror.includes(plane))) && <CheckIcon />}
                 {renderPlaneName(plane)}
               </Button>
             ))}

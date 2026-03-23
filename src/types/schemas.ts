@@ -59,6 +59,11 @@ export const PersistentDistrictStateSchema = z.object({
   current: z.union([z.string(), z.null()]),
 });
 
+const PlaneSchema = z.union([
+  z.literal("XY"),
+  z.literal("XZ"),
+  z.literal("YZ"),
+]);
 export const NodeSchemaV2 = z.object({
   id: z.string(),
   label: z.string(),
@@ -71,15 +76,11 @@ export const NodeSchemaV2 = z.object({
   position: Vector3Schema,
   rotation: Vector3Schema,
   scale: Vector3Schema,
-  mirror: z
-    .union([z.literal("XY"), z.literal("XZ"), z.literal("YZ")])
-    .nullable(),
+  mirror: z.union([PlaneSchema, z.array(PlaneSchema), z.null()]),
   pattern: z
     .object({
       count: z.number(),
-      mirror: z
-        .union([z.literal("XY"), z.literal("XZ"), z.literal("YZ")])
-        .nullable(),
+      mirror: z.union([PlaneSchema, z.array(PlaneSchema), z.null()]),
       position: Vector3Schema,
       rotation: Vector3Schema,
       scale: Vector3Schema,

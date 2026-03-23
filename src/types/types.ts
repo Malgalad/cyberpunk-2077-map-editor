@@ -95,7 +95,7 @@ export type TransformV2 = {
   position: Vector3;
   rotation: Vector3;
   scale: Vector3;
-  mirror: Plane | null;
+  mirror: Plane | Plane[] | null;
 };
 // MapNodes use absolute position
 export type MapNodeV2 = TransformV2 & {
