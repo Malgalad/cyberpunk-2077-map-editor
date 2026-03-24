@@ -108,6 +108,7 @@ export class Map3DBase {
 
     Object.defineProperty(window, "$$renderTiles", {
       value: () => this.renderTiles(),
+      configurable: true,
     });
   }
 
@@ -244,22 +245,36 @@ export class Map3DBase {
   }
 
   async renderTiles() {
-    const resolution = 1000;
+    const TILE_SIZE = 800;
+    const ZOOM = 1.5;
     const halfMap = MAP_SIZE / 2;
-    const halfRes = resolution / 2;
-    this.#renderer.setSize(resolution, resolution);
+    const halfRes = TILE_SIZE / 2;
+    this.#renderer.setSize(TILE_SIZE, TILE_SIZE);
+    this.#composer.passes.forEach((pass) => {
+      if (pass.setSize) {
+        pass.setSize(TILE_SIZE * ZOOM, TILE_SIZE * ZOOM);
+      }
+    });
     this.#camera.left = -halfRes;
     this.#camera.right = halfRes;
     this.#camera.top = halfRes;
     this.#camera.bottom = -halfRes;
+    this.#camera.zoom = ZOOM;
     this.#camera.updateProjectionMatrix();
     let counter = 0;
-    for (let x = -halfMap + halfRes; x < halfMap - halfRes; x += resolution) {
-      for (let y = halfMap - halfRes; y > -halfMap + halfRes; y -= resolution) {
+    for (
+      let x = -halfMap + halfRes;
+      x <= halfMap - halfRes;
+      x += TILE_SIZE / ZOOM
+    ) {
+      for (
+        let y = halfMap - halfRes;
+        y >= -halfMap + halfRes;
+        y -= TILE_SIZE / ZOOM
+      ) {
         counter++;
         this.#camera.position.set(x, 3000, y);
         this.#camera.lookAt(new THREE.Vector3(x, 0, y));
-        this.#camera.zoom = 1;
         this.#camera.updateProjectionMatrix();
         this.screenshot(`tile-${counter}`);
         await sleep(50);
