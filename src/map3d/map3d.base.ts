@@ -7,6 +7,7 @@ import { SSAOPass } from "three/addons/postprocessing/SSAOPass.js";
 import { OutputPass } from "three/examples/jsm/postprocessing/OutputPass.js";
 
 import { downloadBlob } from "../utilities/fileHelpers.ts";
+import { MAP_SIZE } from "./constants.ts";
 
 export const frustumSize = 8_000;
 const readSS = () => JSON.parse(sessionStorage.getItem("camera") || "null");
@@ -104,6 +105,10 @@ export class Map3DBase {
 
     this.#controls.update();
     this.render();
+
+    Object.defineProperty(window, "$$renderTiles", {
+      value: () => this.renderTiles(),
+    });
   }
 
   dispose() {
@@ -130,11 +135,11 @@ export class Map3DBase {
     };
   }
 
-  screenshot() {
+  screenshot(name = "screenshot") {
     this.#render();
     this.canvas.toBlob((blob) => {
       if (!blob) return;
-      downloadBlob(blob, "screenshot.png");
+      downloadBlob(blob, `${name}.png`);
     }, "image/png");
   }
 
@@ -237,4 +242,30 @@ export class Map3DBase {
   toggleControls(enabled: boolean) {
     this.#controls.enabled = enabled;
   }
+
+  async renderTiles() {
+    const resolution = 1000;
+    const halfMap = MAP_SIZE / 2;
+    const halfRes = resolution / 2;
+    this.#renderer.setSize(resolution, resolution);
+    this.#camera.left = -halfRes;
+    this.#camera.right = halfRes;
+    this.#camera.top = halfRes;
+    this.#camera.bottom = -halfRes;
+    this.#camera.updateProjectionMatrix();
+    let counter = 0;
+    for (let x = -halfMap + halfRes; x < halfMap - halfRes; x += resolution) {
+      for (let y = halfMap - halfRes; y > -halfMap + halfRes; y -= resolution) {
+        counter++;
+        this.#camera.position.set(x, 3000, y);
+        this.#camera.lookAt(new THREE.Vector3(x, 0, y));
+        this.#camera.zoom = 1;
+        this.#camera.updateProjectionMatrix();
+        this.screenshot(`tile-${counter}`);
+        await sleep(50);
+      }
+    }
+  }
 }
+
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
