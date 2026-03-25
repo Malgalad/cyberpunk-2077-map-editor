@@ -245,8 +245,8 @@ export class Map3DBase {
   }
 
   async renderTiles() {
-    const TILE_SIZE = 800;
-    const ZOOM = 1.5;
+    const TILE_SIZE = 1000;
+    const ZOOM = 1;
     const halfMap = MAP_SIZE / 2;
     const halfRes = TILE_SIZE / 2;
     this.#renderer.setSize(TILE_SIZE, TILE_SIZE);
