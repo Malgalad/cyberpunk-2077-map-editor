@@ -277,7 +277,7 @@ export class Map3DBase {
         this.#camera.lookAt(new THREE.Vector3(x, 0, y));
         this.#camera.updateProjectionMatrix();
         this.screenshot(`tile-${counter}`);
-        await sleep(50);
+        await sleep(200);
       }
     }
   }
