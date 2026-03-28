@@ -8,7 +8,7 @@ import { OutputPass } from "three/examples/jsm/postprocessing/OutputPass.js";
 
 import type { RenderEffects } from "../types/types.ts";
 import { downloadBlob } from "../utilities/fileHelpers.ts";
-import { MAP_SIZE } from "./constants.ts";
+import { EXCLUDE_AO_LAYER, MAP_SIZE } from "./constants.ts";
 
 export const frustumSize = 8_000;
 const readSS = () => JSON.parse(sessionStorage.getItem("camera") || "null");
@@ -92,6 +92,27 @@ export class Map3DBase {
       canvas.width,
       canvas.height,
     );
+    const renderGTAO = gtaoPass.render.bind(gtaoPass);
+    gtaoPass.render = (
+      renderer,
+      writeBuffer,
+      readBuffer,
+      deltaTime,
+      maskActive,
+    ) => {
+      this.#camera.layers.disable(EXCLUDE_AO_LAYER);
+
+      renderGTAO.call(
+        null,
+        renderer,
+        writeBuffer,
+        readBuffer,
+        deltaTime,
+        maskActive,
+      );
+
+      this.camera.layers.enable(EXCLUDE_AO_LAYER);
+    };
     const aoParameters = {
       radius: 0.25,
       distanceExponent: 1,

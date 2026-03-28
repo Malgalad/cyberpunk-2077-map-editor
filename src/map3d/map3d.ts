@@ -13,6 +13,7 @@ import type {
 import { partition } from "../utilities/utilities.ts";
 import AxesHelper from "./axesHelper.ts";
 import * as COLORS from "./colors.ts";
+import { EXCLUDE_AO_LAYER } from "./constants.ts";
 import { createDistrictMesh } from "./createDistrictMesh.ts";
 import { Map3DBase } from "./map3d.base.ts";
 import {
@@ -286,9 +287,15 @@ export class Map3D extends Map3DBase {
   #refreshMaterials() {
     if (!this.#additionsVirtual) return;
 
-    const next = virtualEditsMaterial[this.#patternView];
+    const patternView = this.#patternView;
+    const next = virtualEditsMaterial[patternView];
     if (this.#additionsVirtual.material !== next) {
       this.#additionsVirtual.material = next;
+    }
+    if (patternView !== "solid") {
+      this.#additionsVirtual.layers.set(EXCLUDE_AO_LAYER);
+    } else {
+      this.#additionsVirtual.layers.set(0);
     }
   }
 
@@ -407,6 +414,7 @@ export class Map3D extends Map3DBase {
       this.#add,
       COLORS.DELETIONS.default,
     );
+    this.#deletions.layers.set(EXCLUDE_AO_LAYER);
 
     requestAnimationFrame(this.render);
   }
