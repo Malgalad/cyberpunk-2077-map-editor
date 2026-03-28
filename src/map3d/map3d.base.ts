@@ -247,10 +247,10 @@ export class Map3DBase {
 
   toggleEffects(effects: RenderEffects) {
     this.#composer.passes.forEach((pass) => {
-      if (pass.constructor.name === "GTAOPass") {
+      if (pass.constructor.name === GTAOPass.name) {
         pass.enabled = effects.includes("ao");
       }
-      if (pass.constructor.name === "SMAAPass") {
+      if (pass.constructor.name === SMAAPass.name) {
         pass.enabled = effects.includes("aa");
       }
     });
