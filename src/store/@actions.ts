@@ -47,7 +47,10 @@ export const hydrateState = createAsyncThunk(
         current,
       },
       nodes: persistentState.nodes,
-      options: persistentState.options,
+      options: {
+        ...persistentState.options,
+        effects: persistentState.options.effects ?? ["ao", "aa"],
+      },
       project: persistentState.project,
     } satisfies RevivedAppState as RevivedAppState;
   },

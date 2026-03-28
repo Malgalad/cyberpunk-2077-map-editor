@@ -58,6 +58,7 @@ export type Tool = "move" | "select" | "multiselect";
 export type Modes = "create" | "update" | "delete";
 export type PatternView = "none" | "wireframe" | "solid";
 export type DistrictView = "all" | "current" | "custom";
+export type RenderEffects = Array<"ao" | "aa">;
 
 export type AppStore = typeof store;
 export type AppState = ReturnType<AppStore["getState"]>;
@@ -78,7 +79,13 @@ export type PersistentAppState = {
     nodes: AppState["present"]["nodes"]["nodes"];
     selected: AppState["present"]["nodes"]["selected"];
   };
-  options: AppState["present"]["options"];
+  options: {
+    districtView: AppState["present"]["options"]["districtView"];
+    effects?: AppState["present"]["options"]["effects"];
+    patternView: AppState["present"]["options"]["patternView"];
+    visibleDistricts: AppState["present"]["options"]["visibleDistricts"];
+    visibleMeshes: AppState["present"]["options"]["visibleMeshes"];
+  };
   project: AppState["present"]["project"];
 };
 export type RevivedAppState = {

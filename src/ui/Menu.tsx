@@ -35,6 +35,7 @@ function Menu() {
   const allDistricts = useAppSelector(DistrictSelectors.getAllDistricts);
   const patternView = useAppSelector(OptionsSelectors.getPatternView);
   const districtView = useAppSelector(OptionsSelectors.getDistrictView);
+  const renderEffects = useAppSelector(OptionsSelectors.getEffects);
   const visibleDistricts = useAppSelector(OptionsSelectors.getVisibleDistricts);
   const visibleMeshes = useAppSelector(OptionsSelectors.getVisibleMeshes);
   const exportDDS = useExportDDS();
@@ -259,6 +260,26 @@ function Menu() {
                 {KNOWN_MESH_NAMES[id]}
               </DropdownItem>
             ))}
+          </Dropdown>
+
+          <Dropdown
+            trigger={<DropdownItem>Render options</DropdownItem>}
+            direction="right"
+            align="top"
+            disabled={!projectName}
+          >
+            <DropdownItem
+              checked={renderEffects.includes("ao")}
+              onClick={() => dispatch(OptionsActions.toggleEffect("ao"))}
+            >
+              Ambient occlusion
+            </DropdownItem>
+            <DropdownItem
+              checked={renderEffects.includes("aa")}
+              onClick={() => dispatch(OptionsActions.toggleEffect("aa"))}
+            >
+              Antialiasing
+            </DropdownItem>
           </Dropdown>
         </Dropdown>
 

@@ -24,6 +24,7 @@ export const OptionsStateSchema = z.object({
     z.literal("current"),
     z.literal("custom"),
   ]),
+  effects: z.array(z.union([z.literal("ao"), z.literal("aa")])).optional(),
   patternView: z.union([
     z.literal("none"),
     z.literal("wireframe"),

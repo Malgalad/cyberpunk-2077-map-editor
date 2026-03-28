@@ -117,6 +117,10 @@ export class Map3D extends Map3DBase {
     return ProjectSelectors.getTool(this.#store.getState());
   }
 
+  get #effects() {
+    return OptionsSelectors.getEffects(this.#store.getState());
+  }
+
   /** Add mesh to the scene */
   #add = <T extends THREE.Object3D>(mesh: T): T => {
     this.scene.add(mesh);
@@ -529,6 +533,7 @@ export class Map3D extends Map3DBase {
 
   render = () => {
     this.toggleControls(this.#tool === "move");
+    this.toggleEffects(this.#effects);
     this.#refreshInstancesColors();
     this.#refreshMaterials();
     this.#refreshMeshes();

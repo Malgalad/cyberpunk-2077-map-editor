@@ -1,11 +1,12 @@
 import * as THREE from "three";
 import { MapControls } from "three/addons/controls/MapControls.js";
 import { EffectComposer } from "three/addons/postprocessing/EffectComposer.js";
+import { GTAOPass } from "three/addons/postprocessing/GTAOPass.js";
 import { RenderPass } from "three/addons/postprocessing/RenderPass.js";
 import { SMAAPass } from "three/addons/postprocessing/SMAAPass.js";
-import { SSAOPass } from "three/addons/postprocessing/SSAOPass.js";
 import { OutputPass } from "three/examples/jsm/postprocessing/OutputPass.js";
 
+import type { RenderEffects } from "../types/types.ts";
 import { downloadBlob } from "../utilities/fileHelpers.ts";
 import { MAP_SIZE } from "./constants.ts";
 
@@ -85,18 +86,23 @@ export class Map3DBase {
     const renderPass = new RenderPass(this.#scene, this.#camera);
     this.#composer.addPass(renderPass);
 
-    const ssaoPass = new SSAOPass(
+    const gtaoPass = new GTAOPass(
       this.#scene,
       this.#camera,
       canvas.width,
       canvas.height,
     );
-    ssaoPass.minDistance = 0.0001;
-    ssaoPass.maxDistance = 0.5;
-    ssaoPass.kernelRadius = 16;
-    ssaoPass.ssaoMaterial.defines.PERSPECTIVE_CAMERA = 0;
-    ssaoPass.ssaoMaterial.defines.needsUpdate = true;
-    this.#composer.addPass(ssaoPass);
+    const aoParameters = {
+      radius: 0.25,
+      distanceExponent: 1,
+      thickness: 10,
+      scale: 2,
+      samples: 16,
+      distanceFallOff: 1,
+      screenSpaceRadius: true,
+    };
+    gtaoPass.updateGtaoMaterial(aoParameters);
+    this.#composer.addPass(gtaoPass);
 
     const smaaPass = new SMAAPass();
     this.#composer.addPass(smaaPass);
@@ -157,11 +163,6 @@ export class Map3DBase {
 
     this.#renderer.setSize(parent.clientWidth, parent.clientHeight);
     this.#composer.setSize(parent.clientWidth, parent.clientHeight);
-    this.#composer.passes.forEach((pass) => {
-      if (pass.setSize) {
-        pass.setSize(parent.clientWidth, parent.clientHeight);
-      }
-    });
     this.render();
   };
 
@@ -242,6 +243,17 @@ export class Map3DBase {
 
   toggleControls(enabled: boolean) {
     this.#controls.enabled = enabled;
+  }
+
+  toggleEffects(effects: RenderEffects) {
+    this.#composer.passes.forEach((pass) => {
+      if (pass.constructor.name === "GTAOPass") {
+        pass.enabled = effects.includes("ao");
+      }
+      if (pass.constructor.name === "SMAAPass") {
+        pass.enabled = effects.includes("aa");
+      }
+    });
   }
 
   async renderTiles() {
