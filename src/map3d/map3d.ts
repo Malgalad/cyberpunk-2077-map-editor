@@ -59,6 +59,7 @@ export class Map3D extends Map3DBase {
     super(canvas);
 
     this.#raycaster = new THREE.Raycaster();
+    this.#raycaster.layers.enable(EXCLUDE_AO_LAYER);
     this.#store = store;
     this.#canvasRect = this.canvas.getBoundingClientRect();
 
