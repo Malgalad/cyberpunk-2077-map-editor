@@ -127,11 +127,17 @@ export function useChangeNodeTag(node?: MapNodeV2) {
     (tag: MapNodeV2["tag"], mode: Modes = tag) => {
       if (!node) return;
       const updates: NodesMap = {
-        [node.id]: { ...node, tag, parent: null },
+        [node.id]: transplantNode(nodes, { ...node, tag }, null, node.district),
       };
       if (node.type === "group") {
         for (const id of index[node.id].descendantIds) {
-          updates[id] = { ...nodes[id], tag };
+          const descendant = nodes[id];
+          updates[id] = transplantNode(
+            nodes,
+            { ...descendant, tag },
+            descendant.parent,
+            node.district,
+          );
         }
       }
       invalidate([node.id]);
