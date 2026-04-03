@@ -151,6 +151,10 @@ export class Map3DBase {
     this.composer.dispose();
   }
 
+  get zoom() {
+    return this.camera.zoom;
+  }
+
   private zoomChanged = () => {
     this.onZoomChangeListeners.forEach((callback) => callback(this.cameraZoom));
   };

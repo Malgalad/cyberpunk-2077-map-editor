@@ -2,6 +2,7 @@ import { CheckIcon } from "lucide-react";
 import * as THREE from "three";
 
 import { AXII, PLANES } from "../constants.ts";
+import { useNumFieldSteps } from "../hooks/nodes.hooks.ts";
 import type { Axis, MapNode, Plane } from "../types/types.ts";
 import { clsx } from "../utilities/utilities.ts";
 import Button from "./common/Button.tsx";
@@ -21,6 +22,7 @@ interface EditNodePatternProps {
 function EditNodePattern({ node }: EditNodePatternProps) {
   const hasMirror = node.pattern?.mirror !== null;
 
+  const scaling = useNumFieldSteps();
   const togglePattern = useTogglePattern(node);
   const changeCount = useChangePatternCount(node);
   const changeProperty = useChangePatternProperty(node);
@@ -57,7 +59,7 @@ function EditNodePattern({ node }: EditNodePatternProps) {
                   <DraggableInput
                     key={axis}
                     className="w-20"
-                    step={0.05}
+                    step={scaling}
                     value={node.pattern!.position[axis]}
                     onChange={changeProperty("position", axis)}
                     disabled={hasMirror}
@@ -91,7 +93,7 @@ function EditNodePattern({ node }: EditNodePatternProps) {
                   <DraggableInput
                     key={axis}
                     className="w-20"
-                    step={0.05}
+                    step={scaling}
                     value={node.pattern!.scale[axis]}
                     onChange={changeProperty("scale", axis)}
                     disabled={hasMirror}

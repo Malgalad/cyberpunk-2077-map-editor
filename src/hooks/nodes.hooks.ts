@@ -17,7 +17,7 @@ import {
   transplantNode,
   transplantPoint,
 } from "../utilities/nodes.ts";
-import { toTuple3 } from "../utilities/utilities.ts";
+import { toNumber, toString, toTuple3 } from "../utilities/utilities.ts";
 import { useAppDispatch, useAppSelector, useAppStore } from "./hooks.ts";
 
 export function useFocusNodeOnSelected(node: MapNode) {
@@ -323,4 +323,13 @@ export function useInvalidateTransformsCache() {
     },
     [store],
   );
+}
+
+export function useNumFieldSteps() {
+  const map3d = useMap3D();
+  const [zoom, setZoom] = React.useState(map3d?.zoom ?? 1);
+
+  React.useEffect(() => map3d?.onZoomChange(setZoom), [map3d]);
+
+  return toNumber(toString(1.25 / zoom));
 }

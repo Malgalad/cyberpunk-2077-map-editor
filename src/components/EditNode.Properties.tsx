@@ -4,7 +4,7 @@ import * as THREE from "three";
 
 import { AXII, PLANES } from "../constants.ts";
 import { useAppSelector } from "../hooks/hooks.ts";
-import { useMirrorNode } from "../hooks/nodes.hooks.ts";
+import { useMirrorNode, useNumFieldSteps } from "../hooks/nodes.hooks.ts";
 import { DistrictSelectors } from "../store/district.ts";
 import { NodesSelectors } from "../store/nodes.ts";
 import type { Axis, Plane } from "../types/types.ts";
@@ -41,6 +41,7 @@ function EditNodeProperties({ selected, mode }: EditNodePropertiesProps) {
   const node = nodes[selected[0]];
   const isMultiple = selected.length > 1;
 
+  const scaling = useNumFieldSteps();
   const changeLabel = useChangeLabel(node);
   const changeParent = useChangeParent(selected);
   const [position, changePosition] = useChangePosition(
@@ -141,7 +142,7 @@ function EditNodeProperties({ selected, mode }: EditNodePropertiesProps) {
             <DraggableInput
               key={`${axis}+${useLocal}`}
               className={clsx("w-20", axiiColors[axis])}
-              step={0.05}
+              step={scaling}
               value={position[axis]}
               onChange={changePosition(axis)}
             />
@@ -188,7 +189,7 @@ function EditNodeProperties({ selected, mode }: EditNodePropertiesProps) {
             <DraggableInput
               key={axis}
               className={clsx("w-20", axiiColors[axis])}
-              step={0.05}
+              step={scaling}
               value={node.scale[axis]}
               onChange={changeScale(axis)}
               min={0}
