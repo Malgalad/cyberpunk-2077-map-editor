@@ -3,16 +3,16 @@ import * as THREE from "three";
 
 import { useAppDispatch } from "../hooks/hooks.ts";
 import { useInvalidateTransformsCache } from "../hooks/nodes.hooks.ts";
-import { NodesActions } from "../store/nodesV2.ts";
-import type { MapNodeV2, Plane, TransformV2 } from "../types/types.ts";
+import { NodesActions } from "../store/nodes.ts";
+import type { MapNode, Plane, Transform } from "../types/types.ts";
 import { toNumber } from "../utilities/utilities.ts";
 
-function useUpdatePattern(node: MapNodeV2) {
+function useUpdatePattern(node: MapNode) {
   const dispatch = useAppDispatch();
   const invalidate = useInvalidateTransformsCache();
 
   return React.useCallback(
-    (pattern: MapNodeV2["pattern"]) => {
+    (pattern: MapNode["pattern"]) => {
       invalidate([node.id]);
       dispatch(
         NodesActions.updateNode({
@@ -25,11 +25,11 @@ function useUpdatePattern(node: MapNodeV2) {
   );
 }
 
-export function useTogglePattern(node: MapNodeV2) {
+export function useTogglePattern(node: MapNode) {
   const updatePattern = useUpdatePattern(node);
 
   return React.useCallback(() => {
-    const pattern: MapNodeV2["pattern"] = node.pattern
+    const pattern: MapNode["pattern"] = node.pattern
       ? undefined
       : {
           count: 1,
@@ -43,7 +43,7 @@ export function useTogglePattern(node: MapNodeV2) {
   }, [updatePattern, node.pattern]);
 }
 
-export function useChangePatternCount(node: MapNodeV2) {
+export function useChangePatternCount(node: MapNode) {
   const updatePattern = useUpdatePattern(node);
 
   return React.useCallback(
@@ -61,11 +61,11 @@ export function useChangePatternCount(node: MapNodeV2) {
   );
 }
 
-export function useChangePatternProperty(node: MapNodeV2) {
+export function useChangePatternProperty(node: MapNode) {
   const updatePattern = useUpdatePattern(node);
 
   return React.useCallback(
-    (property: keyof TransformV2, index: number) =>
+    (property: keyof Transform, index: number) =>
       (event: React.ChangeEvent<HTMLInputElement>) => {
         if (!node.pattern || property === "mirror") return;
 
@@ -86,14 +86,14 @@ export function useChangePatternProperty(node: MapNodeV2) {
   );
 }
 
-export function useChangePatternMirror(node: MapNodeV2) {
+export function useChangePatternMirror(node: MapNode) {
   const updatePattern = useUpdatePattern(node);
 
   return React.useCallback(
     (plane: Plane) => () => {
       if (!node.pattern) return;
 
-      const pattern: MapNodeV2["pattern"] =
+      const pattern: MapNode["pattern"] =
         node.pattern.mirror === plane
           ? { ...node.pattern, mirror: null }
           : {

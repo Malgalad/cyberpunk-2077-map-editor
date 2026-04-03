@@ -2,7 +2,7 @@ import { CheckIcon } from "lucide-react";
 import * as THREE from "three";
 
 import { AXII, PLANES } from "../constants.ts";
-import type { Axis, MapNodeV2, Plane } from "../types/types.ts";
+import type { Axis, MapNode, Plane } from "../types/types.ts";
 import { clsx } from "../utilities/utilities.ts";
 import Button from "./common/Button.tsx";
 import DraggableInput from "./common/DraggableInput.tsx";
@@ -15,7 +15,7 @@ import {
 } from "./EditNode.Pattern.hooks.ts";
 
 interface EditNodePatternProps {
-  node: MapNodeV2;
+  node: MapNode;
 }
 
 function EditNodePattern({ node }: EditNodePatternProps) {

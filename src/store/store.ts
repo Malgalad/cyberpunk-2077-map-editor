@@ -5,7 +5,7 @@ import { persistMiddleware } from "./@middleware.ts";
 import undoRedoConfig from "./@undoredo.ts";
 import districtSlice from "./district.ts";
 import modalsSlice from "./modals.ts";
-import nodesSlice from "./nodesV2.ts";
+import nodesSlice from "./nodes.ts";
 import optionsSlice from "./options.ts";
 import projectSlice from "./project.ts";
 

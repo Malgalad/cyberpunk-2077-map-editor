@@ -1,9 +1,9 @@
-import type { MapNodeV2 } from "../types/types.ts";
+import type { MapNode } from "../types/types.ts";
 import Group from "./Node.Group.tsx";
 import Instance from "./Node.Instance.tsx";
 
 interface NodeProps {
-  node: MapNodeV2;
+  node: MapNode;
 }
 
 function Node({ node }: NodeProps) {

@@ -6,7 +6,7 @@ import { AXII, PLANES } from "../constants.ts";
 import { useAppSelector } from "../hooks/hooks.ts";
 import { useMirrorNode } from "../hooks/nodes.hooks.ts";
 import { DistrictSelectors } from "../store/district.ts";
-import { NodesSelectors } from "../store/nodesV2.ts";
+import { NodesSelectors } from "../store/nodes.ts";
 import type { Axis, Plane } from "../types/types.ts";
 import { clsx } from "../utilities/utilities.ts";
 import Button from "./common/Button.tsx";

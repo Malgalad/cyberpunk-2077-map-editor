@@ -1,4 +1,3 @@
-import { nanoid } from "nanoid";
 import * as React from "react";
 import { ActionCreators } from "redux-undo";
 
@@ -19,13 +18,12 @@ import {
 import { Map3D } from "./map3d/map3d.ts";
 import { DistrictSelectors } from "./store/district.ts";
 import { ModalsActions, ModalsSelectors } from "./store/modals.ts";
-import { NodesActions, NodesSelectors } from "./store/nodesV2.ts";
+import { NodesSelectors } from "./store/nodes.ts";
 import { OptionsSelectors } from "./store/options.ts";
 import { ProjectActions, ProjectSelectors } from "./store/project.ts";
 import type {
   District,
   DistrictWithTransforms,
-  MapNodeV2,
   TreeNode,
 } from "./types/types.ts";
 import {
@@ -36,8 +34,6 @@ import {
   applyTransforms,
   getTransformsFromSubtree,
 } from "./utilities/getTransformsFromSubtree.ts";
-import { resolveParent, transplantNode } from "./utilities/nodes.ts";
-import { transformToNode } from "./utilities/transforms.ts";
 import { invariant, partition } from "./utilities/utilities.ts";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -351,100 +347,4 @@ export function useDrawSelection(map3d: Map3D | null) {
     if (!map3d) return;
     map3d.clearPointer();
   }, [map3d, tool]);
-}
-
-export function useMap3DEvents(map3d: Map3D | null) {
-  const dispatch = useAppDispatch();
-  const store = useAppStore();
-  const selected = useAppSelector(NodesSelectors.getSelectedNodes);
-  const mode = useAppSelector(ProjectSelectors.getMode);
-  const district = useAppSelector(DistrictSelectors.getDistrict);
-  const invalidate = useInvalidateTransformsCache();
-
-  const addNode = React.useCallback(
-    (index: number, tag: MapNodeV2["tag"]) => {
-      if (!district) return;
-      const transform = immutableDistrictTransforms.get(district.name)?.[index];
-      if (!transform) return;
-
-      const state = store.getState();
-      const nodes = NodesSelectors.getNodes(state);
-      const tree = NodesSelectors.getNodesTree(state);
-
-      const parent = resolveParent(nodes[selected[0]]);
-      const id = nanoid();
-
-      // If the user clicks twice without moving mouse, the highlighted block
-      // will stay the same and trigger event twice
-      const districtTree = tree[district.name];
-      if (
-        districtTree &&
-        districtTree.type === "district" &&
-        districtTree[tag].find(
-          (treeNode) => nodes[treeNode.id].indexInDistrict === index,
-        )
-      )
-        return;
-
-      const node = transformToNode(transform, district, {
-        label: `Block #${index}`,
-        parent: null,
-        district: district.name,
-        tag,
-        id,
-        indexInDistrict: index,
-      });
-
-      if (parent) {
-        const nodeWithCorrectParent = transplantNode(
-          nodes,
-          node,
-          parent,
-          district.name,
-        );
-        invalidate([parent]);
-        dispatch(NodesActions.createNode(nodeWithCorrectParent));
-      } else {
-        dispatch(NodesActions.createNode(node));
-      }
-      dispatch(NodesActions.selectNode(id));
-    },
-    [district, selected, dispatch, store, invalidate],
-  );
-
-  React.useEffect(() => {
-    if (!map3d || !district) return;
-
-    const onSelect = ((event: CustomEvent<{ id: string }>) => {
-      if (event.detail) {
-        const { id } = event.detail;
-
-        if (id != null) {
-          dispatch(NodesActions.selectNode(id));
-        } else {
-          dispatch(NodesActions.selectNode(null));
-        }
-      }
-    }) as EventListener;
-    const onRemove = ((event: CustomEvent<{ index: number }>) => {
-      if (event.detail?.index != null) {
-        addNode(event.detail.index, "delete");
-      }
-    }) as EventListener;
-    const onUpdate = ((event: CustomEvent<{ index: number }>) => {
-      if (event.detail?.index != null) {
-        addNode(event.detail.index, "update");
-      }
-    }) as EventListener;
-
-    window.addEventListener("select-node", onSelect);
-    window.addEventListener("remove-node", onRemove);
-    window.addEventListener("update-node", onUpdate);
-
-    return () => {
-      window.removeEventListener("select-node", onSelect);
-      window.removeEventListener("remove-node", onRemove);
-      window.removeEventListener("update-node", onUpdate);
-    };
-  }, [addNode, mode, store, dispatch, district, map3d]);
 }

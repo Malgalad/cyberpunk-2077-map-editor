@@ -7,10 +7,10 @@ import Modal from "../components/common/Modal.tsx";
 import Select from "../components/common/Select.tsx";
 import { useAppDispatch, useAppSelector } from "../hooks/hooks.ts";
 import { DistrictActions, DistrictSelectors } from "../store/district.ts";
-import { NodesActions, NodesSelectors } from "../store/nodesV2.ts";
+import { NodesActions, NodesSelectors } from "../store/nodes.ts";
 import type { ModalProps } from "../types/modals.ts";
 import { NodeSchemaV2 } from "../types/schemas.ts";
-import type { MapNodeV2 } from "../types/types.ts";
+import type { MapNode } from "../types/types.ts";
 import { getDistrictName } from "../utilities/district.ts";
 import {
   downloadBlob,
@@ -26,7 +26,7 @@ import { clsx } from "../utilities/utilities.ts";
 export type Tabs = "import" | "export";
 type Loaded = {
   filename: string | null;
-  nodes: MapNodeV2[] | null;
+  nodes: MapNode[] | null;
   error: z.ZodError | Error | null;
 };
 const tabs: { key: Tabs; label: string }[] = [
@@ -160,7 +160,7 @@ function ImportExportNodesModal(props: ModalProps) {
     </Button>
   );
 
-  function renderNode(node: MapNodeV2) {
+  function renderNode(node: MapNode) {
     if (!unIndex) return null;
 
     const parentTree = unIndex[node.parent || node.district].treeNode;

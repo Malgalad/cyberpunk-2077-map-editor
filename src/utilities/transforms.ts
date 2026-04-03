@@ -6,7 +6,7 @@ import type {
   District,
   DistrictProperties,
   InstancedMeshTransforms,
-  MapNodeV2,
+  MapNode,
 } from "../types/types.ts";
 import { fs } from "./opfs.ts";
 import { toTuple3 } from "./utilities.ts";
@@ -30,10 +30,10 @@ export function transformToNode(
   transform: InstancedMeshTransforms,
   district: District,
   properties: Pick<
-    MapNodeV2,
+    MapNode,
     "label" | "parent" | "district" | "tag" | "id" | "indexInDistrict"
   >,
-): MapNodeV2 {
+): MapNode {
   const position = toTuple3([
     transform.position.x + district.origin.x,
     transform.position.y + district.origin.y,
@@ -66,7 +66,7 @@ export function transformToNode(
     rotation,
     scale,
     mirror,
-  } satisfies MapNodeV2 as MapNodeV2;
+  } satisfies MapNode as MapNode;
 }
 
 export const unclampTransform =

@@ -4,19 +4,19 @@ import * as THREE from "three";
 import { useAppDispatch, usePreviousValue } from "../hooks/hooks.ts";
 import { useInvalidateTransformsCache } from "../hooks/nodes.hooks.ts";
 import { ModalsActions } from "../store/modals.ts";
-import { NodesActions } from "../store/nodesV2.ts";
-import type { MapNodeV2 } from "../types/types.ts";
+import { NodesActions } from "../store/nodes.ts";
+import type { MapNode } from "../types/types.ts";
 import { toNumber, toTuple3 } from "../utilities/utilities.ts";
 
 const updateTuple = <T>(tuple: T[], index: number, value: T) =>
   toTuple3(tuple.toSpliced(index, 1, value));
 
-function useUpdateNode(node: MapNodeV2, shouldInvalidate = true) {
+function useUpdateNode(node: MapNode, shouldInvalidate = true) {
   const dispatch = useAppDispatch();
   const invalidate = useInvalidateTransformsCache();
 
   return React.useCallback(
-    <T extends keyof MapNodeV2>(property: T, value: MapNodeV2[T]) => {
+    <T extends keyof MapNode>(property: T, value: MapNode[T]) => {
       if (shouldInvalidate) invalidate([node.id]);
       dispatch(
         NodesActions.updateNode({
@@ -29,7 +29,7 @@ function useUpdateNode(node: MapNodeV2, shouldInvalidate = true) {
   );
 }
 
-export function useChangeLabel(node: MapNodeV2) {
+export function useChangeLabel(node: MapNode) {
   const updateNode = useUpdateNode(node, false);
 
   return React.useCallback(
@@ -49,12 +49,12 @@ export function useChangeParent(selected: string[]) {
   );
 }
 
-export function useChangePosition(node: MapNodeV2, useLocal: boolean) {
+export function useChangePosition(node: MapNode, useLocal: boolean) {
   const wasLocal = usePreviousValue(useLocal);
   const updateNode = useUpdateNode(node);
 
-  const [local, setLocal] = React.useState<MapNodeV2["position"]>([0, 0, 0]);
-  const [copy, setCopy] = React.useState<MapNodeV2["position"]>([0, 0, 0]);
+  const [local, setLocal] = React.useState<MapNode["position"]>([0, 0, 0]);
+  const [copy, setCopy] = React.useState<MapNode["position"]>([0, 0, 0]);
 
   React.useEffect(() => {
     if (useLocal && !wasLocal) {
@@ -91,12 +91,12 @@ export function useChangePosition(node: MapNodeV2, useLocal: boolean) {
   ] as const;
 }
 
-export function useChangeRotation(node: MapNodeV2, useLocal: boolean) {
+export function useChangeRotation(node: MapNode, useLocal: boolean) {
   const wasLocal = usePreviousValue(useLocal);
   const updateNode = useUpdateNode(node);
 
-  const [local, setLocal] = React.useState<MapNodeV2["rotation"]>([0, 0, 0]);
-  const [copy, setCopy] = React.useState<MapNodeV2["rotation"]>([0, 0, 0]);
+  const [local, setLocal] = React.useState<MapNode["rotation"]>([0, 0, 0]);
+  const [copy, setCopy] = React.useState<MapNode["rotation"]>([0, 0, 0]);
 
   React.useEffect(() => {
     if (useLocal && !wasLocal) {
@@ -135,7 +135,7 @@ export function useChangeRotation(node: MapNodeV2, useLocal: boolean) {
   ] as const;
 }
 
-export function useChangeScale(node: MapNodeV2) {
+export function useChangeScale(node: MapNode) {
   const updateNode = useUpdateNode(node);
 
   return React.useCallback(

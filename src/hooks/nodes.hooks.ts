@@ -3,15 +3,9 @@ import * as React from "react";
 import { useMap3D } from "../map3d/map3d.context.ts";
 import { DistrictSelectors } from "../store/district.ts";
 import { ModalsActions } from "../store/modals.ts";
-import { NodesActions, NodesSelectors } from "../store/nodesV2.ts";
+import { NodesActions, NodesSelectors } from "../store/nodes.ts";
 import { ProjectActions } from "../store/project.ts";
-import type {
-  MapNodeV2,
-  Modes,
-  NodesIndex,
-  NodesMap,
-  Plane,
-} from "../types/types.ts";
+import type { MapNode, Modes, NodesMap, Plane } from "../types/types.ts";
 import {
   getTransformsFromSubtree,
   invalidateCachedTransforms,
@@ -26,7 +20,7 @@ import {
 import { toTuple3 } from "../utilities/utilities.ts";
 import { useAppDispatch, useAppSelector, useAppStore } from "./hooks.ts";
 
-export function useFocusNodeOnSelected(node: MapNodeV2) {
+export function useFocusNodeOnSelected(node: MapNode) {
   const selected = useAppSelector(NodesSelectors.getSelectedNodes);
   const ref = React.useRef<HTMLDivElement | null>(null);
 
@@ -39,7 +33,7 @@ export function useFocusNodeOnSelected(node: MapNodeV2) {
   return ref;
 }
 
-export function useLookAtNode(node: MapNodeV2) {
+export function useLookAtNode(node: MapNode) {
   const map3D = useMap3D();
   const store = useAppStore();
 
@@ -79,7 +73,7 @@ export function useLookAtNode(node: MapNodeV2) {
   );
 }
 
-export function useSelectNode(node: MapNodeV2) {
+export function useSelectNode(node: MapNode) {
   const dispatch = useAppDispatch();
 
   return React.useCallback(
@@ -105,7 +99,7 @@ export function useDeselectNode() {
   );
 }
 
-export function useCloneNode(node?: MapNodeV2) {
+export function useCloneNode(node?: MapNode) {
   const dispatch = useAppDispatch();
   const invalidate = useInvalidateTransformsCache();
 
@@ -117,14 +111,14 @@ export function useCloneNode(node?: MapNodeV2) {
   }, [dispatch, node, invalidate]);
 }
 
-export function useChangeNodeTag(node?: MapNodeV2) {
+export function useChangeNodeTag(node?: MapNode) {
   const dispatch = useAppDispatch();
   const invalidate = useInvalidateTransformsCache();
   const nodes = useAppSelector(NodesSelectors.getNodes);
   const index = useAppSelector(NodesSelectors.getNodesIndex);
 
   return React.useCallback(
-    (tag: MapNodeV2["tag"], mode: Modes = tag) => {
+    (tag: MapNode["tag"], mode: Modes = tag) => {
       if (!node) return;
       const updates: NodesMap = {
         [node.id]: transplantNode(nodes, { ...node, tag }, null, node.district),
@@ -171,7 +165,7 @@ export function useDeleteNode(selected: string[]) {
   }, [dispatch, selected, nodes, invalidate]);
 }
 
-export function useAddNode(type: MapNodeV2["type"], tag: MapNodeV2["tag"]) {
+export function useAddNode(type: MapNode["type"], tag: MapNode["tag"]) {
   const dispatch = useAppDispatch();
   const map3d = useMap3D();
   const invalidate = useInvalidateTransformsCache();
@@ -236,7 +230,7 @@ export function useWrapNode(selected: string[]) {
   }, [selected, invalidate, store]);
 }
 
-export function useMirrorNode(node?: MapNodeV2) {
+export function useMirrorNode(node?: MapNode) {
   const dispatch = useAppDispatch();
   const invalidate = useInvalidateTransformsCache();
 
@@ -280,7 +274,7 @@ export function useHideNode(selected: string[]) {
   }, [dispatch, invalidate, selected, nodes]);
 }
 
-const offsetPosition = (node: MapNodeV2) => {
+const offsetPosition = (node: MapNode) => {
   return toTuple3([
     node.position[0],
     node.position[1],
@@ -288,7 +282,7 @@ const offsetPosition = (node: MapNodeV2) => {
   ]);
 };
 
-export function useEditNodeAsAddition(node?: MapNodeV2) {
+export function useEditNodeAsAddition(node?: MapNode) {
   const dispatch = useAppDispatch();
   const nodes = useAppSelector(NodesSelectors.getNodes);
   const index = useAppSelector(NodesSelectors.getNodesIndex);
@@ -316,33 +310,16 @@ export function useEditNodeAsAddition(node?: MapNodeV2) {
   }, [dispatch, invalidate, nodes, index, node, onTransfer]);
 }
 
-const getNodeAncestors = (index: NodesIndex, node: MapNodeV2) => {
-  if (!node.parent) return [];
-  return [node.parent, ...index[node.parent].ancestorIds];
-};
-const getNodeDescendants = (index: NodesIndex, id: string) => {
-  if (!index[id]) return [];
-  return [...index[id].descendantIds];
-};
-
 export function useInvalidateTransformsCache() {
   const store = useAppStore();
 
   return React.useCallback(
-    (updates: string[]) => {
+    (nodeIds: string[]) => {
       const state = store.getState();
       const nodes = NodesSelectors.getNodes(state);
       const index = NodesSelectors.getNodesIndex(state);
-      const ids = [...updates];
 
-      for (const id of updates) {
-        const node = nodes[id];
-
-        if (node.parent) ids.push(...getNodeAncestors(index, node));
-        if (node.type === "group") ids.push(...getNodeDescendants(index, id));
-      }
-
-      invalidateCachedTransforms(ids);
+      invalidateCachedTransforms(nodes, index, nodeIds);
     },
     [store],
   );

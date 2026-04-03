@@ -6,7 +6,7 @@ import type {
   PersistentAppState,
 } from "../types/types.ts";
 import districtSlice from "./district.ts";
-import nodesSlice from "./nodesV2.ts";
+import nodesSlice from "./nodes.ts";
 import optionsSlice from "./options.ts";
 import projectSlice from "./project.ts";
 

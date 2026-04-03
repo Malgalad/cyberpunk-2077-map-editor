@@ -5,7 +5,7 @@ import { encodeImageData } from "../map3d/processDDS.ts";
 import { getPersistentState } from "../store/@selectors.ts";
 import { DistrictSelectors } from "../store/district.ts";
 import { ModalsActions } from "../store/modals.ts";
-import { NodesSelectors } from "../store/nodesV2.ts";
+import { NodesSelectors } from "../store/nodes.ts";
 import { PersistentStateSchema } from "../types/schemas.ts";
 import type {
   InstancedMeshTransforms,

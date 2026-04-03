@@ -18,7 +18,7 @@ import {
   useEditNodeAsAddition,
 } from "../hooks/nodes.hooks.ts";
 import { DistrictSelectors } from "../store/district.ts";
-import { NodesSelectors } from "../store/nodesV2.ts";
+import { NodesSelectors } from "../store/nodes.ts";
 
 function UpdateNodes() {
   const nodes = useAppSelector(NodesSelectors.getNodes);

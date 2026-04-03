@@ -1,7 +1,7 @@
 import * as React from "react";
 
 import { useAppSelector } from "../../hooks/hooks.ts";
-import { NodesSelectors } from "../../store/nodesV2.ts";
+import { NodesSelectors } from "../../store/nodes.ts";
 import type { District, DistrictProperties } from "../../types/types.ts";
 import {
   calculateHeight,

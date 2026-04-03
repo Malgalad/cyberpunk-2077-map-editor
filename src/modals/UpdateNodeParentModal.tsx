@@ -14,7 +14,7 @@ import { TEMPLATE_ID } from "../constants.ts";
 import { useAppDispatch, useAppSelector } from "../hooks/hooks.ts";
 import { useInvalidateTransformsCache } from "../hooks/nodes.hooks.ts";
 import { DistrictActions, DistrictSelectors } from "../store/district.ts";
-import { NodesActions, NodesSelectors } from "../store/nodesV2.ts";
+import { NodesActions, NodesSelectors } from "../store/nodes.ts";
 import type { ModalProps } from "../types/modals.ts";
 import type { NodesMap, TreeNode } from "../types/types.ts";
 import type { SelectItem } from "../types/ui.types.ts";

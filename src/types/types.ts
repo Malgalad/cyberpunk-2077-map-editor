@@ -98,14 +98,14 @@ export type RevivedAppState = {
   project: AppState["present"]["project"];
 };
 
-export type TransformV2 = {
+export type Transform = {
   position: Vector3;
   rotation: Vector3;
   scale: Vector3;
   mirror: Plane | Plane[] | null;
 };
 // MapNodes use absolute position
-export type MapNodeV2 = TransformV2 & {
+export type MapNode = Transform & {
   id: string;
   label: string;
   type: "group" | "instance";
@@ -116,11 +116,11 @@ export type MapNodeV2 = TransformV2 & {
   hidden: boolean;
   virtual?: boolean;
   originId?: string;
-  pattern?: TransformV2 & {
+  pattern?: Transform & {
     count: number;
   };
 };
-export type NodesMap = Record<string, MapNodeV2>;
+export type NodesMap = Record<string, MapNode>;
 
 export type TreeNode = {
   id: string;

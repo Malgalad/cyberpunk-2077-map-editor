@@ -15,15 +15,15 @@ import {
   useLookAtNode,
   useSelectNode,
 } from "../hooks/nodes.hooks.ts";
-import { NodesSelectors } from "../store/nodesV2.ts";
-import type { MapNodeV2 } from "../types/types.ts";
+import { NodesSelectors } from "../store/nodes.ts";
+import type { MapNode } from "../types/types.ts";
 import { clsx, invariant } from "../utilities/utilities.ts";
 import Button from "./common/Button.tsx";
 import Tooltip from "./common/Tooltip.tsx";
 import Node from "./Node.tsx";
 
 interface GroupProps {
-  node: MapNodeV2;
+  node: MapNode;
 }
 const ROW_HEIGHT = 28;
 

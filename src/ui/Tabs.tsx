@@ -1,7 +1,7 @@
 import Button from "../components/common/Button.tsx";
 import { useAppDispatch, useAppSelector } from "../hooks/hooks.ts";
 import { DistrictSelectors } from "../store/district.ts";
-import { NodesActions } from "../store/nodesV2.ts";
+import { NodesActions } from "../store/nodes.ts";
 import { ProjectActions, ProjectSelectors } from "../store/project.ts";
 import type { Modes } from "../types/types.ts";
 import { clsx } from "../utilities/utilities.ts";

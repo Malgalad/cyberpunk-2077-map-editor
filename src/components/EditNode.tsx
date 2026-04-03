@@ -1,7 +1,7 @@
 import * as React from "react";
 
 import { useAppSelector } from "../hooks/hooks.ts";
-import { NodesSelectors } from "../store/nodesV2.ts";
+import { NodesSelectors } from "../store/nodes.ts";
 import { clsx } from "../utilities/utilities.ts";
 import Button from "./common/Button.tsx";
 import EditNodePattern from "./EditNode.Pattern.tsx";

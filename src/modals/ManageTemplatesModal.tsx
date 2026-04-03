@@ -12,7 +12,7 @@ import { TEMPLATE_ID } from "../constants.ts";
 import { useAppDispatch, useAppSelector } from "../hooks/hooks.ts";
 import { useDeleteNode } from "../hooks/nodes.hooks.ts";
 import { ModalsActions } from "../store/modals.ts";
-import { NodesActions, NodesSelectors } from "../store/nodesV2.ts";
+import { NodesActions, NodesSelectors } from "../store/nodes.ts";
 import type { NodesMap, TreeNode } from "../types/types.ts";
 import { resolveParent } from "../utilities/nodes.ts";
 import { clsx, invariant } from "../utilities/utilities.ts";

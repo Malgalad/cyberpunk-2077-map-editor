@@ -3,7 +3,8 @@ import * as THREE from "three";
 import type {
   District,
   InstancedMeshTransforms,
-  MapNodeV2,
+  MapNode,
+  NodesIndex,
   NodesMap,
   Plane,
   TreeNode,
@@ -39,8 +40,8 @@ const mirrorRotation = (plane: Plane | null, rotation: THREE.Vector3Tuple) => {
 };
 
 const mirrorContext: Array<Plane | null> = [];
-function applyParentTransform(parent: MapNodeV2 | null) {
-  return (node: MapNodeV2): MapNodeV2 => {
+function applyParentTransform(parent: MapNode | null) {
+  return (node: MapNode): MapNode => {
     if (!parent) return node;
 
     const parentPosition = toVector3(parent.position);
@@ -78,7 +79,7 @@ function applyParentTransform(parent: MapNodeV2 | null) {
   };
 }
 
-export function applyTransforms(nodes: NodesMap, node: MapNodeV2) {
+export function applyTransforms(nodes: NodesMap, node: MapNode) {
   let current = node;
   let parentId = current.parent;
 
@@ -92,20 +93,20 @@ export function applyTransforms(nodes: NodesMap, node: MapNodeV2) {
   return current;
 }
 
-function applyHidden(node: MapNodeV2): MapNodeV2 {
+function applyHidden(node: MapNode): MapNode {
   if (node.hidden) return { ...node, scale: [0, 0, 0] };
   return node;
 }
 
-function applyCloned(parents: MapNodeV2[]) {
-  return (node: MapNodeV2): MapNodeV2 => {
+function applyCloned(parents: MapNode[]) {
+  return (node: MapNode): MapNode => {
     const isCloned = parents.some((parent) => parent.virtual);
     if (!isCloned || node.virtual) return node;
     return { ...node, virtual: true, originId: node.id };
   };
 }
 
-function applyOffset(node: MapNodeV2): MapNodeV2 {
+function applyOffset(node: MapNode): MapNode {
   // set node Z transform origin to bottom instead of center
   if (node.tag === "create")
     return {
@@ -119,7 +120,7 @@ function applyOffset(node: MapNodeV2): MapNodeV2 {
   return node;
 }
 
-function applyPattern(node: MapNodeV2): MapNodeV2[] {
+function applyPattern(node: MapNode): MapNode[] {
   if (!node.pattern) return [];
 
   if (node.pattern.mirror) {
@@ -134,7 +135,7 @@ function applyPattern(node: MapNodeV2): MapNodeV2[] {
     ];
   }
 
-  const clones: MapNodeV2[] = Array(node.pattern.count)
+  const clones: MapNode[] = Array(node.pattern.count)
     .fill(node)
     .map((clone, index) => ({
       ...clone,
@@ -171,8 +172,8 @@ type ReturnType<T extends (...args: any) => any> = T extends (
   : any;
 /* eslint-enable */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-function applyMirror<Fn extends (node: MapNodeV2) => any>(fn: Fn) {
-  return (node: MapNodeV2): ReturnType<typeof fn> => {
+function applyMirror<Fn extends (node: MapNode) => any>(fn: Fn) {
+  return (node: MapNode): ReturnType<typeof fn> => {
     const mirror = [node.mirror].flat();
     mirrorContext.push(...mirror);
     const transform = fn(node);
@@ -189,6 +190,7 @@ const cache = new Map<string, InstancedMeshTransforms[]>();
 const extraKeys = new Map<string, string[]>();
 const getKey = <T extends { id: string }>(node: T, parents: T[]) =>
   `${node.id}+${parents.map((p) => p.id).join("+")}`;
+
 const addTransformsToCache = (
   id: string,
   key: string,
@@ -199,11 +201,34 @@ const addTransformsToCache = (
   extraKeys.set(id, keys);
   cache.set(key, transforms);
 };
+
+const getNodeAncestors = (index: NodesIndex, node: MapNode) => {
+  if (!node.parent) return [];
+  return [node.parent, ...index[node.parent].ancestorIds];
+};
+const getNodeDescendants = (index: NodesIndex, node: MapNode) => {
+  if (!index[node.id]) return [];
+  return [...index[node.id].descendantIds];
+};
+
 /**
  * Invalidate cached transforms for specified node ids
  */
-export const invalidateCachedTransforms = (nodeIds: string[]) => {
-  for (const id of nodeIds) {
+export const invalidateCachedTransforms = (
+  nodes: NodesMap,
+  index: NodesIndex,
+  ids: string[],
+) => {
+  const allIds = [...ids];
+
+  for (const id of ids) {
+    const node = nodes[id];
+
+    if (node.parent) allIds.push(...getNodeAncestors(index, node));
+    if (node.type === "group") allIds.push(...getNodeDescendants(index, node));
+  }
+
+  for (const id of allIds) {
     const keys = extraKeys.get(id) ?? [];
     extraKeys.set(id, []);
     for (const key of keys) cache.delete(key);
@@ -219,7 +244,7 @@ export const getTransformsFromSubtree = (
 
   const processNode = (
     treeNode: TreeNode,
-    parents: MapNodeV2[],
+    parents: MapNode[],
   ): InstancedMeshTransforms[] => {
     const node = nodes[treeNode.id];
     const key = getKey(node, parents);

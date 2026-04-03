@@ -5,7 +5,7 @@ import { MAX_DEPTH, TEMPLATE_ID } from "../constants.ts";
 import type {
   District,
   InstancedMeshTransforms,
-  MapNodeV2,
+  MapNode,
   NodesIndex,
   NodesIndexIntermediate,
   NodesMap,
@@ -25,7 +25,7 @@ import {
 import { invariant, toTuple3, unwrapDraft } from "./utilities.ts";
 
 export function initNode(
-  init: Optional<MapNodeV2, "type" | "tag" | "district" | "position">,
+  init: Optional<MapNode, "type" | "tag" | "district" | "position">,
 ) {
   const {
     type,
@@ -41,7 +41,7 @@ export function initNode(
     rotation = [0, 0, 0],
     scale = type === "instance" ? [100, 100, 100] : [1, 1, 1],
   } = init;
-  const node: MapNodeV2 = {
+  const node: MapNode = {
     id,
     label,
     type,
@@ -60,7 +60,7 @@ export function initNode(
 }
 
 export function nodeToTransform(
-  node: MapNodeV2,
+  node: MapNode,
   district: District,
 ): InstancedMeshTransforms {
   const position = {
@@ -97,13 +97,13 @@ export function nodeToTransform(
 export function cloneNode(
   nodes: NodesMap,
   index: NodesIndex,
-  node: MapNodeV2,
+  node: MapNode,
   parent: string | null = node.parent,
-): MapNodeV2[] {
+): MapNode[] {
   const clone = structuredClone(unwrapDraft(node));
   clone.id = nanoid();
   clone.parent = parent;
-  const clones: MapNodeV2[] = [clone];
+  const clones: MapNode[] = [clone];
 
   if (node.type === "group") {
     const treeNode = index[node.id].treeNode;
@@ -118,7 +118,7 @@ export function cloneNode(
   return clones;
 }
 
-export function resolveParent(selected?: MapNodeV2) {
+export function resolveParent(selected?: MapNode) {
   return selected
     ? selected.type === "group"
       ? selected.id
@@ -130,14 +130,14 @@ const buildRoot = (id: string): TreeRoot =>
   id === TEMPLATE_ID
     ? { id, type: "template", children: [] }
     : { id, type: "district", create: [], update: [], delete: [] };
-const getWeight = (node: MapNodeV2) => 1 + (node.pattern?.count ?? 0);
+const getWeight = (node: MapNode) => 1 + (node.pattern?.count ?? 0);
 
 export function buildSupportStructures(nodes: NodesMap) {
   const tree: NodesTree = {};
   const indexTemp: NodesIndexIntermediate = {};
   const processed = new Set<string>();
 
-  const processNode = (node: MapNodeV2) => {
+  const processNode = (node: MapNode) => {
     const { parent, district } = node;
 
     if (processed.has(node.id)) return;
@@ -242,10 +242,10 @@ export function transplantPoint(
 
 export function transplantNode(
   nodes: NodesMap,
-  node: MapNodeV2,
+  node: MapNode,
   parentId: string | null,
   district: string,
-): MapNodeV2 {
+): MapNode {
   const resolvedNode = applyTransforms(nodes, node);
 
   if (!parentId)

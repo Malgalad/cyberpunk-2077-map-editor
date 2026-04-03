@@ -8,7 +8,6 @@ import {
   useDrawSelection,
   useDrawUpdates,
   useInitMap3D,
-  useMap3DEvents,
   useShortcuts,
 } from "./App.hooks.ts";
 import { useAppSelector } from "./hooks/hooks.ts";
@@ -35,7 +34,6 @@ function App() {
   useDrawUpdates(map3d);
   useDrawDeletions(map3d);
   useDrawSelection(map3d);
-  useMap3DEvents(map3d);
 
   return (
     <Map3DContext value={map3d}>

@@ -8,7 +8,7 @@ import { useAppDispatch, useAppSelector } from "../hooks/hooks.ts";
 import { useMap3D } from "../map3d/map3d.context.ts";
 import { DistrictActions, DistrictSelectors } from "../store/district.ts";
 import { ModalsActions } from "../store/modals.ts";
-import { NodesActions, NodesSelectors } from "../store/nodesV2.ts";
+import { NodesActions, NodesSelectors } from "../store/nodes.ts";
 import { ProjectActions, ProjectSelectors } from "../store/project.ts";
 import type { NodesIndex } from "../types/types.ts";
 import { getDistrictName } from "../utilities/district.ts";

@@ -1,21 +1,28 @@
 import { createSlice } from "@reduxjs/toolkit";
+import { nanoid } from "nanoid";
 
 import type {
   AppState,
   AppThunkAction,
-  MapNodeV2,
+  MapNode,
   NodesIndex,
   NodesMap,
   NodesTree,
   Optional,
 } from "../types/types.ts";
+import { immutableDistrictTransforms } from "../utilities/district.ts";
+import { invalidateCachedTransforms } from "../utilities/getTransformsFromSubtree.ts";
 import {
   buildSupportStructures,
   cloneNode,
   initNode,
+  resolveParent,
+  transplantNode,
 } from "../utilities/nodes.ts";
+import { transformToNode } from "../utilities/transforms.ts";
+import { invariant } from "../utilities/utilities.ts";
 import { hydrateState } from "./@actions.ts";
-import { DistrictActions } from "./district.ts";
+import { DistrictActions, DistrictSelectors } from "./district.ts";
 
 interface NodesState {
   nodes: NodesMap;
@@ -37,7 +44,7 @@ const nodesSlice = createSlice({
   reducers: (create) => ({
     createNode: create.preparedReducer(
       (
-        prepare: Optional<MapNodeV2, "type" | "tag" | "district" | "position">,
+        prepare: Optional<MapNode, "type" | "tag" | "district" | "position">,
       ) => {
         return { payload: initNode(prepare) };
       },
@@ -51,7 +58,7 @@ const nodesSlice = createSlice({
       Object.assign(state.nodes, action.payload);
       Object.assign(state, buildSupportStructures(state.nodes));
     }),
-    updateNode: create.reducer<Optional<MapNodeV2, "id">>((state, action) => {
+    updateNode: create.reducer<Optional<MapNode, "id">>((state, action) => {
       const current = state.nodes[action.payload.id];
       const previous = { ...current };
       const next = Object.assign(current, action.payload);
@@ -100,9 +107,9 @@ const nodesSlice = createSlice({
 const cloneNodeDeep =
   (
     id: string,
-    nodeUpdates?: Partial<MapNodeV2>,
-    allNodesUpdates?: Partial<MapNodeV2>,
-  ): AppThunkAction<MapNodeV2[]> =>
+    nodeUpdates?: Partial<MapNode>,
+    allNodesUpdates?: Partial<MapNode>,
+  ): AppThunkAction<MapNode[]> =>
   (dispatch, getState) => {
     const state = getState();
     const nodes = NodesSelectors.getNodes(state);
@@ -183,10 +190,69 @@ const selectNode =
       }
     }
   };
+const addDistrictNode =
+  (index: number, tag: Exclude<MapNode["tag"], "create">): AppThunkAction =>
+  (dispatch, getState) => {
+    const state = getState();
+
+    const district = DistrictSelectors.getDistrict(state);
+    invariant(district, "Unexpected error: district is not defined");
+
+    const transform = immutableDistrictTransforms.get(district.name)?.[index];
+    invariant(
+      transform,
+      "Unexpected error: unable to find transform in district by index",
+    );
+
+    const selected = NodesSelectors.getSelectedNodes(state);
+    const nodes = NodesSelectors.getNodes(state);
+    const nodesIndex = NodesSelectors.getNodesIndex(state);
+    const tree = NodesSelectors.getNodesTree(state);
+
+    const parent = resolveParent(nodes[selected[0]]);
+    const id = nanoid();
+
+    // If the user clicks twice without moving the pointer, the highlighted block
+    // will stay the same and trigger the event twice
+    const districtTree = tree[district.name];
+    invariant(
+      districtTree?.type === "district",
+      "Unexpected error: district tree not found",
+    );
+
+    const existingNode = districtTree[tag].find(
+      (treeNode) => nodes[treeNode.id].indexInDistrict === index,
+    );
+    if (existingNode) return;
+
+    const node = transformToNode(transform, district, {
+      label: `Block #${index}`,
+      parent: null,
+      district: district.name,
+      tag,
+      id,
+      indexInDistrict: index,
+    });
+
+    if (parent) {
+      const nodeWithCorrectParent = transplantNode(
+        nodes,
+        node,
+        parent,
+        district.name,
+      );
+      invalidateCachedTransforms(nodes, nodesIndex, [parent]);
+      dispatch(NodesActions.createNode(nodeWithCorrectParent));
+    } else {
+      dispatch(NodesActions.createNode(node));
+    }
+    dispatch(NodesActions.selectNode(id));
+  };
 
 const getSlice = (state: AppState) => state.present[nodesSlice.reducerPath];
 export const NodesActions = {
   ...nodesSlice.actions,
+  addDistrictNode,
   cloneNodeDeep,
   deleteNodesDeep,
   selectNode,
