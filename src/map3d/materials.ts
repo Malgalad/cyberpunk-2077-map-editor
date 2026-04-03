@@ -99,3 +99,9 @@ export const metroMaterial = new THREE.MeshBasicMaterial({
 export const waterMaterial = new THREE.MeshLambertMaterial({
   color: 0x003779,
 });
+
+export const spriteMaterial = new THREE.SpriteMaterial({
+  color: 0x00ffff,
+  depthWrite: false,
+  depthTest: false,
+});

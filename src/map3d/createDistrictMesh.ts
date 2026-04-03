@@ -33,13 +33,13 @@ export function createDistrictMesh(
       material,
       getCount(instances.length),
     );
-    mesh.userData.district = "";
+    mesh.userData.district = {};
     mesh.userData.instances = [];
     mesh.userData.ids = {};
     onAdd?.(mesh);
   }
 
-  if (district.name !== mesh.userData.district) {
+  if (district.name !== mesh.userData.district.name) {
     const position = new THREE.Vector3().fromArray(district.position);
     const transformMin = new THREE.Vector4().fromArray(district.transMin);
 
@@ -97,7 +97,7 @@ export function createDistrictMesh(
   }
 
   const originIds = instances.map(({ id, originId }) => originId || id);
-  mesh.userData.district = district.name;
+  mesh.userData.district = district;
   mesh.userData.instances = instances;
   mesh.userData.ids = originIds.reduce(
     (acc, id, index) => {

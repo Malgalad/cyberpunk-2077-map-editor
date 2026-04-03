@@ -22,6 +22,7 @@ import {
   buildingsMaterial,
   hiddenMaterial,
   patternMaterial,
+  spriteMaterial,
   staticMaterial,
   wireframeMaterial,
 } from "./materials.ts";
@@ -33,6 +34,13 @@ const virtualEditsMaterial: Record<PatternView, THREE.Material> = {
   solid: patternMaterial,
 };
 const isMarker = ({ scale: { w } }: InstancedMeshTransforms) => w === 0;
+const hideMarkers = (transform: InstancedMeshTransforms) =>
+  isMarker(transform)
+    ? {
+        ...transform,
+        scale: { x: 0, y: 0, z: 0, w: 0 },
+      }
+    : transform;
 
 export class Map3D extends Map3DBase {
   private readonly raycaster: THREE.Raycaster;
@@ -55,7 +63,8 @@ export class Map3D extends Map3DBase {
   private pointingAt: [InstancedMeshTransforms, THREE.InstancedMesh] | null =
     null;
   private helper = new AxesHelper(50);
-  private markers: string[] = [];
+  private markers = new THREE.Group();
+  private markerData: InstancedMeshTransforms[] = [];
   private uncolorList: Array<[THREE.InstancedMesh, string, THREE.Color]> = [];
 
   constructor(canvas: HTMLCanvasElement, store: AppStore) {
@@ -68,6 +77,7 @@ export class Map3D extends Map3DBase {
     this.meshes = setupTerrain(this.loadResource);
     this.addMesh(this.visibleDistricts);
     this.addMesh(this.helper);
+    this.addMesh(this.markers);
 
     this.canvas.addEventListener("mousedown", this.onMouseDown);
     this.canvas.addEventListener("mousemove", this.onMouseMove);
@@ -225,11 +235,7 @@ export class Map3D extends Map3DBase {
       id: string,
       variant: "selected" | "pointingAt",
     ) => {
-      const color = COLORS.getColor(
-        mesh === this.currentDistrict,
-        this.markers.includes(id),
-        mode,
-      );
+      const color = COLORS.getColor(mesh === this.currentDistrict, mode);
       COLORS.setColorForId(mesh, id, color[variant]);
 
       this.uncolorList.push([mesh, id, color.idle]);
@@ -249,6 +255,15 @@ export class Map3D extends Map3DBase {
           for (const id of this.selected) {
             if (!mesh.userData.ids[id]) continue;
             applyColor(mesh, id, "selected");
+          }
+        }
+
+        if (mode === "create" && this.markers.children.length) {
+          for (const child of this.markers.children) {
+            const sprite = child as THREE.Sprite;
+            sprite.material.color.set(
+              this.selected.includes(sprite.userData.id) ? 0xff88ff : 0x00ffff,
+            );
           }
         }
       }
@@ -291,12 +306,34 @@ export class Map3D extends Map3DBase {
     }
   }
 
-  private markMarkers() {
-    if (this.additions) {
-      const mesh = this.additions;
-      for (const id of this.markers) {
-        COLORS.setColorForId(mesh, id, COLORS.MARKERS.default);
-      }
+  private drawMarkers() {
+    const district = this.currentDistrict?.userData.district;
+    if (!district) return;
+    const position = new THREE.Vector3().fromArray(district.position);
+    const transformMin = new THREE.Vector4().fromArray(district.transMin);
+
+    this.markers.renderOrder = 99;
+    this.markers.clear();
+    this.markers.position.set(
+      position.x + transformMin.x,
+      position.z + transformMin.z,
+      -position.y - transformMin.y,
+    );
+
+    for (const marker of this.markerData) {
+      const sprite = new THREE.Sprite(spriteMaterial.clone());
+      sprite.scale.set(
+        150 / this.camera.zoom,
+        150 / this.camera.zoom,
+        150 / this.camera.zoom,
+      );
+      sprite.position.set(
+        marker.position.x,
+        marker.position.z,
+        -marker.position.y,
+      );
+      sprite.userData.id = marker.id;
+      this.markers.add(sprite);
     }
   }
 
@@ -355,9 +392,12 @@ export class Map3D extends Map3DBase {
   }
 
   setAdditions({ district, transforms }: DistrictWithTransforms) {
-    this.markers = transforms.filter(isMarker).map(({ id }) => id);
+    this.markerData = transforms.filter(isMarker);
 
-    const split = partition(transforms, (transform) => `${transform.virtual}`);
+    const split = partition(
+      transforms.map(hideMarkers),
+      (transform) => `${transform.virtual}`,
+    );
 
     this.additions = createDistrictMesh(
       this.additions,
@@ -368,7 +408,6 @@ export class Map3D extends Map3DBase {
       this.addMesh,
       COLORS.ADDITIONS.default,
     );
-    this.markMarkers();
     this.additionsVirtual = createDistrictMesh(
       this.additionsVirtual,
       district,
@@ -505,7 +544,7 @@ export class Map3D extends Map3DBase {
     this.removeMesh(this.currentDistrictBoundaries);
     this.removeMesh(this.deletions);
     this.removeMesh(this.updates);
-    this.markers = [];
+    this.markers.clear();
     this.uncolorList = [];
     this.pointingAt = null;
     this.startedPointingAt = null;
@@ -520,6 +559,7 @@ export class Map3D extends Map3DBase {
   render() {
     this.toggleControls(this.tool === "move");
     this.toggleEffects(this.effects);
+    this.drawMarkers();
     this.refreshInstancesColors();
     this.refreshMaterials();
     this.refreshMeshes();

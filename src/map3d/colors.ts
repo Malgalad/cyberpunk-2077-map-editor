@@ -27,11 +27,6 @@ export const DELETIONS = {
   selected: new THREE.Color(0xffffff),
 };
 
-export const MARKERS = {
-  default: new THREE.Color(0x00ffff),
-  selected: new THREE.Color(0xff88ff),
-};
-
 export const IDLE_COLORS: Record<Modes, THREE.Color> = {
   create: ADDITIONS.default,
   update: UPDATES.default,
@@ -53,22 +48,10 @@ export const BUILDING_COLORS: Record<Modes, THREE.Color> = {
   delete: BUILDINGS.pointingAtDeletion,
 };
 
-export const getColor = (
-  isDefaultMesh: boolean,
-  isMarker: boolean,
-  mode: Modes,
-) => ({
-  idle: isDefaultMesh
-    ? BUILDINGS.default
-    : isMarker
-      ? MARKERS.default
-      : IDLE_COLORS[mode],
-  pointingAt: isDefaultMesh
-    ? BUILDING_COLORS[mode]
-    : isMarker
-      ? MARKERS.selected
-      : POINTING_AT_COLORS[mode],
-  selected: isMarker ? MARKERS.selected : SELECTED_COLORS[mode],
+export const getColor = (isDefaultMesh: boolean, mode: Modes) => ({
+  idle: isDefaultMesh ? BUILDINGS.default : IDLE_COLORS[mode],
+  pointingAt: isDefaultMesh ? BUILDING_COLORS[mode] : POINTING_AT_COLORS[mode],
+  selected: SELECTED_COLORS[mode],
 });
 
 export const setColorForId = (
