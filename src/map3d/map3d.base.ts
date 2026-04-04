@@ -119,13 +119,13 @@ export class Map3DBase {
       this.camera.layers.enable(EXCLUDE_AO_LAYER);
     };
     const aoParameters = {
-      radius: 0.25,
+      radius: 5,
       distanceExponent: 1,
       thickness: 10,
       scale: 2,
       samples: 16,
-      distanceFallOff: 1,
-      screenSpaceRadius: true,
+      distanceFallOff: 0.5,
+      screenSpaceRadius: false,
     };
     gtaoPass.updateGtaoMaterial(aoParameters);
     this.composer.addPass(gtaoPass);
