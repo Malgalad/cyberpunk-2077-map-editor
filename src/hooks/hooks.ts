@@ -1,8 +1,19 @@
 import * as React from "react";
 import { useDispatch, useSelector, useStore } from "react-redux";
 
-import type { AppDispatch, AppState, AppStore } from "../types/types.ts";
+import { DistrictSelectors } from "../store/district.ts";
+import { ModalsActions } from "../store/modals.ts";
+import { NodesActions, NodesSelectors } from "../store/nodes.ts";
+import type {
+  AppDispatch,
+  AppState,
+  AppStore,
+  NodesMap,
+} from "../types/types.ts";
+import { invalidateCachedTransforms } from "../utilities/getTransformsFromSubtree.ts";
+import { initNode } from "../utilities/nodes.ts";
 import { fs } from "../utilities/opfs.ts";
+import { invariant } from "../utilities/utilities.ts";
 
 export const useAppDispatch = useDispatch.withTypes<AppDispatch>();
 export const useAppSelector = useSelector.withTypes<AppState>();
@@ -78,4 +89,72 @@ export function useGlobalShortcuts(
       window.removeEventListener("keydown", listener);
     };
   }, [shortcut, callback, disabled]);
+}
+
+export function useConnectToServer() {
+  const store = useAppStore();
+  const [eventSource, setEventSource] = React.useState<EventSource | null>(
+    null,
+  );
+
+  React.useEffect(() => {
+    if (!eventSource) return;
+    eventSource.addEventListener("connect", (event) => {
+      if (event.data === "OK")
+        store.dispatch(
+          ModalsActions.openModal("alert", "Connected to server!"),
+        );
+    });
+    eventSource.addEventListener("addMarker", (event) => {
+      const state = store.getState();
+      const district = DistrictSelectors.getDistrict(state);
+      const nodes = NodesSelectors.getNodes(state);
+      const index = NodesSelectors.getNodesIndex(state);
+      const tree = NodesSelectors.getNodesTree(state);
+      const markers = JSON.parse(event.data) as number[][];
+      if (!markers.length || !district) return;
+
+      const districtTree = tree[district.name];
+      invariant(
+        districtTree.type === "district",
+        "Unexpected error: District tree has wrong type " + districtTree.type,
+      );
+      const markersGroup = districtTree.create.find(
+        (node) => node.type === "group" && nodes[node.id].label === "markers",
+      );
+      const nodesToUpsert: NodesMap = {};
+      for (const marker of markers) {
+        const [x, y, z] = marker;
+
+        const node = initNode({
+          type: "instance",
+          tag: "create",
+          district: district.name,
+          position: [x, y, z],
+          scale: [1, 1, 1],
+          parent: markersGroup?.id,
+        });
+        nodesToUpsert[node.id] = node;
+      }
+      if (markersGroup)
+        invalidateCachedTransforms(nodes, index, [markersGroup.id]);
+      store.dispatch(NodesActions.batchUpsertNodes(nodesToUpsert));
+    });
+
+    return () => {
+      eventSource.close();
+    };
+  }, [eventSource, store]);
+
+  return React.useCallback(async () => {
+    const maybeId = await store.dispatch(
+      ModalsActions.openModal("connect-to-server"),
+    );
+    if (!maybeId) return;
+    const id = maybeId as string;
+    const eventSource = new EventSource(
+      "https://cyberpunk.moonbee.eu/connect?id=" + id,
+    );
+    setEventSource(eventSource);
+  }, [store]);
 }

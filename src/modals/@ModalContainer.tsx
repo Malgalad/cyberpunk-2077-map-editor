@@ -6,6 +6,7 @@ import type { ModalProps, ModalType } from "../types/modals.ts";
 import AlertModal from "./AlertModal.tsx";
 import ConfirmByTypingModal from "./ConfirmByTypingModal.tsx";
 import ConfirmModal from "./ConfirmModal.tsx";
+import ConnectToServerModal from "./ConnectToServerModal.tsx";
 import CriticalErrorModal from "./CriticalErrorModal.tsx";
 import EditDistrictModal from "./EditDistrictModal/EditDistrictModal.tsx";
 import ImportExportNodesModal from "./ImportExportNodesModal.tsx";
@@ -25,6 +26,7 @@ const ComponentMap: Record<ModalType, React.FC<ModalProps>> = {
   "import-export": ImportExportNodesModal,
   "update-node-parent": UpdateNodeParentModal,
   "manage-templates": ManageTemplatesModal,
+  "connect-to-server": ConnectToServerModal,
 };
 
 function ModalContainer() {

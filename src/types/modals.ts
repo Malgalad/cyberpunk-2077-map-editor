@@ -8,7 +8,8 @@ export type ModalType =
   | "edit-district"
   | "import-export"
   | "update-node-parent"
-  | "manage-templates";
+  | "manage-templates"
+  | "connect-to-server";
 export type Modal = {
   type: ModalType;
   data: unknown;

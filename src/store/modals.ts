@@ -61,6 +61,9 @@ function openModal(
   data: string[],
 ): AppThunkAction<Promise<void>>;
 function openModal(type: "manage-templates"): AppThunkAction<Promise<void>>;
+function openModal(
+  type: "connect-to-server",
+): AppThunkAction<Promise<string | void>>;
 function openModal<T>(
   type: ModalType,
   data?: unknown,

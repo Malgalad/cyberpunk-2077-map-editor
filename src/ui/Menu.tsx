@@ -8,6 +8,7 @@ import {
   HardDriveUpload,
   ImageDown,
   Redo,
+  Router,
   Settings2,
   Undo,
 } from "lucide-react";
@@ -19,7 +20,11 @@ import DropdownSeparator from "../components/common/Dropdown/Dropdown.Separator.
 import Dropdown from "../components/common/Dropdown/Dropdown.tsx";
 import Tooltip from "../components/common/Tooltip.tsx";
 import { KNOWN_MESH_NAMES, KNOWN_MESHES } from "../constants.ts";
-import { useAppDispatch, useAppSelector } from "../hooks/hooks.ts";
+import {
+  useAppDispatch,
+  useAppSelector,
+  useConnectToServer,
+} from "../hooks/hooks.ts";
 import { useDownloadProject, useExportDDS } from "../hooks/importExport.ts";
 import { DistrictSelectors } from "../store/district.ts";
 import { ModalsActions } from "../store/modals.ts";
@@ -40,6 +45,7 @@ function Menu() {
   const visibleMeshes = useAppSelector(OptionsSelectors.getVisibleMeshes);
   const exportDDS = useExportDDS();
   const saveProject = useDownloadProject();
+  const connectToServer = useConnectToServer();
   const hasPast = useAppSelector((state) => state.past.length > 0);
   const hasFuture = useAppSelector((state) => state.future.length > 0);
 
@@ -117,6 +123,14 @@ function Menu() {
               </DropdownItem>
             </Tooltip>
           </Dropdown>
+          <DropdownSeparator />
+          <DropdownItem
+            icon={<Router />}
+            onClick={() => connectToServer()}
+            disabled={!projectName}
+          >
+            Connect to server
+          </DropdownItem>
         </Dropdown>
 
         <Dropdown
