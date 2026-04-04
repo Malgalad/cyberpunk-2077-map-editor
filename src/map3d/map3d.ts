@@ -312,7 +312,6 @@ export class Map3D extends Map3DBase {
     const position = new THREE.Vector3().fromArray(district.position);
     const transformMin = new THREE.Vector4().fromArray(district.transMin);
 
-    this.markers.renderOrder = 99;
     this.markers.clear();
     this.markers.position.set(
       position.x + transformMin.x,
@@ -322,13 +321,15 @@ export class Map3D extends Map3DBase {
 
     for (const marker of this.markerData) {
       const sprite = new THREE.Sprite(spriteMaterial.clone());
-      sprite.scale.set(150 / this.camera.zoom, 150 / this.camera.zoom, 1);
+      const scale = (100 / this.camera.zoom) * window.devicePixelRatio;
+      sprite.scale.set(scale, scale, 1);
       sprite.material.rotation = Math.PI / 4;
       sprite.position.set(
         marker.position.x,
         marker.position.z,
         -marker.position.y,
       );
+      sprite.layers.set(EXCLUDE_AO_LAYER);
       sprite.userData.id = marker.id;
       this.markers.add(sprite);
     }
