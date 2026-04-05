@@ -5,6 +5,7 @@ import {
   useDrawAllDistricts,
   useDrawCurrentDistrict,
   useDrawDeletions,
+  useDrawMarkers,
   useDrawSelection,
   useDrawUpdates,
   useInitMap3D,
@@ -34,6 +35,7 @@ function App() {
   useDrawUpdates(map3d);
   useDrawDeletions(map3d);
   useDrawSelection(map3d);
+  useDrawMarkers(map3d);
 
   return (
     <Map3DContext value={map3d}>

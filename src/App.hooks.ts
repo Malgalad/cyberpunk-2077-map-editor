@@ -1,6 +1,7 @@
 import * as React from "react";
 import { ActionCreators } from "redux-undo";
 
+import { MARKER_ID } from "./constants.ts";
 import {
   useAppDispatch,
   useAppSelector,
@@ -347,4 +348,25 @@ export function useDrawSelection(map3d: Map3D | null) {
     if (!map3d) return;
     map3d.clearPointer();
   }, [map3d, tool]);
+}
+
+const emptyArr: TreeNode[] = [];
+export function useDrawMarkers(map3d: Map3D | null) {
+  const nodes = useAppSelector(NodesSelectors.getNodes);
+  const tree = useAppSelector(NodesSelectors.getNodesTree);
+  const markersTree = tree[MARKER_ID];
+  const markers =
+    markersTree && markersTree.type === "simpleRoot"
+      ? markersTree.children
+      : emptyArr;
+
+  React.useEffect(() => {
+    if (!map3d) return;
+
+    if (!markers.length) map3d.setMarkers([]);
+
+    const markerNodes = markers.map((marker) => nodes[marker.id]);
+
+    map3d.setMarkers(markerNodes);
+  }, [markers, nodes, map3d]);
 }

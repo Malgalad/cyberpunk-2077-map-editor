@@ -32,16 +32,6 @@ function Markers() {
       ? markersTree.children
       : emptyArr;
 
-  React.useEffect(() => {
-    if (!map3d) return;
-
-    if (!markers.length) map3d.setMarkers([]);
-
-    const markerNodes = markers.map((marker) => nodes[marker.id]);
-
-    map3d.setMarkers(markerNodes);
-  }, [markers, nodes, map3d]);
-
   const onCreate = (event: React.MouseEvent<HTMLButtonElement>) => {
     event.stopPropagation();
     if (!map3d) return;
