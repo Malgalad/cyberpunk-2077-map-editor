@@ -303,7 +303,7 @@ export class Map3D extends Map3DBase {
 
     for (const marker of this.markerData) {
       const sprite = new THREE.Sprite(spriteMaterial.clone());
-      const scale = (100 / this.camera.zoom) * window.devicePixelRatio;
+      const scale = 100 / this.camera.zoom / window.devicePixelRatio;
       sprite.scale.set(scale, scale, 1);
       sprite.material.rotation = Math.PI / 4;
       sprite.position.set(

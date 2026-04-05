@@ -131,7 +131,7 @@ function Markers() {
         </div>
       </div>
       {expanded && markers.length > 0 && (
-        <div className="pl-8 flex flex-row flex-wrap gap-0.5 bg-inherit">
+        <div className="px-2 flex flex-row flex-wrap gap-0.5 bg-inherit">
           {markers.map(renderMarker)}
         </div>
       )}
