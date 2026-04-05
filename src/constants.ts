@@ -10,6 +10,7 @@ import type {
 export const PROJECT_VERSION = 3 as const;
 export const MAX_DEPTH = 10 as const;
 export const TEMPLATE_ID = "@@TEMPLATE" as const;
+export const MARKER_ID = "@@MARKER" as const;
 export const AXII = [0, 1, 2] as const;
 export const AXIS_LABELS = ["X", "Y", "Z"] as const;
 export const PLANES: [Plane, Plane, Plane] = ["XY", "XZ", "YZ"];

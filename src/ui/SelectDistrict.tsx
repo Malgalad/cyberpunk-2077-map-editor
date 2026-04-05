@@ -15,7 +15,7 @@ import { getDistrictName } from "../utilities/district.ts";
 import { clsx } from "../utilities/utilities.ts";
 
 const getEdits = (index: NodesIndex[string]) => {
-  if (!index || index.treeNode.type !== "district") return null;
+  if (!index || index.treeNode.type !== "rootByTag") return null;
   const treeNode = index.treeNode;
   const additions = treeNode.create.reduce((acc, node) => acc + node.weight, 0);
   const updates = treeNode.update.reduce((acc, node) => acc + node.weight, 0);

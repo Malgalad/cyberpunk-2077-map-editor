@@ -165,7 +165,7 @@ function ImportExportNodesModal(props: ModalProps) {
 
     const parentTree = unIndex[node.parent || node.district].treeNode;
     const weight = (
-      parentTree?.type === "district"
+      parentTree?.type === "rootByTag"
         ? parentTree[node.tag]
         : parentTree.children
     ).find((n) => n.id === node.id)?.weight;

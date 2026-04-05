@@ -49,7 +49,7 @@ export function useLookAtNode(node: MapNode) {
       const tree = NodesSelectors.getNodesTree(state);
       const index = NodesSelectors.getNodesIndex(state);
       const districtTree = tree[district.name];
-      if (!districtTree || districtTree.type !== "district") return;
+      if (!districtTree || districtTree.type !== "rootByTag") return;
       const transforms = getTransformsFromSubtree(
         district,
         nodes,

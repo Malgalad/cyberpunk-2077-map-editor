@@ -132,14 +132,14 @@ export type TreeNode = {
 export type TreeRoot =
   | {
       id: string;
-      type: "district";
+      type: "rootByTag";
       create: TreeNode[];
       update: TreeNode[];
       delete: TreeNode[];
     }
   | {
       id: string;
-      type: "template";
+      type: "simpleRoot";
       children: TreeNode[];
     };
 export type NodesTree = Record<string, TreeRoot>;

@@ -24,6 +24,7 @@ import {
 import { DistrictSelectors } from "../store/district.ts";
 import { NodesSelectors } from "../store/nodes.ts";
 import AddNodesTemplates from "./AddNodes.Templates.tsx";
+import Markers from "./Markers.tsx";
 
 function AddNodes() {
   const nodes = useAppSelector(NodesSelectors.getNodes);
@@ -41,7 +42,7 @@ function AddNodes() {
   if (!district) return null;
 
   const root = tree[district.name];
-  const branches = root && root.type === "district" ? root.create : [];
+  const branches = root && root.type === "rootByTag" ? root.create : [];
 
   return (
     <>
@@ -50,6 +51,8 @@ function AddNodes() {
           className="grow flex flex-col overflow-auto bg-inherit"
           onClick={onDeselect}
         >
+          <Markers />
+
           {branches.length === 0 && (
             <div className="grow flex items-center justify-center italic">
               Add new nodes

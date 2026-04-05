@@ -20,7 +20,7 @@ function RemoveNodes() {
   const selected = useAppSelector(NodesSelectors.getSelectedNodes);
   const district = useAppSelector(DistrictSelectors.getDistrict);
   const root = tree[district?.name ?? "--"] ?? {};
-  const branches = root && root.type === "district" ? root.delete : [];
+  const branches = root && root.type === "rootByTag" ? root.delete : [];
 
   const onDeselect = useDeselectNode();
   const onDelete = useDeleteNode(selected);

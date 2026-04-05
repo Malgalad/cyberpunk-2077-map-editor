@@ -116,7 +116,7 @@ export function useConnectToServer() {
 
       const districtTree = tree[district.name];
       invariant(
-        districtTree.type === "district",
+        districtTree.type === "rootByTag",
         "Unexpected error: District tree has wrong type " + districtTree.type,
       );
       const markersGroup = districtTree.create.find(

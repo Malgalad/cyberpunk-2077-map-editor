@@ -173,7 +173,7 @@ const selectNode =
           ? index[start.parent].treeNode
           : index[start.district].treeNode;
         const siblings =
-          parentTree.type === "district"
+          parentTree.type === "rootByTag"
             ? parentTree[start.tag]
             : parentTree.children;
         const startIndex = siblings.findIndex((leaf) => leaf.id === startId);
@@ -217,7 +217,7 @@ const addDistrictNode =
     // will stay the same and trigger the event twice
     const districtTree = tree[district.name];
     invariant(
-      districtTree?.type === "district",
+      districtTree?.type === "rootByTag",
       "Unexpected error: district tree not found",
     );
 

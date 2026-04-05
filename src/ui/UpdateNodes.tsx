@@ -26,7 +26,7 @@ function UpdateNodes() {
   const selected = useAppSelector(NodesSelectors.getSelectedNodes);
   const district = useAppSelector(DistrictSelectors.getDistrict);
   const root = tree[district?.name ?? "--"] ?? {};
-  const branches = root && root.type === "district" ? root.update : [];
+  const branches = root && root.type === "rootByTag" ? root.update : [];
 
   const onDeselect = useDeselectNode();
   const onDelete = useDeleteNode(selected);

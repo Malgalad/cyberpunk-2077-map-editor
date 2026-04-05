@@ -1,7 +1,7 @@
 import { nanoid } from "nanoid";
 import * as THREE from "three";
 
-import { MAX_DEPTH, TEMPLATE_ID } from "../constants.ts";
+import { MARKER_ID, MAX_DEPTH, TEMPLATE_ID } from "../constants.ts";
 import type {
   District,
   InstancedMeshTransforms,
@@ -127,9 +127,9 @@ export function resolveParent(selected?: MapNode) {
 }
 
 const buildRoot = (id: string): TreeRoot =>
-  id === TEMPLATE_ID
-    ? { id, type: "template", children: [] }
-    : { id, type: "district", create: [], update: [], delete: [] };
+  id === TEMPLATE_ID || id === MARKER_ID
+    ? { id, type: "simpleRoot", children: [] }
+    : { id, type: "rootByTag", create: [], update: [], delete: [] };
 const getWeight = (node: MapNode) => 1 + (node.pattern?.count ?? 0);
 
 export function buildSupportStructures(nodes: NodesMap) {
@@ -167,7 +167,7 @@ export function buildSupportStructures(nodes: NodesMap) {
       depth: parentTree.type === "group" ? parentTree.depth + 1 : 0,
     };
 
-    if (parentTree.type === "district") {
+    if (parentTree.type === "rootByTag") {
       parentTree[node.tag].push(treeNode);
     } else {
       parentTree.children.push(treeNode);

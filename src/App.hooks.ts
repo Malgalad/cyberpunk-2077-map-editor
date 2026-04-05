@@ -248,7 +248,7 @@ export function useDrawAdditions(map3d: Map3D | null) {
   const additions = React.useMemo<TreeNode[]>(() => {
     if (!district || !tree[district.name]) return emptyArray;
     const root = tree[district.name];
-    invariant(root.type === "district", "Unexpected tree node type");
+    invariant(root.type === "rootByTag", "Unexpected tree node type");
     return root.create;
   }, [district, tree]);
 
@@ -268,7 +268,7 @@ export function useDrawUpdates(map3d: Map3D | null) {
   const updates = React.useMemo<TreeNode[]>(() => {
     if (!district || !tree[district.name]) return emptyArray;
     const root = tree[district.name];
-    invariant(root.type === "district", "Unexpected tree node type");
+    invariant(root.type === "rootByTag", "Unexpected tree node type");
     return root.update;
   }, [district, tree]);
 
@@ -288,7 +288,7 @@ export function useDrawDeletions(map3d: Map3D | null) {
   const deletions = React.useMemo<TreeNode[]>(() => {
     if (!district || !tree[district.name]) return emptyArray;
     const root = tree[district.name];
-    invariant(root.type === "district", "Unexpected tree node type");
+    invariant(root.type === "rootByTag", "Unexpected tree node type");
     return root.delete;
   }, [district, tree]);
 

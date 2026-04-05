@@ -93,7 +93,7 @@ export default function ManageTemplatesModal() {
   const nodes = useAppSelector(NodesSelectors.getNodes);
   const index = useAppSelector(NodesSelectors.getNodesIndex);
   const treeNode = index[TEMPLATE_ID].treeNode;
-  invariant(treeNode.type === "template", "Invalid treeNode type");
+  invariant(treeNode.type === "simpleRoot", "Invalid treeNode type");
   const [selected, setSelected] = React.useState<string[]>([]);
 
   const reopen = () => dispatch(ModalsActions.openModal("manage-templates"));

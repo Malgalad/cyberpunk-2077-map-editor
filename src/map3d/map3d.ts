@@ -33,14 +33,6 @@ const virtualEditsMaterial: Record<PatternView, THREE.Material> = {
   wireframe: wireframeMaterial,
   solid: patternMaterial,
 };
-const isMarker = ({ scale: { w } }: InstancedMeshTransforms) => w === 0;
-const hideMarkers = (transform: InstancedMeshTransforms) =>
-  isMarker(transform)
-    ? {
-        ...transform,
-        scale: { x: 0, y: 0, z: 0, w: 0 },
-      }
-    : transform;
 
 export class Map3D extends Map3DBase {
   private readonly raycaster: THREE.Raycaster;
@@ -64,7 +56,7 @@ export class Map3D extends Map3DBase {
     null;
   private helper = new AxesHelper(50);
   private markers = new THREE.Group();
-  private markerData: InstancedMeshTransforms[] = [];
+  private markerData: MapNode[] = [];
   private uncolorList: Array<[THREE.InstancedMesh, string, THREE.Color]> = [];
 
   constructor(canvas: HTMLCanvasElement, store: AppStore) {
@@ -307,17 +299,7 @@ export class Map3D extends Map3DBase {
   }
 
   private drawMarkers() {
-    const district = this.currentDistrict?.userData.district;
-    if (!district) return;
-    const position = new THREE.Vector3().fromArray(district.position);
-    const transformMin = new THREE.Vector4().fromArray(district.transMin);
-
     this.markers.clear();
-    this.markers.position.set(
-      position.x + transformMin.x,
-      position.z + transformMin.z,
-      -position.y - transformMin.y,
-    );
 
     for (const marker of this.markerData) {
       const sprite = new THREE.Sprite(spriteMaterial.clone());
@@ -325,9 +307,9 @@ export class Map3D extends Map3DBase {
       sprite.scale.set(scale, scale, 1);
       sprite.material.rotation = Math.PI / 4;
       sprite.position.set(
-        marker.position.x,
-        marker.position.z,
-        -marker.position.y,
+        marker.position[0],
+        marker.position[2],
+        -marker.position[1],
       );
       sprite.layers.set(EXCLUDE_AO_LAYER);
       sprite.userData.id = marker.id;
@@ -389,13 +371,12 @@ export class Map3D extends Map3DBase {
     requestAnimationFrame(() => this.render());
   }
 
-  setAdditions({ district, transforms }: DistrictWithTransforms) {
-    this.markerData = transforms.filter(isMarker);
+  setMarkers(markers: MapNode[]) {
+    this.markerData = markers;
+  }
 
-    const split = partition(
-      transforms.map(hideMarkers),
-      (transform) => `${transform.virtual}`,
-    );
+  setAdditions({ district, transforms }: DistrictWithTransforms) {
+    const split = partition(transforms, (transform) => `${transform.virtual}`);
 
     this.additions = createDistrictMesh(
       this.additions,

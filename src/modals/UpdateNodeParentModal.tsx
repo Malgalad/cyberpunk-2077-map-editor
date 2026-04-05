@@ -53,7 +53,7 @@ function UpdateNodeParentModal(props: ModalProps) {
 
   const root = tree[currentDistrict];
   const branches = root
-    ? root.type === "district"
+    ? root.type === "rootByTag"
       ? root[node.tag]
       : root.children
     : [];

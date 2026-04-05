@@ -32,7 +32,7 @@ function AddNodesTemplates() {
   const invalidate = useInvalidateTransformsCache();
   const templatesTree = tree[TEMPLATE_ID];
   const templates =
-    templatesTree && templatesTree.type === "template"
+    templatesTree && templatesTree.type === "simpleRoot"
       ? templatesTree.children
       : [];
 

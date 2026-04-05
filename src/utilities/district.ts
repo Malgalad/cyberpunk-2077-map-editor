@@ -77,8 +77,8 @@ export function getFinalDistrictTransformsFromNodes(
   if (!treeNode) return baseTransforms;
 
   invariant(
-    treeNode.type === "district",
-    "District tree must have a district type.",
+    treeNode.type === "rootByTag",
+    "District tree root must have children separated by tag.",
   );
   const additions = getTransformsFromSubtree(district, nodes, treeNode.create);
   const updates = getTransformsFromSubtree(district, nodes, treeNode.update);

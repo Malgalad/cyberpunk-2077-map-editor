@@ -80,9 +80,9 @@ export const roadsMaterial2 = new THREE.MeshBasicMaterial({
   color: 0x09b3f9,
   opacity: 0.2,
   transparent: true,
+  depthWrite: false,
+  depthTest: false,
 });
-roadsMaterial2.depthTest = false;
-roadsMaterial2.depthWrite = false;
 
 export const roadsBordersMaterial = new THREE.MeshBasicMaterial({
   color: 0x09b3f9,
