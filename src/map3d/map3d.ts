@@ -23,6 +23,7 @@ import {
   hiddenMaterial,
   patternMaterial,
   spriteMaterial,
+  spriteMaterial2,
   staticMaterial,
   wireframeMaterial,
 } from "./materials.ts";
@@ -305,7 +306,6 @@ export class Map3D extends Map3DBase {
       const sprite = new THREE.Sprite(spriteMaterial.clone());
       const scale = 100 / this.camera.zoom / window.devicePixelRatio;
       sprite.scale.set(scale, scale, 1);
-      sprite.material.rotation = Math.PI / 4;
       sprite.position.set(
         marker.position[0],
         marker.position[2],
@@ -313,7 +313,9 @@ export class Map3D extends Map3DBase {
       );
       sprite.layers.set(EXCLUDE_AO_LAYER);
       sprite.userData.id = marker.id;
-      this.markers.add(sprite);
+      const spriteCopy = sprite.clone();
+      spriteCopy.material = spriteMaterial2.clone();
+      this.markers.add(sprite, spriteCopy);
     }
   }
 

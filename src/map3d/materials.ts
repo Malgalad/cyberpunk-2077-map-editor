@@ -102,6 +102,14 @@ export const waterMaterial = new THREE.MeshLambertMaterial({
 
 export const spriteMaterial = new THREE.SpriteMaterial({
   color: 0x00ffff,
+  rotation: Math.PI / 4,
+});
+
+export const spriteMaterial2 = new THREE.SpriteMaterial({
+  color: 0x00ffff,
+  rotation: Math.PI / 4,
+  opacity: 0.33,
+  transparent: true,
   depthWrite: false,
   depthTest: false,
 });

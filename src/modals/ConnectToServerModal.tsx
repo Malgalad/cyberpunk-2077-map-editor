@@ -20,7 +20,7 @@ function ConnectToServerModal(props: ModalProps) {
         value={value}
         onChange={(event) => setValue(event.target.value)}
         autoFocus={true}
-        className="mt-2"
+        className="mt-2 w-64"
         placeholder="ID"
       />
     </Modal>
