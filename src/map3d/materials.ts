@@ -95,6 +95,44 @@ export const metroMaterial = new THREE.MeshBasicMaterial({
   opacity: 0.67,
   transparent: true,
 });
+export const experimentalMetroMaterial = new THREE.ShaderMaterial({
+  transparent: true,
+  vertexColors: true,
+  vertexShader: `
+    uniform vec3 white;
+    uniform float cameraZoom;
+    varying vec3 vColor;
+    
+    void main() {
+        vColor = color;
+        vec4 worldPosition = modelMatrix * vec4(position, 1.0);
+        
+        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+    }
+    `,
+  fragmentShader: `
+    uniform vec3 white;
+    uniform float cameraZoom;
+    varying vec3 vColor;
+    
+    void main() {
+        if (cameraZoom < 5.0 && (vColor.r > 0.5 || vColor.g > 0.5)) {
+            discard;
+        }
+        if (cameraZoom >= 5.0 && cameraZoom < 15.0 && (vColor.r > 0.5 || vColor.b > 0.5)) {
+            discard;
+        }
+        if (cameraZoom >= 15.0 && (vColor.b > 0.5 || vColor.g > 0.5)) {
+            discard;
+        }
+        gl_FragColor = vec4(white, 0.67);
+    }
+    `,
+  uniforms: {
+    white: { value: new THREE.Color(0xffffff) },
+    cameraZoom: { value: 1.0 },
+  },
+});
 
 export const waterMaterial = new THREE.MeshLambertMaterial({
   color: 0x003779,

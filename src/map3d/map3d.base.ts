@@ -9,6 +9,7 @@ import { OutputPass } from "three/examples/jsm/postprocessing/OutputPass.js";
 import type { AppStore, RenderEffects } from "../types/types.ts";
 import { downloadBlob } from "../utilities/fileHelpers.ts";
 import { EXCLUDE_AO_LAYER, MAP_SIZE } from "./constants.ts";
+import { experimentalMetroMaterial } from "./materials.ts";
 
 export const frustumSize = 8_000;
 const readSS = () => JSON.parse(sessionStorage.getItem("camera") || "null");
@@ -157,6 +158,7 @@ export class Map3DBase {
 
   private zoomChanged = () => {
     this.onZoomChangeListeners.forEach((callback) => callback(this.cameraZoom));
+    experimentalMetroMaterial.uniforms.cameraZoom.value = this.camera.zoom;
   };
 
   onZoomChange(callback: (zoom: number) => void) {

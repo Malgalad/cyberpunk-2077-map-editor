@@ -2,11 +2,12 @@ import * as THREE from "three";
 
 import { KNOWN_MESHES } from "../constants.ts";
 import mapData from "../mapData.min.json";
-import { STATIC_ASSETS } from "./constants.js";
+import { EXCLUDE_AO_LAYER, STATIC_ASSETS } from "./constants.js";
 import { importDRC } from "./importDRC.ts";
 import * as materials from "./materials.ts";
 
 const rotateCoordinates = ([x, y, z, w]: number[]) => [x, z, -y, w];
+const excludedAO = ["3dmap_metro"];
 
 async function importMesh(
   name: keyof (typeof mapData)["meshes"],
@@ -27,6 +28,10 @@ async function importMesh(
     new THREE.Quaternion(...rotateCoordinates(data.orientation)),
   );
 
+  if (excludedAO.includes(name)) {
+    mesh.layers.set(EXCLUDE_AO_LAYER);
+  }
+
   return mesh;
 }
 
@@ -35,7 +40,7 @@ const materialsMap: Record<string, THREE.Material | THREE.Material[]> = {
   "3dmap_cliffs": materials.terrainMaterial,
   "3dmap_roads": [materials.roadsMaterial, materials.roadsMaterial2],
   "3dmap_roads_borders": materials.roadsBordersMaterial,
-  "3dmap_metro": materials.metroMaterial,
+  "3dmap_metro": materials.experimentalMetroMaterial,
   water_mesh: materials.waterMaterial,
   northoak_sign_a: materials.statuesMaterial,
   monument_ave_pyramid: materials.statuesMaterial,
