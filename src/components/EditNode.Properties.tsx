@@ -193,9 +193,7 @@ function EditNodeProperties({ selected, mode }: EditNodePropertiesProps) {
               value={node.scale[axis]}
               onChange={changeScale(axis)}
               min={0}
-              max={
-                node.type === "instance" ? (district?.cubeSize ?? 0) * 2 : 100
-              }
+              max={(district?.cubeSize ?? 0) * 2}
             />
           ))}
         </div>

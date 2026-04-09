@@ -11,7 +11,7 @@ import DropdownItem from "../components/common/Dropdown/Dropdown.Item.tsx";
 import DropdownSeparator from "../components/common/Dropdown/Dropdown.Separator.tsx";
 import Dropdown from "../components/common/Dropdown/Dropdown.tsx";
 import Tooltip from "../components/common/Tooltip.tsx";
-import { TEMPLATE_ID } from "../constants.ts";
+import { MARKER_ID, TEMPLATE_ID } from "../constants.ts";
 import { useAppDispatch, useAppSelector } from "../hooks/hooks.ts";
 import { useInvalidateTransformsCache } from "../hooks/nodes.hooks.ts";
 import { useMap3D } from "../map3d/map3d.context.ts";
@@ -35,6 +35,9 @@ function AddNodesTemplates() {
     templatesTree && templatesTree.type === "simpleRoot"
       ? templatesTree.children
       : [];
+  const isMarkerSelected = selected.some(
+    (id) => nodes[id]?.district === MARKER_ID,
+  );
 
   if (!district) return null;
 
@@ -126,6 +129,7 @@ function AddNodesTemplates() {
         }
         direction="left"
         align="bottom"
+        disabled={isMarkerSelected}
       >
         {templates.length === 0 && (
           <DropdownItem disabled>No templates</DropdownItem>
@@ -150,7 +154,7 @@ function AddNodesTemplates() {
           <Button
             className="border-none"
             onClick={onCreate}
-            disabled={selected.length !== 1}
+            disabled={selected.length !== 1 || isMarkerSelected}
           >
             <ClipboardPlus />
           </Button>

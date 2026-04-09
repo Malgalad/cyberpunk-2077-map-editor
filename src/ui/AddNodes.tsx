@@ -12,6 +12,7 @@ import Dropdown from "../components/common/Dropdown/Dropdown.tsx";
 import Tooltip from "../components/common/Tooltip.tsx";
 import EditNode from "../components/EditNode.tsx";
 import Node from "../components/Node.tsx";
+import { MARKER_ID } from "../constants.ts";
 // import { MAX_DEPTH } from "../constants.ts";
 import { useAppSelector } from "../hooks/hooks.ts";
 import {
@@ -43,6 +44,9 @@ function AddNodes() {
 
   const root = tree[district.name];
   const branches = root && root.type === "rootByTag" ? root.create : [];
+  const isMarkerSelected = selected.some(
+    (id) => nodes[id]?.district === MARKER_ID,
+  );
 
   return (
     <>
@@ -101,7 +105,7 @@ function AddNodes() {
             <Button
               className="border-none"
               onClick={onAddInstance}
-              disabled={selected.length > 1}
+              disabled={selected.length > 1 || isMarkerSelected}
             >
               <FilePlus />
             </Button>
@@ -113,11 +117,7 @@ function AddNodes() {
               <Button
                 className="border-none tooltip"
                 onClick={onAddGroup}
-                disabled={
-                  selected.length > 1 /* ||
-                (nodes[selected[0]]?.type === "group" &&
-                  cache[selected[0].id].level >= MAX_DEPTH - 1)*/
-                }
+                disabled={selected.length > 1 || isMarkerSelected}
                 data-tooltip="Add folder"
                 data-flow="left"
               >
@@ -125,6 +125,7 @@ function AddNodes() {
               </Button>
             }
             indent={false}
+            disabled={selected.length > 1 || isMarkerSelected}
             direction="top"
             align="center"
           >
@@ -134,6 +135,13 @@ function AddNodes() {
               data-tooltip="Add wrapper"
               data-flow="left"
               onClick={onWrapNode}
+              disabled={
+                selected.length === 0 ||
+                isMarkerSelected ||
+                !selected.every(
+                  (id) => nodes[id].parent === nodes[selected[0]].parent,
+                )
+              }
             >
               {""}
             </DropdownItem>

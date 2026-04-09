@@ -60,7 +60,7 @@ function Dropdown({
             disabled,
             className: clsx(
               trigger.props.className,
-              "hover:bg-slate-600",
+              !disabled && "hover:bg-slate-600",
               isOpen && "bg-slate-600",
             ),
           })}
