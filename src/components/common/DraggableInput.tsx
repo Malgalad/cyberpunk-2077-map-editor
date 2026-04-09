@@ -29,45 +29,14 @@ export default function DraggableInput(
   } = props;
   const [value, setValue] = React.useState(`${props.value}`);
   const [isDragging, setIsDragging] = React.useState(false);
+  const [sliding, setSliding] = React.useState(false);
   const [startY, setStartY] = React.useState(0);
-  const [startValue, setStartValue] = React.useState("0");
+  const [startValue, setStartValue] = React.useState(value);
   const inputRef = React.useRef<HTMLInputElement>(null);
-
-  const handleMouseDown = React.useCallback(
-    (event: React.MouseEvent<HTMLInputElement, MouseEvent>) => {
-      onMouseDown?.(event);
-      if (props.disabled || props.readOnly) return;
-      setIsDragging(true);
-      setStartY(event.clientY);
-      setStartValue(`${props.value}`);
-      document.body.style.cursor = "ns-resize";
-    },
-    [props.value, props.disabled, props.readOnly, onMouseDown],
-  );
-
-  const handleMouseMove = React.useCallback(
-    (event: MouseEvent) => {
-      if (!isDragging) return;
-
-      const deltaY = startY - event.clientY;
-      const value = Math.min(
-        parseFloat(`${max}`),
-        Math.max(
-          parseFloat(`${min}`),
-          parseFloat(startValue) + deltaY * parseFloat(`${step}`),
-        ),
-      );
-      const eventLike = { target: { value: toPrecision(value) } };
-      setValue(eventLike.target.value);
-      onChange?.(eventLike as React.ChangeEvent<HTMLInputElement>);
-    },
-    [isDragging, max, min, onChange, startValue, startY, step],
-  );
-
-  const handleMouseUp = React.useCallback(() => {
-    setIsDragging(false);
-    document.body.style.cursor = "default";
-  }, []);
+  const timerRef = React.useRef<number | null>(null);
+  const valueRef = React.useRef(value);
+  const valueRef2 = React.useRef(value);
+  const tRef = React.useRef(0);
 
   const handleChange = React.useCallback(
     (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -76,6 +45,68 @@ export default function DraggableInput(
     },
     [onChange],
   );
+
+  const handleMouseDown = React.useCallback(
+    (event: React.MouseEvent<HTMLInputElement, MouseEvent>) => {
+      onMouseDown?.(event);
+      if (props.disabled || props.readOnly) return;
+      setIsDragging(true);
+      setSliding(event.getModifierState("Control"));
+      setStartY(event.clientY);
+      setStartValue(value);
+    },
+    [value, props.disabled, props.readOnly, onMouseDown],
+  );
+
+  const handleMouseMove = React.useCallback(
+    (event: MouseEvent) => {
+      if (!isDragging) return;
+
+      event.preventDefault();
+      const deltaY = startY - event.clientY;
+      if (sliding) {
+        if (timerRef.current !== null) clearInterval(timerRef.current);
+        tRef.current = performance.now();
+        valueRef.current = valueRef2.current;
+        timerRef.current = window.setInterval(() => {
+          const dt = performance.now() - tRef.current;
+          const value = Math.min(
+            parseFloat(`${max}`),
+            Math.max(
+              parseFloat(`${min}`),
+              parseFloat(valueRef.current) +
+                (deltaY / 250) * dt * parseFloat(`${step}`),
+            ),
+          );
+          const eventLike = {
+            target: { value: toPrecision(value) },
+          } as React.ChangeEvent<HTMLInputElement>;
+          valueRef2.current = eventLike.target.value;
+          handleChange(eventLike);
+        }, 50);
+      } else {
+        const value = Math.min(
+          parseFloat(`${max}`),
+          Math.max(
+            parseFloat(`${min}`),
+            parseFloat(startValue) + deltaY * parseFloat(`${step}`),
+          ),
+        );
+        const eventLike = {
+          target: { value: toPrecision(value) },
+        } as React.ChangeEvent<HTMLInputElement>;
+        handleChange(eventLike);
+      }
+    },
+    [isDragging, max, min, handleChange, startValue, startY, step, sliding],
+  );
+
+  const handleMouseUp = React.useCallback(() => {
+    setIsDragging(false);
+    setSliding(false);
+    if (timerRef.current !== null) clearInterval(timerRef.current);
+    timerRef.current = null;
+  }, []);
 
   React.useEffect(() => {
     if (isDragging) {
@@ -95,6 +126,8 @@ export default function DraggableInput(
       trimmed === "-" ||
       trimmed.endsWith(decimalSeparator) ||
       trimmed.endsWith("0");
+    // if value is not a valid number, props.value will be 0
+    // BUT if we're editing this field, don't use it and wait for a valid value
     if (notValidNumber && document.activeElement === inputRef.current) return;
     if (typeof props.value === "number" && toString(props.value) !== trimmed) {
       setValue(toString(props.value));
