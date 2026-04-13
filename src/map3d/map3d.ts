@@ -6,9 +6,7 @@ import { ProjectSelectors } from "../store/project.ts";
 import type {
   AppStore,
   DistrictWithTransforms,
-  InstancedMeshTransforms,
   MapNode,
-  Modes,
   PatternView,
 } from "../types/types.ts";
 import { partition } from "../utilities/utilities.ts";
@@ -17,6 +15,7 @@ import * as COLORS from "./colors.ts";
 import { EXCLUDE_AO_LAYER } from "./constants.ts";
 import { createDistrictMesh } from "./createDistrictMesh.ts";
 import { Map3DBase } from "./map3d.base.ts";
+import Map3DState from "./map3d.state.ts";
 import {
   additionsMaterial,
   buildingsMaterial,
@@ -36,7 +35,7 @@ const virtualEditsMaterial: Record<PatternView, THREE.Material> = {
 };
 
 export class Map3D extends Map3DBase {
-  private readonly raycaster: THREE.Raycaster;
+  private readonly state: Map3DState;
   private readonly meshes: Record<
     string,
     THREE.Mesh | THREE.Mesh[] | undefined
@@ -48,23 +47,15 @@ export class Map3D extends Map3DBase {
   private additionsVirtual: THREE.InstancedMesh | null = null;
   private updates: THREE.InstancedMesh | null = null;
   private deletions: THREE.InstancedMesh | null = null;
-  private selected: string[] = [];
   private canvasRect: DOMRect | null = null;
-  private startedPointingAt:
-    | [InstancedMeshTransforms, THREE.InstancedMesh]
-    | null = null;
-  private pointingAt: [InstancedMeshTransforms, THREE.InstancedMesh] | null =
-    null;
+  private clickOn: THREE.Intersection | undefined;
   private helper = new AxesHelper(50);
   private markers = new THREE.Group();
   private markerData: MapNode[] = [];
-  private uncolorList: Array<[THREE.InstancedMesh, string, THREE.Color]> = [];
 
   constructor(canvas: HTMLCanvasElement, store: AppStore) {
     super(canvas, store);
 
-    this.raycaster = new THREE.Raycaster();
-    this.raycaster.layers.enable(EXCLUDE_AO_LAYER);
     this.canvasRect = this.canvas.getBoundingClientRect();
 
     this.meshes = setupTerrain(this.loadResource);
@@ -75,18 +66,25 @@ export class Map3D extends Map3DBase {
     this.canvas.addEventListener("mousedown", this.onMouseDown);
     this.canvas.addEventListener("mousemove", this.onMouseMove);
     this.canvas.addEventListener("mouseleave", this.onMouseLeave);
-    this.canvas.addEventListener("click", this.onClick);
+    this.canvas.addEventListener("click", this.onMouseUp);
+
+    this.state = new Map3DState(store);
+    this.state.addEventListener("update", () =>
+      requestAnimationFrame(() => this.render()),
+    );
+    this.addMesh(this.state.group);
 
     this.render();
   }
 
   dispose() {
     super.dispose();
+    this.state.dispose();
 
     this.canvas.removeEventListener("mousedown", this.onMouseDown);
     this.canvas.removeEventListener("mousemove", this.onMouseMove);
     this.canvas.removeEventListener("mouseleave", this.onMouseLeave);
-    this.canvas.removeEventListener("click", this.onClick);
+    this.canvas.removeEventListener("mouseup", this.onMouseUp);
 
     this.helper.dispose();
     this.visibleDistricts.children.forEach((child) =>
@@ -126,148 +124,63 @@ export class Map3D extends Map3DBase {
     return OptionsSelectors.getEffects(this.store.getState());
   }
 
-  private onMouseDown = (event: MouseEvent) => {
-    if (event.button !== 0 || this.tool !== "select") return;
-    this.startedPointingAt = this.pointingAt;
-  };
-
-  private onMouseMove = (event: MouseEvent) => {
+  private getPointer(event: MouseEvent) {
     const { left, top, width, height } = this.canvasRect!;
-    const mode = this.mode;
-    const tool = this.tool;
-
-    if (tool !== "select") return;
-
-    const pointer = new THREE.Vector2(
+    return new THREE.Vector2(
       ((event.clientX - left) / width) * 2 - 1,
       -((event.clientY - top) / height) * 2 + 1,
     );
+  }
 
-    if (mode === "create" && !this.additions) return;
-    if (mode === "update" && !this.currentDistrict) return;
-    if (mode === "delete" && !this.currentDistrict) return;
+  private onMouseDown = (event: MouseEvent) => {
+    if (event.button !== 0 || this.tool !== "select") return;
+    this.state.intersect(this.getPointer(event), this.camera);
+    this.clickOn = this.state.findIntersection();
+  };
 
-    const meshes =
-      mode === "create"
-        ? [this.additions!]
-        : mode === "update"
-          ? [this.updates!, this.currentDistrict!]
-          : event.shiftKey
-            ? [this.deletions!, this.currentDistrict!]
-            : [this.currentDistrict!];
-
-    this.raycaster.setFromCamera(pointer, this.camera);
-    const intersection = this.raycaster.intersectObjects(meshes);
-    const previousPointingAt = this.pointingAt;
-
-    if (intersection.length > 0) {
-      const index = intersection[0].instanceId;
-
-      if (index !== undefined) {
-        const mesh = intersection[0].object;
-        if (!("ids" in mesh.userData)) return;
-        const instance = intersection[0].object.userData.instances[index];
-
-        this.pointingAt = [instance, mesh as THREE.InstancedMesh];
-      }
-    } else {
-      this.pointingAt = null;
-    }
-
-    if (this.pointingAt !== previousPointingAt)
-      requestAnimationFrame(() => this.render());
+  private onMouseMove = (event: MouseEvent) => {
+    this.state.intersect(this.getPointer(event), this.camera);
   };
 
   private onMouseLeave = () => {
-    this.pointingAt = null;
-    requestAnimationFrame(() => this.render());
+    this.state.intersect(new THREE.Vector2(9999, 9999), this.camera);
   };
 
-  private onClick = () => {
+  private onMouseUp = (event: MouseEvent) => {
+    if (this.tool !== "select") return;
+
     const mode = this.mode;
+    this.state.intersect(this.getPointer(event), this.camera);
+    const intersection = this.state.findIntersection();
 
-    if (this.startedPointingAt !== this.pointingAt || this.tool !== "select")
-      return;
-
-    if (this.pointingAt == null) {
+    if (!this.clickOn && !intersection) {
       this.store.dispatch(NodesActions.selectNode(null));
       return;
     }
 
-    const [{ id, index }, mesh] = this.pointingAt;
+    if (
+      !intersection ||
+      this.clickOn?.object !== intersection.object ||
+      this.clickOn?.instanceId !== intersection.instanceId
+    )
+      return;
+
+    const { object, instanceId } = intersection;
+    if (!instanceId) return;
 
     if (
       mode === "create" ||
-      (mode === "update" && mesh === this.updates) ||
-      (mode === "delete" && mesh === this.deletions)
+      (mode === "update" && object.name === "updates") ||
+      (mode === "delete" && object.name === "deletions")
     ) {
+      const { id } = object.userData.instances[instanceId];
       this.store.dispatch(NodesActions.selectNode(id));
-    } else if (mode === "delete" && mesh === this.currentDistrict) {
-      this.store.dispatch(NodesActions.addDistrictNode(index, "delete"));
-    } else if (mode === "update" && mesh === this.currentDistrict) {
-      this.store.dispatch(NodesActions.addDistrictNode(index, "update"));
+    } else if (mode === "delete" && object.name === "currentDistrict") {
+      this.store.dispatch(NodesActions.addDistrictNode(instanceId, "delete"));
+    } else if (mode === "update" && object.name === "currentDistrict") {
+      this.store.dispatch(NodesActions.addDistrictNode(instanceId, "update"));
     }
   };
-
-  private refreshInstancesColors() {
-    const mode = this.mode;
-
-    const meshes: Record<Modes, THREE.InstancedMesh | null> = {
-      create: this.additions,
-      update: this.updates,
-      delete: this.deletions,
-    };
-
-    for (const [mesh, id, color] of this.uncolorList) {
-      COLORS.setColorForId(mesh, id, color);
-    }
-    this.uncolorList = [];
-
-    const applyColor = (
-      mesh: THREE.InstancedMesh,
-      id: string,
-      variant: "selected" | "pointingAt",
-    ) => {
-      const color = COLORS.getColor(mesh === this.currentDistrict, mode);
-      COLORS.setColorForId(mesh, id, color[variant]);
-
-      this.uncolorList.push([mesh, id, color.idle]);
-    };
-
-    if (meshes[mode]) {
-      if (this.selected.length) {
-        const mesh = meshes[mode];
-
-        for (const id of this.selected) {
-          applyColor(mesh, id, "selected");
-        }
-
-        if (mode === "create" && this.additionsVirtual) {
-          const mesh = this.additionsVirtual;
-
-          for (const id of this.selected) {
-            if (!mesh.userData.ids[id]) continue;
-            applyColor(mesh, id, "selected");
-          }
-        }
-
-        if (mode === "create" && this.markers.children.length) {
-          for (const child of this.markers.children) {
-            const sprite = child as THREE.Sprite;
-            sprite.material.color.set(
-              this.selected.includes(sprite.userData.id) ? 0xff88ff : 0x00ffff,
-            );
-          }
-        }
-      }
-
-      if (this.pointingAt !== null) {
-        const [{ id }, mesh] = this.pointingAt;
-        if (this.selected.includes(id)) return;
-        applyColor(mesh, id, "pointingAt");
-      }
-    }
-  }
 
   /** Apply selected material to virtual geometry */
   private refreshMaterials() {
@@ -299,7 +212,7 @@ export class Map3D extends Map3DBase {
     }
   }
 
-  private drawMarkers() {
+  private renderMarkers() {
     this.markers.clear();
 
     for (const marker of this.markerData) {
@@ -319,12 +232,6 @@ export class Map3D extends Map3DBase {
     }
   }
 
-  clearPointer() {
-    this.pointingAt = null;
-    this.startedPointingAt = null;
-    requestAnimationFrame(() => this.render());
-  }
-
   lookAtCurrentDistrict() {
     if (!this.currentDistrictBoundaries) return;
 
@@ -334,15 +241,10 @@ export class Map3D extends Map3DBase {
     requestAnimationFrame(() => this.render());
   }
 
-  selectInstances(ids: string[]) {
-    this.selected = ids;
-
-    requestAnimationFrame(() => this.render());
-  }
-
   setHelper(node?: MapNode, relative?: boolean) {
     if (!node) {
       this.helper.visible = false;
+      requestAnimationFrame(() => this.render());
       return;
     }
 
@@ -385,19 +287,17 @@ export class Map3D extends Map3DBase {
       district,
       split["false"] ?? [],
       additionsMaterial,
-      this.removeMesh,
-      this.addMesh,
       COLORS.ADDITIONS.default,
     );
+    this.state.setMesh("additions", this.additions);
     this.additionsVirtual = createDistrictMesh(
       this.additionsVirtual,
       district,
       split["true"] ?? [],
       virtualEditsMaterial[this.patternView],
-      this.removeMesh,
-      this.addMesh,
       COLORS.ADDITIONS.default,
     );
+    this.state.setMesh("additionsVirtual", this.additionsVirtual);
 
     requestAnimationFrame(() => this.render());
   }
@@ -408,11 +308,10 @@ export class Map3D extends Map3DBase {
       district,
       transforms,
       wireframeMaterial,
-      this.removeMesh,
-      this.addMesh,
       COLORS.DELETIONS.default,
     );
     this.deletions.layers.set(EXCLUDE_AO_LAYER);
+    this.state.setMesh("deletions", this.deletions);
 
     requestAnimationFrame(() => this.render());
   }
@@ -426,10 +325,9 @@ export class Map3D extends Map3DBase {
       district,
       transforms,
       buildingsMaterial,
-      this.removeMesh,
-      this.addMesh,
       COLORS.BUILDINGS.default,
     );
+    this.state.setMesh("currentDistrict", this.currentDistrict);
 
     const minMaxBox = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1));
     minMaxBox.scale.set(
@@ -455,10 +353,9 @@ export class Map3D extends Map3DBase {
       district,
       transforms,
       additionsMaterial,
-      this.removeMesh,
-      this.addMesh,
       COLORS.UPDATES.default,
     );
+    this.state.setMesh("updates", this.updates);
 
     requestAnimationFrame(() => this.render());
   }
@@ -514,21 +411,15 @@ export class Map3D extends Map3DBase {
       }
     }
     if (objectsToAdd.length > 0) this.visibleDistricts.add(...objectsToAdd);
+    this.state.setMesh("visibleDistricts", this.visibleDistricts);
 
     requestAnimationFrame(() => this.render());
   }
 
   reset() {
-    this.removeMesh(this.additions);
-    this.removeMesh(this.additionsVirtual);
-    this.removeMesh(this.currentDistrict);
-    this.removeMesh(this.currentDistrictBoundaries);
-    this.removeMesh(this.deletions);
-    this.removeMesh(this.updates);
+    this.state.clear();
     this.markers.clear();
-    this.uncolorList = [];
-    this.pointingAt = null;
-    this.startedPointingAt = null;
+    this.clickOn = undefined;
 
     for (const object3d of this.visibleDistricts.children) {
       (object3d as THREE.InstancedMesh).geometry.dispose();
@@ -540,8 +431,8 @@ export class Map3D extends Map3DBase {
   render() {
     this.toggleControls(this.tool === "move");
     this.toggleEffects(this.effects);
-    this.drawMarkers();
-    this.refreshInstancesColors();
+    this.renderMarkers();
+    this.state?.render();
     this.refreshMaterials();
     this.refreshMeshes();
     super.render();
@@ -555,8 +446,9 @@ export class Map3D extends Map3DBase {
     if (Array.isArray(terrain))
       throw new Error("Multiple terrain meshes found");
 
-    this.raycaster.setFromCamera(new THREE.Vector2(0, 0), this.camera);
-    const intersection = this.raycaster.intersectObject(terrain);
+    const raycaster = new THREE.Raycaster();
+    raycaster.setFromCamera(new THREE.Vector2(0, 0), this.camera);
+    const intersection = raycaster.intersectObject(terrain);
 
     if (!intersection.length) throw new Error("No terrain intersection");
 

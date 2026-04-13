@@ -1,4 +1,4 @@
-import { createSlice } from "@reduxjs/toolkit";
+import { createSelector, createSlice } from "@reduxjs/toolkit";
 import { nanoid } from "nanoid";
 
 import type {
@@ -250,6 +250,23 @@ const addDistrictNode =
     dispatch(NodesActions.selectNode(id));
   };
 
+const getSelectedNodesDeep = createSelector(
+  [
+    (state: AppState): NodesMap => NodesSelectors.getNodes(state),
+    (state: AppState): NodesIndex => NodesSelectors.getNodesIndex(state),
+    (state: AppState): string[] => NodesSelectors.getSelectedNodes(state),
+  ],
+  (nodes, index, selectedNodeIds): string[] => {
+    return selectedNodeIds.flatMap((id) => {
+      const node = nodes[id];
+      if (node.type === "instance") return [id];
+      return index[node.id].descendantIds.filter(
+        (id) => nodes[id].type == "instance",
+      );
+    });
+  },
+);
+
 const getSlice = (state: AppState) => state.present[nodesSlice.reducerPath];
 export const NodesActions = {
   ...nodesSlice.actions,
@@ -263,5 +280,6 @@ export const NodesSelectors = {
   getNodesTree: (state: AppState) => getSlice(state).tree,
   getNodesIndex: (state: AppState) => getSlice(state).index,
   getSelectedNodes: (state: AppState) => getSlice(state).selected,
+  getSelectedNodesDeep,
 };
 export default nodesSlice;

@@ -1,6 +1,7 @@
 import * as THREE from "three";
 
 import type { Modes } from "../types/types.ts";
+import type { KnownInstancedMeshNames } from "./types.ts";
 
 export const BUILDINGS = {
   default: new THREE.Color(0xff375a),
@@ -27,45 +28,41 @@ export const DELETIONS = {
   selected: new THREE.Color(0xffffff),
 };
 
-export const IDLE_COLORS: Record<Modes, THREE.Color> = {
-  create: ADDITIONS.default,
-  update: UPDATES.default,
-  delete: DELETIONS.default,
+export const idleColors: Record<KnownInstancedMeshNames, THREE.Color> = {
+  additions: ADDITIONS.default,
+  additionsVirtual: ADDITIONS.default,
+  currentDistrict: BUILDINGS.default,
+  deletions: DELETIONS.default,
+  updates: UPDATES.default,
+  visibleDistricts: BUILDINGS.default,
 };
-export const POINTING_AT_COLORS: Record<Modes, THREE.Color> = {
-  create: ADDITIONS.pointingAt,
-  update: UPDATES.pointingAt,
-  delete: DELETIONS.pointingAt,
+export const intersectionColors: Record<KnownInstancedMeshNames, THREE.Color> =
+  {
+    additions: ADDITIONS.pointingAt,
+    additionsVirtual: ADDITIONS.pointingAt,
+    currentDistrict: BUILDINGS.pointingAtUpdate,
+    deletions: DELETIONS.pointingAt,
+    updates: UPDATES.pointingAt,
+    visibleDistricts: BUILDINGS.default,
+  };
+export const selectedColors: Record<KnownInstancedMeshNames, THREE.Color> = {
+  additions: ADDITIONS.selected,
+  additionsVirtual: ADDITIONS.selected,
+  currentDistrict: BUILDINGS.default,
+  deletions: DELETIONS.selected,
+  updates: UPDATES.selected,
+  visibleDistricts: BUILDINGS.default,
 };
-export const SELECTED_COLORS: Record<Modes, THREE.Color> = {
-  create: ADDITIONS.selected,
-  update: UPDATES.selected,
-  delete: DELETIONS.selected,
-};
-export const BUILDING_COLORS: Record<Modes, THREE.Color> = {
-  create: BUILDINGS.default,
-  update: BUILDINGS.pointingAtUpdate,
-  delete: BUILDINGS.pointingAtDeletion,
-};
-
-export const getColor = (isDefaultMesh: boolean, mode: Modes) => ({
-  idle: isDefaultMesh ? BUILDINGS.default : IDLE_COLORS[mode],
-  pointingAt: isDefaultMesh ? BUILDING_COLORS[mode] : POINTING_AT_COLORS[mode],
-  selected: SELECTED_COLORS[mode],
-});
-
-export const setColorForId = (
-  mesh: THREE.InstancedMesh,
-  id: string,
-  color: THREE.Color,
+export const getColor = (
+  name: KnownInstancedMeshNames,
+  mode: Modes | undefined,
 ) => {
-  const ids: Record<string, number[]> = mesh.userData.ids;
-
-  if (!ids[id]) return;
-
-  for (const index of ids[id]) {
-    mesh.setColorAt(index, color);
-  }
-
-  if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
+  return {
+    idle: idleColors[name],
+    intersection:
+      name === "currentDistrict" && mode === "delete"
+        ? BUILDINGS.pointingAtDeletion
+        : intersectionColors[name],
+    selected: selectedColors[name],
+  };
 };

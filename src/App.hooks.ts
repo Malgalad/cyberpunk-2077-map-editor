@@ -303,37 +303,9 @@ export function useDrawDeletions(map3d: Map3D | null) {
 }
 
 export function useDrawSelection(map3d: Map3D | null) {
-  const store = useAppStore();
-  const district = useAppSelector(DistrictSelectors.getDistrict);
   const mode = useAppSelector(ProjectSelectors.getMode);
   const selected = useAppSelector(NodesSelectors.getSelectedNodes);
   const nodes = useAppSelector(NodesSelectors.getNodes);
-  const tool = useAppSelector(ProjectSelectors.getTool);
-
-  React.useEffect(() => {
-    if (!map3d || !district) return;
-
-    if (selected.length === 0) {
-      map3d.selectInstances([]);
-      return;
-    }
-
-    const state = store.getState();
-    const nodes = NodesSelectors.getNodes(state);
-    const index = NodesSelectors.getNodesIndex(state);
-
-    const allSelected = new Set<string>(
-      selected.flatMap((id) => {
-        const node = nodes[id];
-        if (node.type === "instance") return [id];
-        return index[node.id].descendantIds.filter(
-          (id) => nodes[id].type == "instance",
-        );
-      }),
-    );
-
-    map3d.selectInstances([...allSelected.values()]);
-  }, [selected, map3d, district, mode, store]);
 
   React.useEffect(() => {
     if (!map3d || mode === "delete") return;
@@ -343,11 +315,6 @@ export function useDrawSelection(map3d: Map3D | null) {
       map3d.setHelper(applyTransforms(nodes, nodes[selected[0]]), true);
     }
   }, [map3d, mode, selected, nodes]);
-
-  React.useEffect(() => {
-    if (!map3d) return;
-    map3d.clearPointer();
-  }, [map3d, tool]);
 }
 
 const emptyArr: TreeNode[] = [];

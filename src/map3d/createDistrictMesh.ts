@@ -13,14 +13,11 @@ export function createDistrictMesh(
   district: DistrictProperties,
   instances: InstancedMeshTransforms[],
   material: THREE.Material,
-  onRemove?: (mesh: THREE.Mesh | THREE.Line | null) => void,
-  onAdd?: (mesh: THREE.Object3D) => void,
   color?: THREE.Color,
 ) {
   let mesh = currentMesh;
 
   if (mesh && mesh.count !== getCount(instances.length)) {
-    onRemove?.(mesh);
     mesh.dispose();
     mesh = null;
   }
@@ -35,8 +32,8 @@ export function createDistrictMesh(
     );
     mesh.userData.district = {};
     mesh.userData.instances = [];
+    mesh.userData.colors = [];
     mesh.userData.ids = {};
-    onAdd?.(mesh);
   }
 
   if (district.name !== mesh.userData.district.name) {
@@ -99,6 +96,7 @@ export function createDistrictMesh(
   const originIds = instances.map(({ id, originId }) => originId || id);
   mesh.userData.district = district;
   mesh.userData.instances = instances;
+  mesh.userData.colors = new Array(instances.length).fill(color);
   mesh.userData.ids = originIds.reduce(
     (acc, id, index) => {
       acc[id] = (acc[id] || []).concat(index);
@@ -109,7 +107,6 @@ export function createDistrictMesh(
 
   if (needsUpdate) mesh.instanceMatrix.needsUpdate = true;
   if (needsUpdate) mesh.computeBoundingSphere();
-  if (!color) mesh.setColorAt(0, new THREE.Color(0xffffff));
 
   return mesh;
 }

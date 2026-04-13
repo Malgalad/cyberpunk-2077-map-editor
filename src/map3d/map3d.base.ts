@@ -9,6 +9,7 @@ import { OutputPass } from "three/examples/jsm/postprocessing/OutputPass.js";
 import type { AppStore, RenderEffects } from "../types/types.ts";
 import { downloadBlob } from "../utilities/fileHelpers.ts";
 import { EXCLUDE_AO_LAYER, MAP_SIZE } from "./constants.ts";
+import Map3dLights from "./map3d.lights.ts";
 import { experimentalMetroMaterial } from "./materials.ts";
 
 export const frustumSize = 8_000;
@@ -72,16 +73,7 @@ export class Map3DBase {
     this.controls.maxDistance = 10_000;
     this.controls.maxPolarAngle = Math.PI / 2;
 
-    const ambient = new THREE.AmbientLight(0x404040, 0.33);
-    this.scene.add(ambient);
-
-    const light1 = new THREE.DirectionalLight(0xffffff);
-    light1.position.set(1, 1, 1);
-    this.scene.add(light1);
-
-    const light2 = new THREE.DirectionalLight(0xffffff, 0.5);
-    light2.position.set(-1, 1, 1);
-    this.scene.add(light2);
+    this.scene.add(new Map3dLights().group);
 
     window.addEventListener("resize", this.onWindowResize);
 
@@ -205,10 +197,12 @@ export class Map3DBase {
     return mesh;
   };
 
-  protected removeMesh = (mesh?: THREE.Mesh | THREE.Line | null) => {
+  protected removeMesh = <T extends THREE.Object3D>(mesh?: T | null) => {
     if (!mesh) return;
     this.scene.remove(mesh);
-    mesh.geometry.dispose();
+    if ("geometry" in mesh && mesh.geometry instanceof THREE.BufferGeometry) {
+      mesh.geometry.dispose();
+    }
   };
 
   protected loadResource = async (promise: Promise<THREE.Mesh>) => {
@@ -301,6 +295,7 @@ export class Map3DBase {
     this.camera.bottom = -halfRes;
     this.camera.zoom = ZOOM;
     this.camera.updateProjectionMatrix();
+    experimentalMetroMaterial.uniforms.cameraZoom.value = 50;
     let counter = 0;
     for (
       let x = -halfMap + halfRes;

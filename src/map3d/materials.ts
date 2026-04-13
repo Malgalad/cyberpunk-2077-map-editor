@@ -49,7 +49,7 @@ staticMaterial.onBeforeCompile = (shader) => {
 
 export const statuesMaterial = staticMaterial.clone();
 
-export const additionsMaterial = new THREE.MeshToonMaterial({
+export const additionsMaterial = new THREE.MeshLambertMaterial({
   color: 0xffffff,
 });
 
