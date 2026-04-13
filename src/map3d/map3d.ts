@@ -63,10 +63,9 @@ export class Map3D extends Map3DBase {
     this.addMesh(this.helper);
     this.addMesh(this.markers);
 
-    this.canvas.addEventListener("mousedown", this.onMouseDown);
     this.canvas.addEventListener("mousemove", this.onMouseMove);
     this.canvas.addEventListener("mouseleave", this.onMouseLeave);
-    this.canvas.addEventListener("click", this.onMouseUp);
+    this.canvas.addEventListener("click", this.onClick);
 
     this.state = new Map3DState(store);
     this.state.addEventListener("update", () =>
@@ -81,10 +80,9 @@ export class Map3D extends Map3DBase {
     super.dispose();
     this.state.dispose();
 
-    this.canvas.removeEventListener("mousedown", this.onMouseDown);
     this.canvas.removeEventListener("mousemove", this.onMouseMove);
     this.canvas.removeEventListener("mouseleave", this.onMouseLeave);
-    this.canvas.removeEventListener("mouseup", this.onMouseUp);
+    this.canvas.removeEventListener("mouseup", this.onClick);
 
     this.helper.dispose();
     this.visibleDistricts.children.forEach((child) =>
@@ -132,12 +130,6 @@ export class Map3D extends Map3DBase {
     );
   }
 
-  private onMouseDown = (event: MouseEvent) => {
-    if (event.button !== 0 || this.tool !== "select") return;
-    this.state.intersect(this.getPointer(event), this.camera);
-    // this.clickOn = this.state.findIntersection();
-  };
-
   private onMouseMove = (event: MouseEvent) => {
     this.state.intersect(this.getPointer(event), this.camera);
   };
@@ -146,24 +138,16 @@ export class Map3D extends Map3DBase {
     this.state.intersect(new THREE.Vector2(9999, 9999), this.camera);
   };
 
-  private onMouseUp = (event: MouseEvent) => {
+  private onClick = () => {
     if (this.tool !== "select") return;
 
     const mode = this.mode;
-    this.state.intersect(this.getPointer(event), this.camera);
     const intersection = this.state.findIntersection();
 
-    if (/*!this.clickOn && */ !intersection) {
+    if (!intersection) {
       this.store.dispatch(NodesActions.selectNode(null));
       return;
     }
-
-    // if (
-    //   !intersection ||
-    //   this.clickOn?.object !== intersection.object ||
-    //   this.clickOn?.instanceId !== intersection.instanceId
-    // )
-    //   return;
 
     const { object, instanceId } = intersection;
     if (!instanceId) return;

@@ -28,11 +28,13 @@ class Map3DState extends Stateful<typeof selectors> {
     this.group.name = "StateMeshes";
     this.raycaster.layers.enable(EXCLUDE_AO_LAYER);
     document.addEventListener("keyup", this.changeIntersectionIndex);
+    document.addEventListener("wheel", this.changeIntersectionIndex);
   }
 
   dispose() {
     super.dispose();
     document.removeEventListener("keyup", this.changeIntersectionIndex);
+    document.removeEventListener("wheel", this.changeIntersectionIndex);
   }
 
   clear() {
@@ -40,17 +42,27 @@ class Map3DState extends Stateful<typeof selectors> {
     this.meshMap.clear();
   }
 
-  private changeIntersectionIndex = (event: KeyboardEvent) => {
+  private changeIntersectionIndex = (event: KeyboardEvent | WheelEvent) => {
     const min = 0;
     const max = this.intersections.length - 1;
 
     if (min === max) return;
 
-    if (event.code === "ArrowUp" || event.code === "KeyC") {
+    if (
+      (event instanceof KeyboardEvent &&
+        (event.code === "ArrowUp" || event.code === "KeyC")) ||
+      (event instanceof WheelEvent && event.deltaY > 0)
+    ) {
       this.intersectionIndex =
         this.intersectionIndex === max ? min : this.intersectionIndex + 1;
       this.dispatchEvent(new Event("update"));
-    } else if (event.code === "ArrowDown" || event.code === "KeyZ") {
+    }
+
+    if (
+      (event instanceof KeyboardEvent &&
+        (event.code === "ArrowDown" || event.code === "KeyZ")) ||
+      (event instanceof WheelEvent && event.deltaY < 0)
+    ) {
       this.intersectionIndex =
         this.intersectionIndex === min ? max : this.intersectionIndex - 1;
       this.dispatchEvent(new Event("update"));
