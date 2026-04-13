@@ -35,11 +35,11 @@ export default function DraggableInput(
   const inputRef = React.useRef<HTMLInputElement>(null);
   const timerRef = React.useRef<number | null>(null);
   const valueRef = React.useRef(value);
-  const valueRef2 = React.useRef(value);
-  const tRef = React.useRef(0);
+  const elapsedRef = React.useRef(0);
 
   const handleChange = React.useCallback(
     (event: React.ChangeEvent<HTMLInputElement>) => {
+      valueRef.current = event.target.value;
       setValue(event.target.value);
       onChange?.(event);
     },
@@ -64,24 +64,24 @@ export default function DraggableInput(
 
       event.preventDefault();
       const deltaY = startY - event.clientY;
+
       if (sliding) {
         if (timerRef.current !== null) clearInterval(timerRef.current);
-        tRef.current = performance.now();
-        valueRef.current = valueRef2.current;
+        elapsedRef.current = performance.now();
+        const startValue = valueRef.current;
         timerRef.current = window.setInterval(() => {
-          const dt = performance.now() - tRef.current;
+          const dt = performance.now() - elapsedRef.current;
           const value = Math.min(
             parseFloat(`${max}`),
             Math.max(
               parseFloat(`${min}`),
-              parseFloat(valueRef.current) +
+              parseFloat(startValue) +
                 (deltaY / 250) * dt * parseFloat(`${step}`),
             ),
           );
           const eventLike = {
             target: { value: toPrecision(value) },
           } as React.ChangeEvent<HTMLInputElement>;
-          valueRef2.current = eventLike.target.value;
           handleChange(eventLike);
         }, 50);
       } else {
