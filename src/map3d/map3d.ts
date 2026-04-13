@@ -48,7 +48,7 @@ export class Map3D extends Map3DBase {
   private updates: THREE.InstancedMesh | null = null;
   private deletions: THREE.InstancedMesh | null = null;
   private canvasRect: DOMRect | null = null;
-  private clickOn: THREE.Intersection | undefined;
+  // private clickOn: THREE.Intersection | undefined;
   private helper = new AxesHelper(50);
   private markers = new THREE.Group();
   private markerData: MapNode[] = [];
@@ -135,7 +135,7 @@ export class Map3D extends Map3DBase {
   private onMouseDown = (event: MouseEvent) => {
     if (event.button !== 0 || this.tool !== "select") return;
     this.state.intersect(this.getPointer(event), this.camera);
-    this.clickOn = this.state.findIntersection();
+    // this.clickOn = this.state.findIntersection();
   };
 
   private onMouseMove = (event: MouseEvent) => {
@@ -153,17 +153,17 @@ export class Map3D extends Map3DBase {
     this.state.intersect(this.getPointer(event), this.camera);
     const intersection = this.state.findIntersection();
 
-    if (!this.clickOn && !intersection) {
+    if (/*!this.clickOn && */ !intersection) {
       this.store.dispatch(NodesActions.selectNode(null));
       return;
     }
 
-    if (
-      !intersection ||
-      this.clickOn?.object !== intersection.object ||
-      this.clickOn?.instanceId !== intersection.instanceId
-    )
-      return;
+    // if (
+    //   !intersection ||
+    //   this.clickOn?.object !== intersection.object ||
+    //   this.clickOn?.instanceId !== intersection.instanceId
+    // )
+    //   return;
 
     const { object, instanceId } = intersection;
     if (!instanceId) return;
@@ -419,7 +419,7 @@ export class Map3D extends Map3DBase {
   reset() {
     this.state.clear();
     this.markers.clear();
-    this.clickOn = undefined;
+    // this.clickOn = undefined;
 
     for (const object3d of this.visibleDistricts.children) {
       (object3d as THREE.InstancedMesh).geometry.dispose();

@@ -82,21 +82,22 @@ class Map3DState extends Stateful<typeof selectors> {
   }
 
   findIntersection(): undefined | THREE.Intersection {
-    const intersection = this.intersections[this.intersectionIndex];
     const { mode, tool } = this.state;
 
-    if (tool !== "select" || !intersection) return;
-    const { object } = intersection;
-    if (
-      (mode === "create" && object === this.meshMap.get("additions")) ||
-      (mode === "create" && object === this.meshMap.get("additionsVirtual")) ||
-      (mode === "update" && object === this.meshMap.get("updates")) ||
-      (mode === "update" && object === this.meshMap.get("currentDistrict")) ||
-      (mode === "delete" && object === this.meshMap.get("deletions")) ||
-      (mode === "delete" && object === this.meshMap.get("currentDistrict"))
-    ) {
-      return intersection;
-    }
+    if (tool !== "select") return;
+
+    const intersections = this.intersections.filter(
+      ({ object }) =>
+        (mode === "create" && object === this.meshMap.get("additions")) ||
+        (mode === "create" &&
+          object === this.meshMap.get("additionsVirtual")) ||
+        (mode === "update" && object === this.meshMap.get("updates")) ||
+        (mode === "update" && object === this.meshMap.get("currentDistrict")) ||
+        (mode === "delete" && object === this.meshMap.get("deletions")) ||
+        (mode === "delete" && object === this.meshMap.get("currentDistrict")),
+    );
+
+    return intersections[this.intersectionIndex];
   }
 
   render() {
