@@ -15,6 +15,7 @@ export function createDistrictMesh(
   material: THREE.Material,
   color?: THREE.Color,
 ) {
+  const currentColors = currentMesh?.userData.colors ?? [];
   let mesh = currentMesh;
 
   if (mesh && mesh.count !== getCount(instances.length)) {
@@ -96,7 +97,13 @@ export function createDistrictMesh(
   const originIds = instances.map(({ id, originId }) => originId || id);
   mesh.userData.district = district;
   mesh.userData.instances = instances;
-  mesh.userData.colors = new Array(instances.length).fill(color);
+  // carry over selected blocks, otherwise data is cleared, and there is a mismatch
+  // between actual matrix colors and userData
+  mesh.userData.colors = new Array(instances.length)
+    .fill(color)
+    .map((c, i) =>
+      (currentColors[i] && currentColors[i]) !== c ? currentColors[i] : c,
+    );
   mesh.userData.ids = originIds.reduce(
     (acc, id, index) => {
       acc[id] = (acc[id] || []).concat(index);
