@@ -69,6 +69,7 @@ export function useInitMap3D(ref: React.RefObject<HTMLCanvasElement | null>) {
 export function useShortcuts(map3d: Map3D | null) {
   const dispatch = useAppDispatch();
   const projectName = useAppSelector(ProjectSelectors.getProjectName);
+  const mode = useAppSelector(ProjectSelectors.getMode);
   const district = useAppSelector(DistrictSelectors.getDistrict);
   const nodes = useAppSelector(NodesSelectors.getNodes);
   const selected = useAppSelector(NodesSelectors.getSelectedNodes);
@@ -87,12 +88,14 @@ export function useShortcuts(map3d: Map3D | null) {
   useGlobalShortcuts("KeyS", () => dispatch(ProjectActions.setTool("select")));
 
   useGlobalShortcuts("KeyA", () => {
+    if (mode === "create") return;
     dispatch(ProjectActions.setMode("create"));
     deselectNode();
   });
   useGlobalShortcuts(
     "KeyE",
     () => {
+      if (mode === "update") return;
       dispatch(ProjectActions.setMode("update"));
       deselectNode();
     },
@@ -101,6 +104,7 @@ export function useShortcuts(map3d: Map3D | null) {
   useGlobalShortcuts(
     "KeyD",
     () => {
+      if (mode === "delete") return;
       dispatch(ProjectActions.setMode("delete"));
       deselectNode();
     },

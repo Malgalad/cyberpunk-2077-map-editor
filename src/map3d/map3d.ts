@@ -16,6 +16,7 @@ import { EXCLUDE_AO_LAYER } from "./constants.ts";
 import { createDistrictMesh } from "./createDistrictMesh.ts";
 import { Map3DBase } from "./map3d.base.ts";
 import Map3DState from "./map3d.state.ts";
+import Map3dStaticMeshes from "./map3d.staticMeshes.ts";
 import {
   additionsMaterial,
   buildingsMaterial,
@@ -26,7 +27,6 @@ import {
   staticMaterial,
   wireframeMaterial,
 } from "./materials.ts";
-import { setupTerrain } from "./setupTerrain.ts";
 
 const virtualEditsMaterial: Record<PatternView, THREE.Material> = {
   none: hiddenMaterial,
@@ -36,10 +36,7 @@ const virtualEditsMaterial: Record<PatternView, THREE.Material> = {
 
 export class Map3D extends Map3DBase {
   private readonly state: Map3DState;
-  private readonly meshes: Record<
-    string,
-    THREE.Mesh | THREE.Mesh[] | undefined
-  > = {};
+  private readonly meshes: Map3dStaticMeshes;
   private visibleDistricts: THREE.Group = new THREE.Group();
   private currentDistrict: THREE.InstancedMesh | null = null;
   private currentDistrictBoundaries: THREE.BoxHelper | null = null;
@@ -48,17 +45,24 @@ export class Map3D extends Map3DBase {
   private updates: THREE.InstancedMesh | null = null;
   private deletions: THREE.InstancedMesh | null = null;
   private canvasRect: DOMRect | null = null;
-  // private clickOn: THREE.Intersection | undefined;
   private helper = new AxesHelper(50);
   private markers = new THREE.Group();
   private markerData: MapNode[] = [];
+  private raf: number | undefined;
 
   constructor(canvas: HTMLCanvasElement, store: AppStore) {
     super(canvas, store);
 
     this.canvasRect = this.canvas.getBoundingClientRect();
 
-    this.meshes = setupTerrain(this.loadResource);
+    this.meshes = new Map3dStaticMeshes(store);
+    this.meshes.addEventListener("update", this.update);
+    this.addMesh(this.meshes.group);
+
+    this.state = new Map3DState(store);
+    this.state.addEventListener("update", this.update);
+    this.addMesh(this.state.group);
+
     this.addMesh(this.visibleDistricts);
     this.addMesh(this.helper);
     this.addMesh(this.markers);
@@ -67,17 +71,12 @@ export class Map3D extends Map3DBase {
     this.canvas.addEventListener("mouseleave", this.onMouseLeave);
     this.canvas.addEventListener("click", this.onClick);
 
-    this.state = new Map3DState(store);
-    this.state.addEventListener("update", () =>
-      requestAnimationFrame(() => this.render()),
-    );
-    this.addMesh(this.state.group);
-
     this.render();
   }
 
   dispose() {
     super.dispose();
+    this.meshes.dispose();
     this.state.dispose();
 
     this.canvas.removeEventListener("mousemove", this.onMouseMove);
@@ -108,10 +107,6 @@ export class Map3D extends Map3DBase {
 
   private get patternView() {
     return OptionsSelectors.getPatternView(this.store.getState());
-  }
-
-  private get visibleMeshes() {
-    return OptionsSelectors.getVisibleMeshes(this.store.getState());
   }
 
   private get tool() {
@@ -182,20 +177,6 @@ export class Map3D extends Map3DBase {
     }
   }
 
-  private refreshMeshes() {
-    for (const [key, value] of Object.entries(this.meshes)) {
-      if (value === undefined) continue;
-      const mesh = this.meshes[key]!;
-      if (Array.isArray(mesh)) {
-        mesh.forEach(
-          (item) => (item.visible = this.visibleMeshes.includes(key)),
-        );
-      } else {
-        mesh.visible = this.visibleMeshes.includes(key);
-      }
-    }
-  }
-
   private renderMarkers() {
     this.markers.clear();
 
@@ -222,13 +203,13 @@ export class Map3D extends Map3DBase {
     this.currentDistrictBoundaries.geometry.computeBoundingBox();
     this.lookAtBox(this.currentDistrictBoundaries.geometry.boundingBox);
 
-    requestAnimationFrame(() => this.render());
+    this.update();
   }
 
   setHelper(node?: MapNode, relative?: boolean) {
     if (!node) {
       this.helper.visible = false;
-      requestAnimationFrame(() => this.render());
+      this.update();
       return;
     }
 
@@ -256,7 +237,8 @@ export class Map3D extends Map3DBase {
       this.helper.rotation.set(0, 0, 0);
     }
     this.helper.visible = true;
-    requestAnimationFrame(() => this.render());
+
+    this.update();
   }
 
   setMarkers(markers: MapNode[]) {
@@ -283,7 +265,7 @@ export class Map3D extends Map3DBase {
     );
     this.state.setMesh("additionsVirtual", this.additionsVirtual);
 
-    requestAnimationFrame(() => this.render());
+    this.update();
   }
 
   setDeletions({ district, transforms }: DistrictWithTransforms) {
@@ -297,7 +279,7 @@ export class Map3D extends Map3DBase {
     this.deletions.layers.set(EXCLUDE_AO_LAYER);
     this.state.setMesh("deletions", this.deletions);
 
-    requestAnimationFrame(() => this.render());
+    this.update();
   }
 
   setCurrentDistrict(data: DistrictWithTransforms) {
@@ -328,7 +310,7 @@ export class Map3D extends Map3DBase {
       new THREE.BoxHelper(minMaxBox, 0xff8800),
     );
 
-    requestAnimationFrame(() => this.render());
+    this.update();
   }
 
   setUpdates({ district, transforms }: DistrictWithTransforms) {
@@ -341,7 +323,7 @@ export class Map3D extends Map3DBase {
     );
     this.state.setMesh("updates", this.updates);
 
-    requestAnimationFrame(() => this.render());
+    this.update();
   }
 
   setVisibleDistricts(districts: DistrictWithTransforms[]) {
@@ -397,7 +379,7 @@ export class Map3D extends Map3DBase {
     if (objectsToAdd.length > 0) this.visibleDistricts.add(...objectsToAdd);
     this.state.setMesh("visibleDistricts", this.visibleDistricts);
 
-    requestAnimationFrame(() => this.render());
+    this.update();
   }
 
   reset() {
@@ -409,22 +391,27 @@ export class Map3D extends Map3DBase {
       (object3d as THREE.InstancedMesh).geometry.dispose();
     }
     this.visibleDistricts.remove(...this.visibleDistricts.children);
-    this.render();
+    this.update();
   }
+
+  update = () => {
+    if (this.raf != null) cancelAnimationFrame(this.raf);
+    this.raf = requestAnimationFrame(() => this.render());
+  };
 
   render() {
     this.toggleControls(this.tool === "move");
     this.toggleEffects(this.effects);
     this.renderMarkers();
     this.state?.render();
+    this.meshes?.render();
     this.refreshMaterials();
-    this.refreshMeshes();
     super.render();
     this.canvasRect = this.canvas.getBoundingClientRect();
   }
 
   getCenter() {
-    const terrain = this.meshes["terrain_mesh"];
+    const terrain = this.meshes.group.getObjectByName("terrain_mesh");
 
     if (!terrain) throw new Error("Terrain mesh not found");
     if (Array.isArray(terrain))

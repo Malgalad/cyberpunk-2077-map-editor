@@ -14,8 +14,9 @@ function Tabs() {
   const district = useAppSelector(DistrictSelectors.getDistrict);
   const dispatch = useAppDispatch();
 
-  const changeMode = (mode: Modes) => () => {
-    dispatch(ProjectActions.setMode(mode));
+  const changeMode = (next: Modes) => () => {
+    if (next === mode) return;
+    dispatch(ProjectActions.setMode(next));
     dispatch(NodesActions.selectNode(null));
   };
 

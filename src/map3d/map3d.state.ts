@@ -75,6 +75,7 @@ class Map3DState extends Stateful<typeof selectors> {
     if (current !== mesh) {
       if (current) {
         this.group.remove(current);
+        // noinspection SuspiciousTypeOfGuard
         if (current instanceof THREE.Mesh) current.geometry.dispose();
       }
       this.group.add(mesh);
@@ -116,6 +117,7 @@ class Map3DState extends Stateful<typeof selectors> {
     const intersection = this.findIntersection();
 
     for (const mesh of this.meshMap.values()) {
+      // noinspection SuspiciousTypeOfGuard
       if (!(mesh instanceof THREE.InstancedMesh)) continue;
 
       const name = mesh.name as KnownInstancedMeshNames;
