@@ -114,10 +114,10 @@ export class Map3DBase {
     const aoParameters = {
       radius: 5,
       distanceExponent: 1,
-      thickness: 10,
-      scale: 2,
+      thickness: 128,
+      scale: 1.5,
       samples: 16,
-      distanceFallOff: 0.5,
+      distanceFallOff: 0.6,
       screenSpaceRadius: false,
     };
     gtaoPass.updateGtaoMaterial(aoParameters);
