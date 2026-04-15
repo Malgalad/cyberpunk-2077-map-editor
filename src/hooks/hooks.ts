@@ -116,7 +116,7 @@ export function useConnectToServer() {
           type: "instance",
           tag: "create",
           district: MARKER_ID,
-          position: [x, y, z + 0.83],
+          position: [x, y, z + 1.65],
           scale: [1, 1, 1],
           parent: null,
         });

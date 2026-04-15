@@ -216,15 +216,12 @@ const addDistrictNode =
     // If the user clicks twice without moving the pointer, the highlighted block
     // will stay the same and trigger the event twice
     const districtTree = tree[district.name];
-    invariant(
-      districtTree?.type === "rootByTag",
-      "Unexpected error: district tree not found",
-    );
-
-    const existingNode = districtTree[tag].find(
-      (treeNode) => nodes[treeNode.id].indexInDistrict === index,
-    );
-    if (existingNode) return;
+    if (districtTree?.type === "rootByTag") {
+      const existingNode = districtTree[tag].find(
+        (treeNode) => nodes[treeNode.id].indexInDistrict === index,
+      );
+      if (existingNode) return;
+    }
 
     const node = transformToNode(transform, district, {
       label: `Block #${index}`,

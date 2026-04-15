@@ -145,7 +145,7 @@ export class Map3D extends Map3DBase {
     }
 
     const { object, instanceId } = intersection;
-    if (!instanceId) return;
+    if (instanceId == null) return;
 
     if (
       mode === "create" ||

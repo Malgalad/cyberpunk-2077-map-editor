@@ -1,6 +1,6 @@
 import * as THREE from "three";
 
-class Map3dLights {
+class Map3DLights {
   readonly group = new THREE.Group();
 
   constructor() {
@@ -23,4 +23,4 @@ class Map3dLights {
   render() {}
 }
 
-export default Map3dLights;
+export default Map3DLights;
