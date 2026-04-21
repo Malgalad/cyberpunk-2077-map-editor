@@ -1,9 +1,7 @@
 import type { Middleware, MiddlewareAPI } from "redux";
 
 import type { AppDispatch, AppState } from "../types/types.ts";
-import { saveCompressedJSON } from "../utilities/opfs.ts";
-import { getPersistentState } from "./@selectors.ts";
-import { ProjectSelectors } from "./project.ts";
+import worker from "../worker.ts";
 
 let callbackId: number | undefined;
 
@@ -14,14 +12,10 @@ export const persistMiddleware: Middleware =
     const afterState = api.getState();
     clearTimeout(callbackId);
     callbackId = setTimeout(() => {
-      const persistentState = getPersistentState(afterState);
-
-      if (ProjectSelectors.getProjectName(afterState)) {
-        void saveCompressedJSON(
-          `/projects/${ProjectSelectors.getProjectName(afterState)}`,
-          persistentState,
-        );
-      }
+      worker.postMessage({
+        type: "update",
+        state: afterState,
+      });
     }, 200);
 
     return response;

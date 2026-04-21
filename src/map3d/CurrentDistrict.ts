@@ -129,12 +129,12 @@ class CurrentDistrict extends THREE.Group<EventMap> {
       if (!(mesh instanceof THREE.InstancedMesh)) continue;
 
       const name = mesh.name as KnownInstancedMeshNames;
-      const { colors, ids } = mesh.userData as {
+      const { colors: meshColors, ids: meshIds } = mesh.userData as {
         colors: THREE.Color[];
         ids: Record<string, number[]>;
       };
       const palette = getPalette(name, this.state.mode);
-      const nextColors = new Array(colors.length).fill(
+      const nextColors = new Array(meshColors.length).fill(
         palette.idle,
       ) as THREE.Color[];
 
@@ -146,8 +146,8 @@ class CurrentDistrict extends THREE.Group<EventMap> {
 
       if (this.state.selected) {
         for (const nodeId of this.state.selected) {
-          if (ids[nodeId]) {
-            for (const index of ids[nodeId]) {
+          if (meshIds[nodeId]) {
+            for (const index of meshIds[nodeId]) {
               nextColors.splice(index, 1, palette.selected);
             }
           }
@@ -155,11 +155,9 @@ class CurrentDistrict extends THREE.Group<EventMap> {
       }
 
       let needsUpdate = false;
-      for (let i = 0; i < colors.length; i++) {
-        const instanceColor = nextColors[i];
-        const currentColor = colors[i];
-        if (currentColor === instanceColor) continue;
-        mesh.setColorAt(i, instanceColor);
+      for (let i = 0; i < meshColors.length; i++) {
+        if (meshColors[i].equals(nextColors[i])) continue;
+        mesh.setColorAt(i, nextColors[i]);
         needsUpdate = true;
       }
       if (needsUpdate && mesh.instanceColor) {

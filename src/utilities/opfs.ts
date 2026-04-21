@@ -17,7 +17,7 @@ export async function saveCompressedJSON(pathname: string, data: unknown) {
   await fs.writeFile(pathname, buffer);
 }
 
-Object.defineProperties(window, {
+Object.defineProperties(globalThis, {
   $fs: {
     enumerable: false,
     configurable: false,
