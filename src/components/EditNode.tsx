@@ -1,5 +1,6 @@
 import * as React from "react";
 
+import { MARKER_ID } from "../constants.ts";
 import { useAppSelector } from "../hooks/hooks.ts";
 import { NodesSelectors } from "../store/nodes.ts";
 import { clsx } from "../utilities/utilities.ts";
@@ -36,7 +37,11 @@ function EditNode(props: EditNodeProps) {
     };
   }, []);
 
-  if (props.mode !== "create" || selected.length > 1) {
+  if (
+    props.mode !== "create" ||
+    selected.length > 1 ||
+    nodes[selected[0]].district === MARKER_ID
+  ) {
     return (
       <div className="grow flex flex-col">
         <EditNodeProperties selected={selected} mode={props.mode} />
@@ -46,7 +51,7 @@ function EditNode(props: EditNodeProps) {
 
   return (
     <div className="grow flex flex-col">
-      <div className="flex flex-row gap-0.5 -mb-[1px]">
+      <div className="flex flex-row gap-0.5 -mb-px">
         {tabs.map((button) => (
           <Button
             key={button.key}

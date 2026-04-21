@@ -90,11 +90,6 @@ export const roadsBordersMaterial = new THREE.MeshBasicMaterial({
   transparent: true,
 });
 
-export const metroMaterial = new THREE.MeshBasicMaterial({
-  color: 0xf0f0f0,
-  opacity: 0.67,
-  transparent: true,
-});
 export const experimentalMetroMaterial = new THREE.ShaderMaterial({
   transparent: true,
   vertexColors: true,

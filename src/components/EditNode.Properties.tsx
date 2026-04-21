@@ -2,7 +2,7 @@ import { CheckIcon, Move3D } from "lucide-react";
 import * as React from "react";
 import * as THREE from "three";
 
-import { AXII, PLANES } from "../constants.ts";
+import { AXII, MARKER_ID, PLANES } from "../constants.ts";
 import { useAppSelector } from "../hooks/hooks.ts";
 import { useMirrorNode, useNumFieldSteps } from "../hooks/nodes.hooks.ts";
 import { DistrictSelectors } from "../store/district.ts";
@@ -61,7 +61,7 @@ function EditNodeProperties({ selected, mode }: EditNodePropertiesProps) {
       <div>
         <Input
           type="text"
-          className="w-[248px]"
+          className="w-62"
           value={node.label}
           onChange={changeLabel}
         />
@@ -73,7 +73,7 @@ function EditNodeProperties({ selected, mode }: EditNodePropertiesProps) {
       <div>Parent:</div>
       <div>
         <Button
-          className="w-[248px]"
+          className="w-62"
           disabled={
             !selected.every(
               (id) => nodes[id].parent === nodes[selected[0]].parent,
@@ -108,12 +108,34 @@ function EditNodeProperties({ selected, mode }: EditNodePropertiesProps) {
     );
   }
 
+  if (node.district === MARKER_ID) {
+    return (
+      <div className="grow bg-slate-800">
+        <div className="grid grid-cols-[120px_auto] items-center gap-2 p-2">
+          <div>
+            <span>Position:</span>
+          </div>
+          <div className="flex flex-row gap-1 items-center">
+            {AXII.map((axis) => (
+              <DraggableInput
+                key={`${axis}+${useLocal}`}
+                className={clsx("w-20", axiiColors[axis])}
+                step={scaling}
+                value={position[axis]}
+                onChange={changePosition(axis)}
+              />
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="grow bg-slate-800">
       <div className="grid grid-cols-[120px_auto] items-center gap-2 p-2">
         {labelSelector}
         {parentSelector}
-
         <div>
           <Tooltip
             tooltip={

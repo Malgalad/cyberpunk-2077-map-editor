@@ -1,16 +1,12 @@
 import * as THREE from "three";
 import { MapControls } from "three/addons/controls/MapControls.js";
-import { EffectComposer } from "three/addons/postprocessing/EffectComposer.js";
-import { GTAOPass } from "three/addons/postprocessing/GTAOPass.js";
-import { RenderPass } from "three/addons/postprocessing/RenderPass.js";
-import { SMAAPass } from "three/addons/postprocessing/SMAAPass.js";
-import { OutputPass } from "three/examples/jsm/postprocessing/OutputPass.js";
 
-import type { AppStore, RenderEffects } from "../types/types.ts";
+import type { AppStore } from "../types/types.ts";
 import { downloadBlob } from "../utilities/fileHelpers.ts";
-import { EXCLUDE_AO_LAYER, MAP_SIZE } from "./constants.ts";
-import Map3dLights from "./map3d.lights.ts";
+import { MAP_SIZE } from "./constants.ts";
+import Lights from "./Lights.ts";
 import { experimentalMetroMaterial } from "./materials.ts";
+import RenderPipeline from "./RenderPipeline.ts";
 
 export const frustumSize = 8_000;
 const readSS = () => JSON.parse(sessionStorage.getItem("camera") || "null");
@@ -19,34 +15,26 @@ const writeSS = (data: {
   lookAt: number[];
   zoom: number;
 }) => sessionStorage.setItem("camera", JSON.stringify(data));
-const saved = readSS() || {};
-const startPosition = saved.position || [0, 3000, 0];
-const startLookAt = saved.lookAt || [0, 0, 0];
+const startPosition = () => readSS().position || [0, 3000, 0];
+const startLookAt = () => readSS()?.lookAt || [0, 0, 0];
 
 export class Map3DBase {
   protected readonly scene: THREE.Scene;
   protected readonly camera: THREE.OrthographicCamera;
-  protected readonly renderer: THREE.WebGLRenderer;
-  protected readonly composer: EffectComposer;
+  protected readonly renderPipeline: RenderPipeline;
   protected readonly controls: MapControls;
-  protected readonly store: AppStore;
-  private readonly unsubscribe: () => void;
+  private readonly timerID: number | undefined;
   private cameraAspectRatio: number = 1;
-  private cameraPosition: THREE.Vector3 = new THREE.Vector3(...startPosition);
-  private cameraLookAt: THREE.Vector3 = new THREE.Vector3(...startLookAt);
-  private cameraZoom: number = saved.zoom || 1;
+  private cameraPosition: THREE.Vector3 = new THREE.Vector3(...startPosition());
+  private cameraLookAt: THREE.Vector3 = new THREE.Vector3(...startLookAt());
+  private cameraZoom: number = readSS()?.zoom || 1;
   private onZoomChangeListeners: ((zoom: number) => void)[] = [];
 
   constructor(canvas: HTMLCanvasElement, store: AppStore) {
-    this.store = store;
-    this.unsubscribe = store.subscribe(() => this.render());
-
     this.scene = new THREE.Scene();
     this.scene.background = new THREE.Color(0x0f172b);
 
-    this.renderer = new THREE.WebGLRenderer({ canvas });
-    this.renderer.setPixelRatio(window.devicePixelRatio);
-    this.renderer.setSize(canvas.clientWidth, canvas.clientHeight);
+    this.scene.add(new Lights());
 
     this.cameraAspectRatio = canvas.clientWidth / canvas.clientHeight;
     this.camera = new THREE.OrthographicCamera(
@@ -62,73 +50,33 @@ export class Map3DBase {
     this.camera.zoom = this.cameraZoom;
     this.camera.updateProjectionMatrix();
 
+    this.renderPipeline = new RenderPipeline({
+      store,
+      scene: this.scene,
+      camera: this.camera,
+      renderer: new THREE.WebGLRenderer({ canvas }),
+    });
+
     this.controls = new MapControls(this.camera, canvas);
     this.controls.addEventListener("change", () =>
       requestAnimationFrame(() => this.render()),
     );
-    this.controls.addEventListener("change", this.zoomChanged);
+    this.controls.addEventListener("change", this.onControlsChanged);
     this.controls.target.copy(this.cameraLookAt);
     this.controls.zoomToCursor = true;
     this.controls.minDistance = 1;
     this.controls.maxDistance = 10_000;
     this.controls.maxPolarAngle = Math.PI / 2;
-
-    this.scene.add(new Map3dLights().group);
+    this.controls.update();
 
     window.addEventListener("resize", this.onWindowResize);
-
-    this.composer = new EffectComposer(this.renderer);
-    this.composer.setPixelRatio(window.devicePixelRatio);
-    this.composer.setSize(canvas.clientWidth, canvas.clientHeight);
-
-    const renderPass = new RenderPass(this.scene, this.camera);
-    this.composer.addPass(renderPass);
-
-    const gtaoPass = new GTAOPass(
-      this.scene,
-      this.camera,
-      canvas.width,
-      canvas.height,
-    );
-    const renderGTAO = gtaoPass.render.bind(gtaoPass);
-    gtaoPass.render = (
-      renderer,
-      writeBuffer,
-      readBuffer,
-      deltaTime,
-      maskActive,
-    ) => {
-      this.camera.layers.disable(EXCLUDE_AO_LAYER);
-
-      renderGTAO.call(
-        null,
-        renderer,
-        writeBuffer,
-        readBuffer,
-        deltaTime,
-        maskActive,
-      );
-
-      this.camera.layers.enable(EXCLUDE_AO_LAYER);
-    };
-    const aoParameters = {
-      radius: 5,
-      distanceExponent: 1,
-      thickness: 128,
-      scale: 1.5,
-      samples: 16,
-      distanceFallOff: 0.6,
-      screenSpaceRadius: false,
-    };
-    gtaoPass.updateGtaoMaterial(aoParameters);
-    this.composer.addPass(gtaoPass);
-
-    const smaaPass = new SMAAPass();
-    this.composer.addPass(smaaPass);
-
-    this.composer.addPass(new OutputPass());
-
-    this.controls.update();
+    this.timerID = setInterval(() => {
+      writeSS({
+        position: this.cameraPosition.toArray(),
+        lookAt: this.cameraLookAt.toArray(),
+        zoom: this.cameraZoom,
+      });
+    }, 1000);
 
     Object.defineProperty(window, "$$renderTiles", {
       value: () => this.renderTiles(),
@@ -138,19 +86,30 @@ export class Map3DBase {
 
   dispose() {
     window.removeEventListener("resize", this.onWindowResize);
-    this.unsubscribe();
+    clearInterval(this.timerID);
+    this.scene.children.forEach((child) => {
+      if ("dispose" in child && child.dispose instanceof Function) {
+        child.dispose();
+      }
+    });
     this.controls.dispose();
-    this.renderer.dispose();
-    this.composer.dispose();
+    this.renderPipeline.dispose();
   }
 
   get zoom() {
     return this.camera.zoom;
   }
 
-  private zoomChanged = () => {
-    this.onZoomChangeListeners.forEach((callback) => callback(this.cameraZoom));
-    experimentalMetroMaterial.uniforms.cameraZoom.value = this.camera.zoom;
+  private onControlsChanged = () => {
+    if (this.camera.zoom !== this.cameraZoom) {
+      for (const callback of this.onZoomChangeListeners) {
+        callback(this.camera.zoom);
+      }
+      experimentalMetroMaterial.uniforms.cameraZoom.value = this.camera.zoom;
+    }
+    this.cameraPosition.copy(this.camera.position);
+    this.cameraLookAt.copy(this.controls.target);
+    this.cameraZoom = this.camera.zoom;
   };
 
   onZoomChange(callback: (zoom: number) => void) {
@@ -183,13 +142,11 @@ export class Map3DBase {
     this.camera.bottom = -frustumSize / 2;
     this.camera.updateProjectionMatrix();
 
-    this.renderer.setSize(parent.clientWidth, parent.clientHeight);
-    this.composer.setSize(parent.clientWidth, parent.clientHeight);
     this.render();
   };
 
   protected get canvas() {
-    return this.renderer.domElement;
+    return this.renderPipeline.renderer.domElement;
   }
 
   protected addMesh = <T extends THREE.Object3D>(mesh: T): T => {
@@ -205,26 +162,8 @@ export class Map3DBase {
     }
   };
 
-  protected loadResource = async (promise: Promise<THREE.Mesh>) => {
-    const mesh = await promise;
-    this.addMesh(mesh);
-    requestAnimationFrame(() => this.render());
-    return mesh;
-  };
-
   protected render() {
-    this.composer.render();
-
-    this.cameraPosition.copy(this.camera.position);
-    this.cameraLookAt.copy(this.controls.target);
-    this.cameraZoom = this.camera.zoom;
-    requestIdleCallback(() => {
-      writeSS({
-        position: this.cameraPosition.toArray(),
-        lookAt: this.cameraLookAt.toArray(),
-        zoom: this.cameraZoom,
-      });
-    });
+    this.renderPipeline.render();
   }
 
   lookAt(vector: THREE.Vector3, zoom?: number) {
@@ -267,28 +206,13 @@ export class Map3DBase {
     this.controls.enabled = enabled;
   }
 
-  protected toggleEffects(effects: RenderEffects) {
-    this.composer.passes.forEach((pass) => {
-      if (pass.constructor.name === GTAOPass.name) {
-        pass.enabled = effects.includes("ao");
-      }
-      if (pass.constructor.name === SMAAPass.name) {
-        pass.enabled = effects.includes("aa");
-      }
-    });
-  }
-
   private async renderTiles() {
     const TILE_SIZE = 1000;
     const ZOOM = 1;
     const halfMap = MAP_SIZE / 2;
     const halfRes = TILE_SIZE / 2;
-    this.renderer.setSize(TILE_SIZE, TILE_SIZE);
-    this.composer.passes.forEach((pass) => {
-      if (pass.setSize) {
-        pass.setSize(TILE_SIZE * ZOOM, TILE_SIZE * ZOOM);
-      }
-    });
+    this.renderPipeline.renderer.setSize(TILE_SIZE, TILE_SIZE);
+    this.renderPipeline.setSize(TILE_SIZE, TILE_SIZE);
     this.camera.left = -halfRes;
     this.camera.right = halfRes;
     this.camera.top = halfRes;

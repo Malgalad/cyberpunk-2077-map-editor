@@ -53,7 +53,7 @@ export const selectedColors: Record<KnownInstancedMeshNames, THREE.Color> = {
   updates: UPDATES.selected,
   visibleDistricts: BUILDINGS.default,
 };
-export const getColor = (
+export const getPalette = (
   name: KnownInstancedMeshNames,
   mode: Modes | undefined,
 ) => {

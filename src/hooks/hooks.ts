@@ -47,6 +47,33 @@ export function useFilesList(directory: string = "/") {
   return files;
 }
 
+const allowedNumKeys = [
+  "0",
+  "1",
+  "2",
+  "3",
+  "4",
+  "5",
+  "6",
+  "7",
+  "8",
+  "9",
+  "Decimal",
+  "Separator",
+  ",",
+  ".",
+  "-",
+];
+function canRunShortcut(event: KeyboardEvent) {
+  const target = event.target as HTMLElement;
+  if (target instanceof HTMLInputElement) {
+    if (target.type === "text")
+      return event.getModifierState("Control") || event.getModifierState("Alt");
+    if (target.type === "number") return !allowedNumKeys.includes(event.key);
+  }
+  return true;
+}
+
 export function useGlobalShortcuts(
   shortcut?: string,
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -63,7 +90,7 @@ export function useGlobalShortcuts(
       const code = sequence.at(-1)!;
       const expectedModifiers = sequence.slice(0, -1);
 
-      if (event.target instanceof HTMLInputElement) return;
+      if (!canRunShortcut(event)) return;
 
       const eventModifiers = ["Alt", "Control", "Meta", "Shift"];
 

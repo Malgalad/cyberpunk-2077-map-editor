@@ -1,25 +1,44 @@
 import type { AppState, AppStore } from "../types/types.ts";
 
-abstract class Stateful<
+class SelectedState<
   Selectors extends Record<string, (state: AppState) => unknown>,
-> extends EventTarget {
+> {
   private readonly store: AppStore;
   private readonly unsubscribe: () => void;
   private readonly selectors: Selectors;
+  private readonly listeners: (() => void)[] = [];
   // @ts-expect-error State will be defined in constructor via rerunSelectors
-  state: { [K in keyof Selectors]: ReturnType<Selectors[K]> } = {};
+  private state: { [key in keyof Selectors]: ReturnType<Selectors[key]> } = {};
 
-  protected constructor(store: AppStore, selectors: Selectors) {
-    super();
-
+  constructor(store: AppStore, selectors: Selectors) {
     this.store = store;
     this.selectors = selectors;
     this.unsubscribe = store.subscribe(() => this.rerunSelectors());
     this.rerunSelectors();
+
+    for (const key of Object.keys(selectors)) {
+      Object.defineProperty(this, key, {
+        get: () => this.state[key as keyof Selectors],
+        enumerable: true,
+      });
+    }
+  }
+
+  subscribe(callback: () => void) {
+    this.listeners.push(callback);
+    return () => {
+      const index = this.listeners.indexOf(callback);
+      if (index !== -1) {
+        this.listeners.splice(index, 1);
+      }
+    };
   }
 
   dispose() {
     this.unsubscribe();
+    while (this.listeners.length) {
+      this.listeners.pop();
+    }
   }
 
   private select(
@@ -45,8 +64,14 @@ abstract class Stateful<
         shouldUpdate;
     }
 
-    if (shouldUpdate) this.dispatchEvent(new Event("update"));
+    if (shouldUpdate) this.listeners.forEach((callback) => callback());
   }
 }
 
-export default Stateful;
+export default function selectedStateFactory<
+  Selectors extends Record<string, (state: AppState) => unknown>,
+>(store: AppStore, selectors: Selectors) {
+  return new SelectedState(store, selectors) as SelectedState<Selectors> & {
+    readonly [key in keyof Selectors]: ReturnType<Selectors[key]>;
+  };
+}

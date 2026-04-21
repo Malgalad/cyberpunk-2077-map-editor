@@ -3,9 +3,17 @@ import * as THREE from "three";
 import { KNOWN_MESHES } from "../constants.ts";
 import { OptionsSelectors } from "../store/options.ts";
 import type { AppStore } from "../types/types.ts";
-import Stateful from "./@Stateful.ts";
+import selectedStateFactory from "../utilities/SelectedState.ts";
 import * as materials from "./materials.ts";
 import { importMesh } from "./utils.ts";
+
+type EventMap = THREE.Object3DEventMap & {
+  /**
+   * Fires when child mesh visibility changes
+   */
+  // eslint-disable-next-line @typescript-eslint/no-empty-object-type
+  visibilityChanged: {};
+};
 
 const materialsMap: Record<string, THREE.Material | THREE.Material[]> = {
   terrain_mesh: materials.terrainMaterial,
@@ -28,49 +36,43 @@ const selectors = {
   meshes: OptionsSelectors.getVisibleMeshes,
 };
 
-class StaticMeshes extends Stateful<typeof selectors> {
-  readonly group = new THREE.Group();
+class StaticMeshes extends THREE.Group<EventMap> {
+  private readonly state: ReturnType<
+    typeof selectedStateFactory<typeof selectors>
+  >;
+  name = "StaticMeshes";
 
   constructor(store: AppStore) {
-    super(store, selectors);
+    super();
 
-    this.group.name = "StaticMeshes";
-    this.setupTerrain();
-  }
+    this.state = selectedStateFactory(store, selectors);
+    this.state.subscribe(this.update);
 
-  dispose() {
-    super.dispose();
-    this.group.children.forEach((child) => {
-      (child as THREE.Mesh).geometry.dispose();
-    });
-    this.group.clear();
-  }
-
-  clear() {}
-
-  private setupTerrain() {
     for (const name of KNOWN_MESHES) {
-      const material = materialsMap[name];
+      const materials = [materialsMap[name]].flat();
 
-      if (Array.isArray(material)) {
-        for (const mat of material) {
-          importMesh(name, mat).then((mesh) => {
-            this.group.add(mesh);
-          });
-        }
-      } else {
+      for (const material of materials) {
         importMesh(name, material).then((mesh) => {
-          this.group.add(mesh);
+          mesh.visible = this.state.meshes.includes(mesh.name);
+          this.add(mesh);
         });
       }
     }
   }
 
-  render() {
-    this.group.children.forEach((child) => {
-      child.visible = this.state.meshes.includes(child.name);
+  dispose() {
+    this.state.dispose();
+    this.children.forEach((child) => {
+      (child as THREE.Mesh).geometry.dispose();
     });
   }
+
+  private update = () => {
+    this.children.forEach((child) => {
+      child.visible = this.state.meshes.includes(child.name);
+    });
+    this.dispatchEvent({ type: "visibilityChanged" });
+  };
 }
 
 export default StaticMeshes;

@@ -43,9 +43,8 @@ function SelectDistrict() {
       trigger={
         <Button
           className={clsx(
-            "w-64 justify-between!",
-            project && !district && "border border-amber-500!",
-            (!project || district) && "border-none",
+            "w-64 justify-between! border-none",
+            project && !district && "bg-amber-900",
           )}
         >
           <div className="w-full truncate text-left">

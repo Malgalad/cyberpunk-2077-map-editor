@@ -1,43 +1,43 @@
 import * as THREE from "three";
 
 import { NodesActions } from "../store/nodes.ts";
-import { OptionsSelectors } from "../store/options.ts";
 import { ProjectSelectors } from "../store/project.ts";
 import type {
   AppStore,
   DistrictWithTransforms,
   MapNode,
-  PatternView,
 } from "../types/types.ts";
+import selectedStateFactory from "../utilities/SelectedState.ts";
 import { partition } from "../utilities/utilities.ts";
 import AxesHelper from "./axesHelper.ts";
 import * as COLORS from "./colors.ts";
 import { EXCLUDE_AO_LAYER } from "./constants.ts";
 import { createDistrictMesh } from "./createDistrictMesh.ts";
+import CurrentDistrict from "./CurrentDistrict.ts";
 import { Map3DBase } from "./map3d.base.ts";
-import Map3DState from "./map3d.state.ts";
-import Map3dStaticMeshes from "./map3d.staticMeshes.ts";
+import Markers from "./Markers.ts";
 import {
   additionsMaterial,
   buildingsMaterial,
-  hiddenMaterial,
-  patternMaterial,
-  spriteMaterial,
-  spriteMaterial2,
-  staticMaterial,
   wireframeMaterial,
 } from "./materials.ts";
+import StaticDistricts from "./StaticDistricts.ts";
+import StaticMeshes from "./StaticMeshes.ts";
 
-const virtualEditsMaterial: Record<PatternView, THREE.Material> = {
-  none: hiddenMaterial,
-  wireframe: wireframeMaterial,
-  solid: patternMaterial,
-};
+const selectors = {
+  tool: ProjectSelectors.getTool,
+  mode: ProjectSelectors.getMode,
+} as const;
 
 export class Map3D extends Map3DBase {
-  private readonly state: Map3DState;
-  private readonly meshes: Map3dStaticMeshes;
-  private visibleDistricts: THREE.Group = new THREE.Group();
+  private readonly current: CurrentDistrict;
+  private readonly markers: Markers;
+  private readonly staticDistricts: StaticDistricts;
+  private readonly staticMeshes: StaticMeshes;
+  private readonly store: AppStore;
+  private readonly state: ReturnType<
+    typeof selectedStateFactory<typeof selectors>
+  >;
   private currentDistrict: THREE.InstancedMesh | null = null;
   private currentDistrictBoundaries: THREE.BoxHelper | null = null;
   private additions: THREE.InstancedMesh | null = null;
@@ -46,24 +46,37 @@ export class Map3D extends Map3DBase {
   private deletions: THREE.InstancedMesh | null = null;
   private canvasRect: DOMRect | null = null;
   private helper = new AxesHelper(50);
-  private markers = new THREE.Group();
-  private markerData: MapNode[] = [];
   private raf: number | undefined;
 
   constructor(canvas: HTMLCanvasElement, store: AppStore) {
     super(canvas, store);
 
+    this.store = store;
+
+    this.state = selectedStateFactory(store, selectors);
+    this.state.subscribe(this.update);
+
     this.canvasRect = this.canvas.getBoundingClientRect();
 
-    this.meshes = new Map3dStaticMeshes(store);
-    this.meshes.addEventListener("update", this.update);
-    this.addMesh(this.meshes.group);
+    this.staticMeshes = new StaticMeshes(store);
+    this.staticMeshes.addEventListener("visibilityChanged", this.update);
+    this.addMesh(this.staticMeshes);
 
-    this.state = new Map3DState(store);
-    this.state.addEventListener("update", this.update);
-    this.addMesh(this.state.group);
+    this.current = new CurrentDistrict(store);
+    this.current.addEventListener("updated", this.update);
+    this.addMesh(this.current);
 
-    this.addMesh(this.visibleDistricts);
+    this.markers = new Markers(store, this.camera);
+    this.markers.addEventListener("updated", this.update);
+    this.onZoomChange(() =>
+      this.markers.dispatchEvent({ type: "zoomChanged" }),
+    );
+    this.addMesh(this.markers);
+
+    this.staticDistricts = new StaticDistricts();
+    this.staticDistricts.addEventListener("updated", this.update);
+    this.addMesh(this.staticDistricts);
+
     this.addMesh(this.helper);
     this.addMesh(this.markers);
 
@@ -76,45 +89,17 @@ export class Map3D extends Map3DBase {
 
   dispose() {
     super.dispose();
-    this.meshes.dispose();
     this.state.dispose();
+    this.staticDistricts.dispose();
+    this.staticMeshes.dispose();
+    this.current.dispose();
+    this.markers.dispose();
 
     this.canvas.removeEventListener("mousemove", this.onMouseMove);
     this.canvas.removeEventListener("mouseleave", this.onMouseLeave);
     this.canvas.removeEventListener("mouseup", this.onClick);
 
     this.helper.dispose();
-    this.visibleDistricts.children.forEach((child) =>
-      (child as THREE.InstancedMesh).geometry.dispose(),
-    );
-    this.currentDistrict?.geometry.dispose();
-    this.currentDistrict?.dispose();
-    this.currentDistrictBoundaries?.geometry.dispose();
-    this.currentDistrictBoundaries?.dispose();
-    this.additions?.geometry.dispose();
-    this.additions?.dispose();
-    this.additionsVirtual?.geometry.dispose();
-    this.additionsVirtual?.dispose();
-    this.updates?.geometry.dispose();
-    this.updates?.dispose();
-    this.deletions?.geometry.dispose();
-    this.deletions?.dispose();
-  }
-
-  private get mode() {
-    return ProjectSelectors.getMode(this.store.getState());
-  }
-
-  private get patternView() {
-    return OptionsSelectors.getPatternView(this.store.getState());
-  }
-
-  private get tool() {
-    return ProjectSelectors.getTool(this.store.getState());
-  }
-
-  private get effects() {
-    return OptionsSelectors.getEffects(this.store.getState());
   }
 
   private getPointer(event: MouseEvent) {
@@ -126,18 +111,17 @@ export class Map3D extends Map3DBase {
   }
 
   private onMouseMove = (event: MouseEvent) => {
-    this.state.intersect(this.getPointer(event), this.camera);
+    this.current.intersect(this.getPointer(event), this.camera);
   };
 
   private onMouseLeave = () => {
-    this.state.intersect(new THREE.Vector2(9999, 9999), this.camera);
+    this.current.intersect(new THREE.Vector2(9999, 9999), this.camera);
   };
 
   private onClick = () => {
-    if (this.tool !== "select") return;
+    if (this.state.tool !== "select") return;
 
-    const mode = this.mode;
-    const intersection = this.state.findIntersection();
+    const intersection = this.current.findIntersection();
 
     if (!intersection) {
       this.store.dispatch(NodesActions.selectNode(null));
@@ -147,6 +131,7 @@ export class Map3D extends Map3DBase {
     const { object, instanceId } = intersection;
     if (instanceId == null) return;
 
+    const mode = this.state.mode;
     if (
       mode === "create" ||
       (mode === "update" && object.name === "updates") ||
@@ -160,42 +145,6 @@ export class Map3D extends Map3DBase {
       this.store.dispatch(NodesActions.addDistrictNode(instanceId, "update"));
     }
   };
-
-  /** Apply selected material to virtual geometry */
-  private refreshMaterials() {
-    if (!this.additionsVirtual) return;
-
-    const patternView = this.patternView;
-    const next = virtualEditsMaterial[patternView];
-    if (this.additionsVirtual.material !== next) {
-      this.additionsVirtual.material = next;
-    }
-    if (patternView !== "solid") {
-      this.additionsVirtual.layers.set(EXCLUDE_AO_LAYER);
-    } else {
-      this.additionsVirtual.layers.set(0);
-    }
-  }
-
-  private renderMarkers() {
-    this.markers.clear();
-
-    for (const marker of this.markerData) {
-      const sprite = new THREE.Sprite(spriteMaterial.clone());
-      const scale = 100 / this.camera.zoom / window.devicePixelRatio;
-      sprite.scale.set(scale, scale, 1);
-      sprite.position.set(
-        marker.position[0],
-        marker.position[2],
-        -marker.position[1],
-      );
-      sprite.layers.set(EXCLUDE_AO_LAYER);
-      sprite.userData.id = marker.id;
-      const spriteCopy = sprite.clone();
-      spriteCopy.material = spriteMaterial2.clone();
-      this.markers.add(sprite, spriteCopy);
-    }
-  }
 
   lookAtCurrentDistrict() {
     if (!this.currentDistrictBoundaries) return;
@@ -242,7 +191,7 @@ export class Map3D extends Map3DBase {
   }
 
   setMarkers(markers: MapNode[]) {
-    this.markerData = markers;
+    this.markers.setMarkers(markers);
   }
 
   setAdditions({ district, transforms }: DistrictWithTransforms) {
@@ -255,15 +204,15 @@ export class Map3D extends Map3DBase {
       additionsMaterial,
       COLORS.ADDITIONS.default,
     );
-    this.state.setMesh("additions", this.additions);
+    this.current.setMesh("additions", this.additions);
     this.additionsVirtual = createDistrictMesh(
       this.additionsVirtual,
       district,
       split["true"] ?? [],
-      virtualEditsMaterial[this.patternView],
+      additionsMaterial,
       COLORS.ADDITIONS.default,
     );
-    this.state.setMesh("additionsVirtual", this.additionsVirtual);
+    this.current.setMesh("additionsVirtual", this.additionsVirtual);
 
     this.update();
   }
@@ -277,7 +226,7 @@ export class Map3D extends Map3DBase {
       COLORS.DELETIONS.default,
     );
     this.deletions.layers.set(EXCLUDE_AO_LAYER);
-    this.state.setMesh("deletions", this.deletions);
+    this.current.setMesh("deletions", this.deletions);
 
     this.update();
   }
@@ -293,7 +242,7 @@ export class Map3D extends Map3DBase {
       buildingsMaterial,
       COLORS.BUILDINGS.default,
     );
-    this.state.setMesh("currentDistrict", this.currentDistrict);
+    this.current.setMesh("currentDistrict", this.currentDistrict);
 
     const minMaxBox = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1));
     minMaxBox.scale.set(
@@ -321,76 +270,19 @@ export class Map3D extends Map3DBase {
       additionsMaterial,
       COLORS.UPDATES.default,
     );
-    this.state.setMesh("updates", this.updates);
+    this.current.setMesh("updates", this.updates);
 
     this.update();
   }
 
   setVisibleDistricts(districts: DistrictWithTransforms[]) {
-    const visibleNames = districts.map((item) => item.district.name);
-
-    const objectsToRemove: THREE.Object3D[] = [];
-    for (
-      let index = 0;
-      index < this.visibleDistricts.children.length;
-      index++
-    ) {
-      const object3d = this.visibleDistricts.children[index];
-      const { name } = object3d;
-
-      if (!visibleNames.includes(name)) {
-        objectsToRemove.push(object3d);
-        (object3d as THREE.InstancedMesh).geometry.dispose();
-      } else {
-        const { district, transforms } = districts.find(
-          (item) => item.district.name === name,
-        )!;
-
-        this.visibleDistricts.children[index] = createDistrictMesh(
-          this.visibleDistricts.children[index] as THREE.InstancedMesh,
-          district,
-          transforms,
-          staticMaterial,
-        );
-      }
-    }
-    if (objectsToRemove.length > 0)
-      this.visibleDistricts.remove(...objectsToRemove);
-
-    const currentNames = this.visibleDistricts.children.map(
-      (object3d) => object3d.name,
-    );
-
-    const objectsToAdd: THREE.Object3D[] = [];
-    for (const item of districts) {
-      const { district, transforms } = item;
-
-      if (!currentNames.includes(district.name)) {
-        const mesh = createDistrictMesh(
-          null,
-          district,
-          transforms,
-          staticMaterial,
-        );
-        mesh.name = district.name;
-        objectsToAdd.push(mesh);
-      }
-    }
-    if (objectsToAdd.length > 0) this.visibleDistricts.add(...objectsToAdd);
-    this.state.setMesh("visibleDistricts", this.visibleDistricts);
-
-    this.update();
+    this.staticDistricts.setStaticDistricts(districts);
   }
 
   reset() {
-    this.state.clear();
+    this.current.clear();
     this.markers.clear();
-    // this.clickOn = undefined;
 
-    for (const object3d of this.visibleDistricts.children) {
-      (object3d as THREE.InstancedMesh).geometry.dispose();
-    }
-    this.visibleDistricts.remove(...this.visibleDistricts.children);
     this.update();
   }
 
@@ -400,18 +292,13 @@ export class Map3D extends Map3DBase {
   };
 
   render() {
-    this.toggleControls(this.tool === "move");
-    this.toggleEffects(this.effects);
-    this.renderMarkers();
-    this.state?.render();
-    this.meshes?.render();
-    this.refreshMaterials();
+    this.toggleControls(this.state.tool === "move");
     super.render();
     this.canvasRect = this.canvas.getBoundingClientRect();
   }
 
   getCenter() {
-    const terrain = this.meshes.group.getObjectByName("terrain_mesh");
+    const terrain = this.scene.getObjectByName("terrain_mesh");
 
     if (!terrain) throw new Error("Terrain mesh not found");
     if (Array.isArray(terrain))
