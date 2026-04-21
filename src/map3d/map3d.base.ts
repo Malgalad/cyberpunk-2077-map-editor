@@ -15,7 +15,7 @@ const writeSS = (data: {
   lookAt: number[];
   zoom: number;
 }) => sessionStorage.setItem("camera", JSON.stringify(data));
-const startPosition = () => readSS().position || [0, 3000, 0];
+const startPosition = () => readSS()?.position || [0, 3000, 0];
 const startLookAt = () => readSS()?.lookAt || [0, 0, 0];
 
 export class Map3DBase {
