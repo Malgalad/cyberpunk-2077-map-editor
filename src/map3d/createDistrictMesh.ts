@@ -101,8 +101,10 @@ export function createDistrictMesh(
   // between actual matrix colors and userData
   mesh.userData.colors = new Array(instances.length)
     .fill(color)
-    .map((c, i) =>
-      (currentColors[i] && currentColors[i]) !== c ? currentColors[i] : c,
+    .map((col, i) =>
+      !!currentColors[i] && !col.equals(currentColors[i])
+        ? currentColors[i]
+        : col,
     );
   mesh.userData.ids = originIds.reduce(
     (acc, id, index) => {
