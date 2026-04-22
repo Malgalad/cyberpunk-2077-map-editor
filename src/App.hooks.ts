@@ -25,6 +25,7 @@ import { ProjectActions, ProjectSelectors } from "./store/project.ts";
 import type {
   District,
   DistrictWithTransforms,
+  InstancedMeshTransforms,
   TreeNode,
 } from "./types/types.ts";
 import {
@@ -208,6 +209,11 @@ export function useDrawAllDistricts(map3d: Map3D | null) {
   }, [map3d, nonCurrentDistricts, store]);
 }
 
+// Cache instances omitted from base transforms
+const cache = new Map<
+  number,
+  [InstancedMeshTransforms, InstancedMeshTransforms]
+>();
 export function useDrawCurrentDistrict(map3d: Map3D | null) {
   const store = useAppStore();
   const district = useAppSelector(DistrictSelectors.getDistrict);
@@ -234,7 +240,15 @@ export function useDrawCurrentDistrict(map3d: Map3D | null) {
 
       const transforms = baseTransforms.map((instance, index) => {
         if (updateIndexes.has(index) || deletionIndexes.has(index)) {
-          return { ...instance, scale: { x: 0, y: 0, z: 0, w: 0 } };
+          if (cache.has(index) && cache.get(index)![0] === instance)
+            return cache.get(index)![1];
+
+          cache.set(index, [
+            instance,
+            { ...instance, scale: { x: 0, y: 0, z: 0, w: 0 } },
+          ]);
+
+          return cache.get(index)![1];
         }
 
         return instance;
@@ -244,6 +258,10 @@ export function useDrawCurrentDistrict(map3d: Map3D | null) {
       map3d.setCurrentDistrict({ district, transforms: baseTransforms });
     }
   }, [map3d, district, store, root]);
+
+  React.useEffect(() => {
+    cache.clear();
+  }, [district?.name]);
 }
 
 export function useDrawAdditions(map3d: Map3D | null) {

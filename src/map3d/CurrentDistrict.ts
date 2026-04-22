@@ -24,7 +24,6 @@ const virtualEditsMaterial: Record<PatternView, THREE.Material> = {
   wireframe: materials.wireframeMaterial,
   solid: materials.patternMaterial,
 };
-const nullColor = new THREE.Color(0, 0, 0);
 
 const selectors = {
   mode: ProjectSelectors.getMode,
@@ -157,7 +156,7 @@ class CurrentDistrict extends THREE.Group<EventMap> {
 
       let needsUpdate = false;
       for (let i = 0; i < meshColors.length; i++) {
-        if (nextColors[i].equals(meshColors[i] ?? nullColor)) continue;
+        if (meshColors[i] === nextColors[i]) continue;
         mesh.setColorAt(i, nextColors[i]);
         needsUpdate = true;
       }

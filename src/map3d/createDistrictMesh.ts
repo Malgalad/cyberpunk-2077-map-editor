@@ -101,13 +101,10 @@ export function createDistrictMesh(
   mesh.userData.instances = instances;
   // carry over selected blocks, otherwise data is cleared, and there is a mismatch
   // between actual matrix colors and userData
-  mesh.userData.colors = new Array(instances.length)
-    .fill(color)
-    .map((col, i) =>
-      !!currentColors[i] && !col.equals(currentColors[i])
-        ? currentColors[i]
-        : col,
-    );
+  mesh.userData.colors = Array.from(
+    { length: instances.length },
+    (_, i) => currentColors[i] || color,
+  );
   mesh.userData.ids = originIds.reduce(
     (acc, id, index) => {
       acc[id] = (acc[id] || []).concat(index);
