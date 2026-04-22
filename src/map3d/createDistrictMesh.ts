@@ -7,6 +7,12 @@ import type {
 
 const getCount = (length: number) =>
   Math.max(1000, Math.ceil(length / 1000) * 1000);
+const nullMatrix = new THREE.Matrix4().compose(
+  new THREE.Vector3(0, 0, 0),
+  new THREE.Quaternion(0, 0, 0, 0),
+  new THREE.Vector3(0, 0, 0),
+);
+const nullColor = new THREE.Color(0, 0, 0);
 
 export function createDistrictMesh(
   currentMesh: THREE.InstancedMesh | null,
@@ -76,7 +82,8 @@ export function createDistrictMesh(
     needsUpdate = true;
     matrix.compose(position, rotation, scale);
     mesh.setMatrixAt(index, matrix);
-    if (color) mesh.setColorAt(index, color);
+    if (currentColors[index] || color)
+      mesh.setColorAt(index, currentColors[index] || color);
   }
 
   for (
@@ -84,14 +91,9 @@ export function createDistrictMesh(
     index < mesh.userData.instances.length;
     index++
   ) {
-    const position = new THREE.Vector3(0, 0, 0);
-    const rotation = new THREE.Quaternion(0, 0, 0, 0);
-    const scale = new THREE.Vector3(0, 0, 0);
-
     needsUpdate = true;
-    matrix.compose(position, rotation, scale);
-    mesh.setMatrixAt(index, matrix);
-    if (color) mesh.setColorAt(index, color);
+    mesh.setMatrixAt(index, nullMatrix);
+    mesh.setColorAt(index, nullColor);
   }
 
   const originIds = instances.map(({ id, originId }) => originId || id);
