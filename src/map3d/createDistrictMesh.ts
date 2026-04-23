@@ -114,6 +114,7 @@ export function createDistrictMesh(
   );
 
   if (needsUpdate) mesh.instanceMatrix.needsUpdate = true;
+  if (needsUpdate && mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
   if (needsUpdate) mesh.computeBoundingSphere();
 
   return mesh;

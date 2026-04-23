@@ -67,7 +67,8 @@ const nodesSlice = createSlice({
         previous.parent !== next.parent ||
         previous.district !== next.district ||
         previous.tag !== next.tag ||
-        previous.pattern?.count !== next.pattern?.count
+        previous.pattern?.count !== next.pattern?.count ||
+        previous.hidden !== next.hidden
       ) {
         Object.assign(state, buildSupportStructures(state.nodes));
       }

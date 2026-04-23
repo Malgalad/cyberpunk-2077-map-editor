@@ -111,11 +111,11 @@ export class Map3D extends Map3DBase {
   }
 
   private onMouseMove = (event: MouseEvent) => {
-    this.current.intersect(this.getPointer(event), this.camera);
+    this.current.castRay(this.getPointer(event), this.camera);
   };
 
   private onMouseLeave = () => {
-    this.current.intersect(new THREE.Vector2(9999, 9999), this.camera);
+    this.current.castRay(new THREE.Vector2(9999, 9999), this.camera);
   };
 
   private onClick = () => {

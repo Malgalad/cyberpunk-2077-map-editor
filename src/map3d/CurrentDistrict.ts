@@ -178,12 +178,16 @@ class CurrentDistrict extends THREE.Group<EventMap> {
       }
       this.add(mesh);
       this.meshMap.set(name, mesh);
-      if (name === "additionsVirtual") this.updateAdditionsVirtualMaterial();
     }
+    this.intersect();
   }
 
-  intersect(pointer: THREE.Vector2, camera: THREE.Camera) {
+  castRay(pointer: THREE.Vector2, camera: THREE.Camera) {
     this.raycaster.setFromCamera(pointer, camera);
+    this.intersect();
+  }
+
+  private intersect() {
     const intersections = this.raycaster.intersectObject(this);
 
     if (!shallowEqual(intersections, this.intersections)) {

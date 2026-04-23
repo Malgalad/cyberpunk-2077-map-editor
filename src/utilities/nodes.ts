@@ -130,7 +130,8 @@ const buildRoot = (id: string): TreeRoot =>
   id === TEMPLATE_ID || id === MARKER_ID
     ? { id, type: "simpleRoot", children: [] }
     : { id, type: "rootByTag", create: [], update: [], delete: [] };
-const getWeight = (node: MapNode) => 1 + (node.pattern?.count ?? 0);
+const getWeight = (node: MapNode) =>
+  node.hidden ? 0 : 1 + (node.pattern?.count ?? 0);
 
 export function buildSupportStructures(nodes: NodesMap) {
   const tree: NodesTree = {};
