@@ -4,7 +4,11 @@ import * as THREE from "three";
 import { NodesSelectors } from "../store/nodes.ts";
 import { OptionsSelectors } from "../store/options.ts";
 import { ProjectSelectors } from "../store/project.ts";
-import type { AppStore, PatternView } from "../types/types.ts";
+import type {
+  AppStore,
+  InstancedMeshTransforms,
+  PatternView,
+} from "../types/types.ts";
 import selectedStateFactory from "../utilities/SelectedState.ts";
 import { getPalette } from "./colors.ts";
 import { EXCLUDE_AO_LAYER } from "./constants.ts";
@@ -129,18 +133,28 @@ class CurrentDistrict extends THREE.Group<EventMap> {
       if (!(mesh instanceof THREE.InstancedMesh)) continue;
 
       const name = mesh.name as KnownInstancedMeshNames;
-      const { colors: meshColors, ids: meshIds } = mesh.userData as {
-        colors: THREE.Color[];
+      const {
+        colors: meshColors,
+        ids: meshIds,
+        instances,
+      } = mesh.userData as {
+        colors: Record<string, THREE.Color>;
         ids: Record<string, number[]>;
+        instances: InstancedMeshTransforms[];
       };
       const palette = getPalette(name, this.state.mode);
-      const nextColors = new Array(meshColors.length).fill(
-        palette.idle,
-      ) as THREE.Color[];
+      const nextColors = instances.reduce(
+        (acc, { id }) => {
+          acc[id] = palette.idle;
+          return acc;
+        },
+        {} as Record<string, THREE.Color>,
+      );
 
       if (intersection) {
         if (intersection.object === mesh) {
-          nextColors.splice(intersection.instanceId!, 1, palette.intersection);
+          const instance = instances[intersection.instanceId!];
+          nextColors[instance.id] = palette.intersection;
         }
       }
 
@@ -148,16 +162,18 @@ class CurrentDistrict extends THREE.Group<EventMap> {
         for (const nodeId of this.state.selected) {
           if (meshIds[nodeId]) {
             for (const index of meshIds[nodeId]) {
-              nextColors.splice(index, 1, palette.selected);
+              const instance = instances[index];
+              nextColors[instance.id] = palette.selected;
             }
           }
         }
       }
 
       let needsUpdate = false;
-      for (let i = 0; i < meshColors.length; i++) {
-        if (meshColors[i] === nextColors[i]) continue;
-        mesh.setColorAt(i, nextColors[i]);
+      for (let i = 0; i < instances.length; i++) {
+        const { id } = instances[i];
+        if (meshColors[id] === nextColors[id]) continue;
+        mesh.setColorAt(i, nextColors[id]);
         needsUpdate = true;
       }
       if (needsUpdate && mesh.instanceColor) {

@@ -39,7 +39,7 @@ export function createDistrictMesh(
     );
     mesh.userData.district = {};
     mesh.userData.instances = [];
-    mesh.userData.colors = [];
+    mesh.userData.colors = {};
     mesh.userData.ids = {};
   }
 
@@ -82,8 +82,8 @@ export function createDistrictMesh(
     needsUpdate = true;
     matrix.compose(position, rotation, scale);
     mesh.setMatrixAt(index, matrix);
-    if (currentColors[index] || color)
-      mesh.setColorAt(index, currentColors[index] || color);
+    if (currentColors[instance.id] || color)
+      mesh.setColorAt(index, currentColors[instance.id] || color);
   }
 
   for (
@@ -101,9 +101,12 @@ export function createDistrictMesh(
   mesh.userData.instances = instances;
   // carry over selected blocks, otherwise data is cleared, and there is a mismatch
   // between actual matrix colors and userData
-  mesh.userData.colors = Array.from(
-    { length: instances.length },
-    (_, i) => currentColors[i] || color,
+  mesh.userData.colors = instances.reduce(
+    (acc, { id }) => {
+      acc[id] = currentColors[id] || color;
+      return acc;
+    },
+    {} as Record<string, THREE.Color>,
   );
   mesh.userData.ids = originIds.reduce(
     (acc, id, index) => {
