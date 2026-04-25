@@ -51,17 +51,18 @@ export function useChangeParent(selected: string[]) {
 
 export function useChangePosition(node: MapNode, useLocal: boolean) {
   const wasLocal = usePreviousValue(useLocal);
+  const previousRotation = usePreviousValue(node.rotation);
   const updateNode = useUpdateNode(node);
 
   const [local, setLocal] = React.useState<MapNode["position"]>([0, 0, 0]);
   const [copy, setCopy] = React.useState<MapNode["position"]>([0, 0, 0]);
 
   React.useEffect(() => {
-    if (useLocal && !wasLocal) {
+    if ((useLocal && !wasLocal) || node.rotation !== previousRotation) {
       setCopy(node.position);
       setLocal([0, 0, 0]);
     }
-  }, [useLocal, wasLocal, node]);
+  }, [useLocal, wasLocal, previousRotation, node]);
 
   return [
     useLocal ? local : node.position,

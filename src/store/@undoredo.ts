@@ -1,4 +1,3 @@
-// import type { UnknownAction } from "@reduxjs/toolkit";
 import { shallowEqual } from "react-redux";
 import {
   combineFilters,
@@ -9,7 +8,6 @@ import {
 import type { AppState } from "../types/types.ts";
 import { hydrateStateActionPrefix } from "./@actions.ts";
 import modalsSlice from "./modals.ts";
-// import nodesSlice from "./nodesV2.ts";
 
 const isObject = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null && !Array.isArray(value);
@@ -34,23 +32,22 @@ const excludeEmptySelect: FilterFunction<AppState["present"]> = (
   _,
   state,
   history,
-) => !shallowEqual(history.past.at(-1)?.nodes.selected, state.nodes.selected);
+) =>
+  !(
+    shallowEqual(history.past.at(-1)?.nodes.selected, state.nodes.selected) &&
+    !state.nodes.selected.length
+  );
 
 const filter = combineFilters(
   excludeHydrateState,
   excludeModalActions,
   excludeEmptySelect,
 );
-// const groupBy = (action: UnknownAction) => {
-//   if (!nodesSlice.actions.updateNode.match(action)) return null;
-//
-//   return `${getAllPaths(action.payload).join("+")}`;
-// };
+
 const undoRedoConfig: UndoableOptions = {
   limit: 30,
   ignoreInitialState: true,
   filter,
-  // groupBy,
 };
 
 export default undoRedoConfig;
