@@ -38,12 +38,10 @@ export type ComputedDistrictProperties = {
 };
 export type District = DistrictProperties & ComputedDistrictProperties;
 
-// InstancedMeshTransforms are relative to to district position
+// InstancedMeshTransforms are relative to district position
 export type InstancedMeshTransforms = {
   id: string;
-  virtual: boolean;
   originId: string | null;
-  index: number;
   position: THREE.Vector4Like;
   orientation: THREE.Vector4Like;
   scale: THREE.Vector4Like;

@@ -8,11 +8,8 @@ import type {
   MapNode,
 } from "../types/types.ts";
 import selectedStateFactory from "../utilities/SelectedState.ts";
-import { partition } from "../utilities/utilities.ts";
 import AxesHelper from "./axesHelper.ts";
 import * as COLORS from "./colors.ts";
-import { EXCLUDE_AO_LAYER } from "./constants.ts";
-import { createDistrictMesh } from "./createDistrictMesh.ts";
 import CurrentDistrict from "./CurrentDistrict.ts";
 import { Map3DBase } from "./map3d.base.ts";
 import Markers from "./Markers.ts";
@@ -38,12 +35,7 @@ export class Map3D extends Map3DBase {
   private readonly state: ReturnType<
     typeof selectedStateFactory<typeof selectors>
   >;
-  private currentDistrict: THREE.InstancedMesh | null = null;
   private currentDistrictBoundaries: THREE.BoxHelper | null = null;
-  private additions: THREE.InstancedMesh | null = null;
-  private additionsVirtual: THREE.InstancedMesh | null = null;
-  private updates: THREE.InstancedMesh | null = null;
-  private deletions: THREE.InstancedMesh | null = null;
   private canvasRect: DOMRect | null = null;
   private helper = new AxesHelper(50);
   private raf: number | undefined;
@@ -195,54 +187,48 @@ export class Map3D extends Map3DBase {
   }
 
   setAdditions({ district, transforms }: DistrictWithTransforms) {
-    const split = partition(transforms, (transform) => `${transform.virtual}`);
-
-    this.additions = createDistrictMesh(
-      this.additions,
+    this.current.setMesh(
+      "additions",
       district,
-      split["false"] ?? [],
+      transforms,
       additionsMaterial,
       COLORS.ADDITIONS.default,
     );
-    this.current.setMesh("additions", this.additions);
-    this.additionsVirtual = createDistrictMesh(
-      this.additionsVirtual,
+    this.update();
+  }
+
+  setAdditionsVirtual({ district, transforms }: DistrictWithTransforms) {
+    this.current.setMesh(
+      "additionsVirtual",
       district,
-      split["true"] ?? [],
+      transforms,
       additionsMaterial,
       COLORS.ADDITIONS.default,
     );
-    this.current.setMesh("additionsVirtual", this.additionsVirtual);
-
     this.update();
   }
 
   setDeletions({ district, transforms }: DistrictWithTransforms) {
-    this.deletions = createDistrictMesh(
-      this.deletions,
+    this.current.setMesh(
+      "deletions",
       district,
       transforms,
       wireframeMaterial,
       COLORS.DELETIONS.default,
     );
-    this.deletions.layers.set(EXCLUDE_AO_LAYER);
-    this.current.setMesh("deletions", this.deletions);
-
     this.update();
   }
 
-  setCurrentDistrict(data: DistrictWithTransforms) {
+  setCurrentDistrict({ district, transforms }: DistrictWithTransforms) {
     this.removeMesh(this.currentDistrictBoundaries);
 
-    const { district, transforms } = data;
-    this.currentDistrict = createDistrictMesh(
-      this.currentDistrict,
+    this.current.setMesh(
+      "currentDistrict",
       district,
       transforms,
       buildingsMaterial,
       COLORS.BUILDINGS.default,
     );
-    this.current.setMesh("currentDistrict", this.currentDistrict);
 
     const minMaxBox = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1));
     minMaxBox.scale.set(
@@ -263,15 +249,13 @@ export class Map3D extends Map3DBase {
   }
 
   setUpdates({ district, transforms }: DistrictWithTransforms) {
-    this.updates = createDistrictMesh(
-      this.updates,
+    this.current.setMesh(
+      "updates",
       district,
       transforms,
       additionsMaterial,
       COLORS.UPDATES.default,
     );
-    this.current.setMesh("updates", this.updates);
-
     this.update();
   }
 

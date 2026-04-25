@@ -75,9 +75,7 @@ export function decodeImageData(data: Uint16Array): InstancedMeshTransforms[] {
 
     instances[index] = {
       id: `${index}`,
-      virtual: false,
       originId: null,
-      index,
       position,
       orientation,
       scale,

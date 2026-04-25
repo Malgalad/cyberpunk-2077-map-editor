@@ -85,8 +85,6 @@ export function nodeToTransform(
 
   return {
     id: node.id,
-    index: node.indexInDistrict,
-    virtual: node.virtual ?? false,
     originId: node.originId ?? null,
     position,
     orientation,

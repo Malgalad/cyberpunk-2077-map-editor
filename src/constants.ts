@@ -74,9 +74,7 @@ export const KNOWN_MESH_NAMES: Record<DefaultMeshNames, string> = {
 
 export const DEFAULT_TRANSFORM: InstancedMeshTransforms = {
   id: "-1",
-  virtual: false,
   originId: null,
-  index: -1,
   position: { x: 0, y: 0, z: 0, w: 1 },
   orientation: { x: 0, y: 0, z: 0, w: 0 },
   scale: { x: 0, y: 0, z: 0, w: 1 },

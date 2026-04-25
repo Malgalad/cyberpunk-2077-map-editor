@@ -86,10 +86,14 @@ export function getFinalDistrictTransformsFromNodes(
 
   const visibleAdditions = additions.filter(isVisible);
   const visibleUpdatesMap = new Map(
-    updates.filter(isVisible).map((transform) => [transform.index, transform]),
+    updates
+      .filter(isVisible)
+      .map((transform) => [nodes[transform.id].indexInDistrict, transform]),
   );
   const visibleDeletionsSet = new Set(
-    deletions.filter(isVisible).map((transform) => transform.index),
+    deletions
+      .filter(isVisible)
+      .map((transform) => nodes[transform.id].indexInDistrict),
   );
   const districtTransforms: InstancedMeshTransforms[] = [];
 

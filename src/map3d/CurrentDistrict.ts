@@ -6,12 +6,14 @@ import { OptionsSelectors } from "../store/options.ts";
 import { ProjectSelectors } from "../store/project.ts";
 import type {
   AppStore,
+  DistrictProperties,
   InstancedMeshTransforms,
   PatternView,
 } from "../types/types.ts";
 import selectedStateFactory from "../utilities/SelectedState.ts";
 import { getPalette } from "./colors.ts";
 import { EXCLUDE_AO_LAYER } from "./constants.ts";
+import { createDistrictMesh } from "./createDistrictMesh.ts";
 import * as materials from "./materials.ts";
 import type { KnownInstancedMeshNames } from "./types.ts";
 
@@ -38,7 +40,10 @@ const selectors = {
 
 class CurrentDistrict extends THREE.Group<EventMap> {
   private readonly raycaster = new THREE.Raycaster();
-  private readonly meshMap = new Map<KnownInstancedMeshNames, THREE.Object3D>();
+  private readonly meshMap = new Map<
+    KnownInstancedMeshNames,
+    THREE.InstancedMesh
+  >();
   private readonly state: ReturnType<
     typeof selectedStateFactory<typeof selectors>
   >;
@@ -183,17 +188,31 @@ class CurrentDistrict extends THREE.Group<EventMap> {
     }
   }
 
-  setMesh(name: KnownInstancedMeshNames, mesh: THREE.Object3D) {
-    mesh.name = name;
+  setMesh(
+    name: KnownInstancedMeshNames,
+    district: DistrictProperties,
+    transforms: InstancedMeshTransforms[],
+    material: THREE.Material,
+    color: THREE.Color,
+  ) {
     const current = this.meshMap.get(name);
+    const mesh = createDistrictMesh(
+      current ?? null,
+      district,
+      transforms,
+      material,
+      color,
+    );
+    mesh.name = name;
     if (current !== mesh) {
       if (current) {
         this.remove(current);
-        // noinspection SuspiciousTypeOfGuard
-        if (current instanceof THREE.Mesh) current.geometry.dispose();
+        current.geometry.dispose();
       }
       this.add(mesh);
       this.meshMap.set(name, mesh);
+      if (name === "deletions") mesh.layers.set(EXCLUDE_AO_LAYER);
+      if (name === "additionsVirtual") this.updateAdditionsVirtualMaterial();
     }
     this.intersect();
   }

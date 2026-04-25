@@ -279,8 +279,13 @@ export function useDrawAdditions(map3d: Map3D | null) {
     if (!map3d || !district) return;
 
     const transforms = getTransformsFromSubtree(district, nodes, additions);
+    const split = partition(
+      transforms,
+      (transform) => `${transform.originId != null}`,
+    );
 
-    map3d.setAdditions({ district, transforms });
+    map3d.setAdditions({ district, transforms: split["false"] ?? [] });
+    map3d.setAdditionsVirtual({ district, transforms: split["true"] ?? [] });
   }, [map3d, district, nodes, additions]);
 }
 

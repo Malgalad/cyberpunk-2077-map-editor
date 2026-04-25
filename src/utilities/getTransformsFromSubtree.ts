@@ -240,8 +240,6 @@ export const getTransformsFromSubtree = (
   nodes: NodesMap,
   treeNodes: TreeNode[],
 ): InstancedMeshTransforms[] => {
-  const transforms: InstancedMeshTransforms[] = [];
-
   const processNode = (
     treeNode: TreeNode,
     parents: MapNode[],
@@ -252,25 +250,24 @@ export const getTransformsFromSubtree = (
 
     if (cache.has(key)) return cache.get(key) ?? noTransforms;
 
+    const nodeCopies = [node, ...applyPattern(node)];
     if (node.type === "instance") {
-      const clones = applyPattern(node);
       const resolveNode = pipe(
         applyParentTransform(parents.at(-1)!),
         applyHidden,
         applyCloned(parents),
         applyOffset,
       );
-      const resolvedNodes = [node, ...clones].map(applyMirror(resolveNode));
+      const resolvedNodes = nodeCopies.map(applyMirror(resolveNode));
 
       transforms = resolvedNodes.map((node) => nodeToTransform(node, district));
     } else {
-      const clones = applyPattern(node);
       const resolveNode = pipe(
         applyParentTransform(parents.at(-1)!),
         applyHidden,
         applyCloned(parents),
       );
-      const resolvedNodes = [node, ...clones].map(resolveNode);
+      const resolvedNodes = nodeCopies.map(resolveNode);
 
       transforms = treeNode.children.flatMap((child) =>
         resolvedNodes.flatMap(
@@ -284,9 +281,5 @@ export const getTransformsFromSubtree = (
     return transforms;
   };
 
-  for (const treeNode of treeNodes) {
-    transforms.push(...processNode(treeNode, []));
-  }
-
-  return transforms;
+  return treeNodes.flatMap((treeNode) => processNode(treeNode, []));
 };
