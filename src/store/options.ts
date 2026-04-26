@@ -10,6 +10,7 @@ import type {
 import { hydrateState } from "./@actions.ts";
 
 interface OptionsState {
+  adjustZPosition?: boolean;
   districtView: DistrictView;
   effects: RenderEffects;
   patternView: PatternView;
@@ -18,6 +19,7 @@ interface OptionsState {
 }
 
 const initialState: OptionsState = {
+  adjustZPosition: true,
   districtView: "current",
   effects: ["ao"],
   patternView: "wireframe",
@@ -61,6 +63,9 @@ const optionsSlice = createSlice({
         state.visibleMeshes.splice(index, 1);
       }
     }),
+    toggleZAdjustment: create.reducer<boolean>((state, action) => {
+      state.adjustZPosition = action.payload;
+    }),
   }),
   extraReducers: (builder) =>
     builder.addCase(
@@ -72,6 +77,7 @@ const optionsSlice = createSlice({
 const getSlice = (state: AppState) => state.present[optionsSlice.reducerPath];
 export const OptionsActions = optionsSlice.actions;
 export const OptionsSelectors = {
+  getAdjustZPosition: (state: AppState) => getSlice(state).adjustZPosition,
   getDistrictView: (state: AppState) => getSlice(state).districtView,
   getEffects: (state: AppState) => getSlice(state).effects,
   getPatternView: (state: AppState) => getSlice(state).patternView,

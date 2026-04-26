@@ -32,9 +32,7 @@ function EditNodePattern({ node }: EditNodePatternProps) {
     <div className="grow bg-slate-800">
       <div className="flex flex-col gap-4 p-2">
         <div className="flex flex-row gap-2 items-center">
-          <div className="w-[120px]">
-            {node.pattern ? "Enabled" : "Disabled"}
-          </div>
+          <div className="w-30">{node.pattern ? "Enabled" : "Disabled"}</div>
           <Toggle enabled={!!node.pattern} onChange={togglePattern} />
         </div>
 

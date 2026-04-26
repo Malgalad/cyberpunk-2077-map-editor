@@ -274,14 +274,6 @@ export function useHideNode(selected: string[]) {
   }, [dispatch, invalidate, selected, nodes]);
 }
 
-const offsetPosition = (node: MapNode) => {
-  return toTuple3([
-    node.position[0],
-    node.position[1],
-    node.position[2] - node.scale[2] / 2,
-  ]);
-};
-
 export function useEditNodeAsAddition(node?: MapNode) {
   const dispatch = useAppDispatch();
   const nodes = useAppSelector(NodesSelectors.getNodes);
@@ -301,7 +293,6 @@ export function useEditNodeAsAddition(node?: MapNode) {
       clonesMap[clone.id] = clone;
       clone.tag = "create";
       clone.indexInDistrict = -1;
-      clone.position = offsetPosition(clone);
     }
 
     dispatch(NodesActions.batchUpsertNodes(clonesMap));

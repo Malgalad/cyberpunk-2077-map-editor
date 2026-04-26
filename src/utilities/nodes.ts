@@ -54,6 +54,7 @@ export function initNode(
     rotation,
     scale,
     mirror,
+    version: 2,
   };
 
   return node;

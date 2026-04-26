@@ -214,6 +214,7 @@ class CurrentDistrict extends THREE.Group<EventMap> {
       if (name === "deletions") mesh.layers.set(EXCLUDE_AO_LAYER);
       if (name === "additionsVirtual") this.updateAdditionsVirtualMaterial();
     }
+    this.updateInstancedMeshColors();
     this.intersect();
   }
 

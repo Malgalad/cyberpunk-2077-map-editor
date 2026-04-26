@@ -114,6 +114,7 @@ export type MapNode = Transform & {
   hidden: boolean;
   virtual?: boolean;
   originId?: string;
+  version?: number;
   pattern?: Transform & {
     count: number;
   };

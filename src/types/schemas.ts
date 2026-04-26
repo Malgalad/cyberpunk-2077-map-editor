@@ -19,6 +19,7 @@ export const ProjectStateSchema = z.object({
 });
 
 export const OptionsStateSchema = z.object({
+  adjustZPosition: z.boolean().optional(),
   districtView: z.union([
     z.literal("all"),
     z.literal("current"),
@@ -74,6 +75,7 @@ export const NodeSchemaV2 = z.object({
   district: z.string(),
   indexInDistrict: z.number(),
   hidden: z.boolean(),
+  version: z.number().optional(),
   position: Vector3Schema,
   rotation: Vector3Schema,
   scale: Vector3Schema,

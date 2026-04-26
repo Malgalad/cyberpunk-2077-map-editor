@@ -1,12 +1,22 @@
 import * as React from "react";
 import * as THREE from "three";
 
-import { useAppDispatch, usePreviousValue } from "../hooks/hooks.ts";
+import {
+  useAppDispatch,
+  useAppSelector,
+  usePreviousValue,
+} from "../hooks/hooks.ts";
 import { useInvalidateTransformsCache } from "../hooks/nodes.hooks.ts";
 import { ModalsActions } from "../store/modals.ts";
 import { NodesActions } from "../store/nodes.ts";
+import { OptionsSelectors } from "../store/options.ts";
 import type { MapNode } from "../types/types.ts";
+import { toQuaternion } from "../utilities/math.ts";
 import { toNumber, toTuple3 } from "../utilities/utilities.ts";
+
+type UpdateNodeProperties = {
+  [key in Exclude<keyof MapNode, "id">]?: MapNode[key];
+};
 
 const updateTuple = <T>(tuple: T[], index: number, value: T) =>
   toTuple3(tuple.toSpliced(index, 1, value));
@@ -16,12 +26,12 @@ function useUpdateNode(node: MapNode, shouldInvalidate = true) {
   const invalidate = useInvalidateTransformsCache();
 
   return React.useCallback(
-    <T extends keyof MapNode>(property: T, value: MapNode[T]) => {
+    (update: UpdateNodeProperties) => {
       if (shouldInvalidate) invalidate([node.id]);
       dispatch(
         NodesActions.updateNode({
           id: node.id,
-          [property]: value,
+          ...update,
         }),
       );
     },
@@ -34,7 +44,7 @@ export function useChangeLabel(node: MapNode) {
 
   return React.useCallback(
     (event: React.ChangeEvent<HTMLInputElement>) => {
-      updateNode("label", event.target.value);
+      updateNode({ label: event.target.value });
     },
     [updateNode],
   );
@@ -82,9 +92,9 @@ export function useChangePosition(node: MapNode, useLocal: boolean) {
                 .applyEuler(new THREE.Euler().fromArray(node.rotation)),
             );
 
-          updateNode("position", toTuple3(position.toArray()));
+          updateNode({ position: toTuple3(position.toArray()) });
         } else {
-          updateNode("position", updateTuple(node.position, axis, value));
+          updateNode({ position: updateTuple(node.position, axis, value) });
         }
       },
       [node, updateNode, local, copy, useLocal],
@@ -123,12 +133,11 @@ export function useChangeRotation(node: MapNode, useLocal: boolean) {
             value,
           );
 
-          updateNode(
-            "rotation",
-            toTuple3(object.rotation.toArray() as number[]),
-          );
+          updateNode({
+            rotation: toTuple3(object.rotation.toArray() as number[]),
+          });
         } else {
-          updateNode("rotation", updateTuple(node.rotation, axis, value));
+          updateNode({ rotation: updateTuple(node.rotation, axis, value) });
         }
       },
       [node, updateNode, local, useLocal, copy],
@@ -138,12 +147,29 @@ export function useChangeRotation(node: MapNode, useLocal: boolean) {
 
 export function useChangeScale(node: MapNode) {
   const updateNode = useUpdateNode(node);
+  const adjustZPosition = useAppSelector(OptionsSelectors.getAdjustZPosition);
 
   return React.useCallback(
     (axis: number) => (event: React.ChangeEvent<HTMLInputElement>) => {
       const value = toNumber(event.target.value);
-      updateNode("scale", updateTuple(node.scale, axis, value));
+      const updatedProperties: UpdateNodeProperties = {
+        scale: updateTuple(node.scale, axis, value),
+      };
+
+      if (adjustZPosition && node.version && node.version >= 2) {
+        const rotation = toQuaternion(node.rotation);
+        const dHeight = new THREE.Vector3(0, 0, 0)
+          .setComponent(axis, value - node.scale[axis])
+          .applyQuaternion(rotation);
+        updatedProperties.position = updateTuple(
+          node.position,
+          2,
+          node.position[2] + dHeight.z / 2,
+        );
+      }
+
+      updateNode(updatedProperties);
     },
-    [node, updateNode],
+    [node, updateNode, adjustZPosition],
   );
 }

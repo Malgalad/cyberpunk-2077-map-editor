@@ -7,11 +7,13 @@ import { clsx } from "../utilities/utilities.ts";
 import Button from "./common/Button.tsx";
 import EditNodePattern from "./EditNode.Pattern.tsx";
 import EditNodeProperties from "./EditNode.Properties.tsx";
+import EditNodeSettings from "./EditNode.Settings.tsx";
 
-type Tabs = "properties" | "pattern";
+type Tabs = "properties" | "pattern" | "settings";
 const tabs = [
   { key: "properties", label: "Properties" },
   { key: "pattern", label: "Pattern" },
+  { key: "settings", label: "Settings" },
 ] as { key: Tabs; label: string }[];
 
 interface EditNodeProps {
@@ -37,6 +39,34 @@ function EditNode(props: EditNodeProps) {
     };
   }, []);
 
+  if (props.mode === "update" && selected.length < 2) {
+    return (
+      <div className="grow flex flex-col">
+        <div className="flex flex-row gap-0.5 -mb-px">
+          {tabs
+            .filter((tab) => tab.key !== "pattern")
+            .map((button) => (
+              <Button
+                key={button.key}
+                className={clsx(
+                  "w-1/2 z-10 border-none",
+                  button.key === tab && "bg-slate-800",
+                  button.key !== tab && "bg-slate-900",
+                )}
+                onClick={() => setTab(button.key)}
+              >
+                {button.label}
+              </Button>
+            ))}
+        </div>
+        {tab === "properties" && (
+          <EditNodeProperties selected={selected} mode={props.mode} />
+        )}
+        {tab === "settings" && <EditNodeSettings />}
+      </div>
+    );
+  }
+
   if (
     props.mode !== "create" ||
     selected.length > 1 ||
@@ -56,7 +86,7 @@ function EditNode(props: EditNodeProps) {
           <Button
             key={button.key}
             className={clsx(
-              "w-1/2 z-10 border-none",
+              "w-1/3 z-10 border-none",
               button.key === tab && "bg-slate-800",
               button.key !== tab && "bg-slate-900",
             )}
@@ -70,6 +100,7 @@ function EditNode(props: EditNodeProps) {
         <EditNodeProperties selected={selected} mode={props.mode} />
       )}
       {tab === "pattern" && <EditNodePattern node={nodes[selected[0]]} />}
+      {tab === "settings" && <EditNodeSettings />}
     </div>
   );
 }

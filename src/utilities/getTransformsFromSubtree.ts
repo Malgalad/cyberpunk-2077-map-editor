@@ -108,7 +108,7 @@ function applyCloned(parents: MapNode[]) {
 
 function applyOffset(node: MapNode): MapNode {
   // set node Z transform origin to bottom instead of center
-  if (node.tag === "create")
+  if (node.tag === "create" && (!node.version || node.version < 2))
     return {
       ...node,
       position: [
