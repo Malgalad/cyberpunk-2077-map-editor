@@ -3,15 +3,16 @@ import * as React from "react";
 import * as THREE from "three";
 
 import { AXII, MARKER_ID, PLANES } from "../constants.ts";
-import { useAppSelector } from "../hooks/hooks.ts";
+import { useAppDispatch, useAppSelector } from "../hooks/hooks.ts";
 import { useMirrorNode, useNumFieldSteps } from "../hooks/nodes.hooks.ts";
 import { DistrictSelectors } from "../store/district.ts";
-import { NodesSelectors } from "../store/nodes.ts";
+import { NodesActions, NodesSelectors } from "../store/nodes.ts";
 import type { Axis, Plane } from "../types/types.ts";
 import { clsx } from "../utilities/utilities.ts";
 import Button from "./common/Button.tsx";
 import DraggableInput from "./common/DraggableInput.tsx";
 import Input from "./common/Input.tsx";
+import Toggle from "./common/Toggle.tsx";
 import Tooltip from "./common/Tooltip.tsx";
 import {
   useChangeLabel,
@@ -33,8 +34,10 @@ const axiiColors = [
 ] as const;
 
 function EditNodeProperties({ selected, mode }: EditNodePropertiesProps) {
+  const dispatch = useAppDispatch();
   const nodes = useAppSelector(NodesSelectors.getNodes);
   const district = useAppSelector(DistrictSelectors.getDistrict);
+  const pinnedPlane = useAppSelector(NodesSelectors.getPinnedPlaneNode);
   const [useLocal, setUseLocal] = React.useState<
     "position" | "rotation" | null
   >(null);
@@ -125,6 +128,19 @@ function EditNodeProperties({ selected, mode }: EditNodePropertiesProps) {
                 onChange={changePosition(axis)}
               />
             ))}
+          </div>
+          <div>Pin as a plane:</div>
+          <div className="flex flex-row gap-1 items-center">
+            <Toggle
+              enabled={node.id === pinnedPlane}
+              onChange={() =>
+                dispatch(
+                  NodesActions.pinNode(
+                    node.id === pinnedPlane ? undefined : node.id,
+                  ),
+                )
+              }
+            />
           </div>
         </div>
       </div>

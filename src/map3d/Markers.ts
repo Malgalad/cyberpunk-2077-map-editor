@@ -4,7 +4,7 @@ import { NodesSelectors } from "../store/nodes.ts";
 import type { AppStore, MapNode } from "../types/types.ts";
 import selectedStateFactory from "../utilities/SelectedState.ts";
 import { EXCLUDE_AO_LAYER } from "./constants.ts";
-import { spriteMaterial, spriteMaterial2 } from "./materials.ts";
+import { planeMaterial, spriteMaterial, spriteMaterial2 } from "./materials.ts";
 
 type EventMap = THREE.Object3DEventMap & {
   /**
@@ -21,6 +21,7 @@ type EventMap = THREE.Object3DEventMap & {
 
 const selectors = {
   selected: NodesSelectors.getSelectedNodes,
+  pinned: NodesSelectors.getPinnedPlaneNode,
 } as const;
 
 class Markers extends THREE.Group<EventMap> {
@@ -28,6 +29,10 @@ class Markers extends THREE.Group<EventMap> {
   private readonly state: ReturnType<
     typeof selectedStateFactory<typeof selectors>
   >;
+  private readonly plane = new THREE.Mesh(
+    new THREE.PlaneGeometry(1000, 1000),
+    planeMaterial,
+  );
   private markerNodes: MapNode[] = [];
   name = "Markers";
 
@@ -36,6 +41,11 @@ class Markers extends THREE.Group<EventMap> {
 
     this.state = selectedStateFactory(store, selectors);
     this.state.subscribe(this.update);
+
+    this.plane.layers.set(EXCLUDE_AO_LAYER);
+    this.plane.rotateX(-Math.PI / 2);
+    this.plane.visible = false;
+    this.add(this.plane);
     this.camera = camera;
     this.addEventListener("zoomChanged", this.update);
   }
@@ -44,12 +54,14 @@ class Markers extends THREE.Group<EventMap> {
     this.removeEventListener("zoomChanged", this.update);
     this.state.dispose();
     this.children.forEach((child) => {
-      (child as THREE.Sprite).geometry.dispose();
+      (child as THREE.Mesh | THREE.Sprite).geometry.dispose();
     });
   }
 
   private update = () => {
     this.clear();
+    this.add(this.plane);
+    this.plane.visible = false;
 
     for (const marker of this.markerNodes) {
       const sprite = new THREE.Sprite(spriteMaterial.clone());
@@ -65,11 +77,19 @@ class Markers extends THREE.Group<EventMap> {
       );
       sprite.material.color.set(color);
       sprite.layers.set(EXCLUDE_AO_LAYER);
-      sprite.userData.id = marker.id;
       const spriteCopy = sprite.clone();
       spriteCopy.material = spriteMaterial2.clone();
       spriteCopy.material.color.set(color);
       this.add(sprite, spriteCopy);
+    }
+
+    if (this.state.pinned) {
+      const marker = this.markerNodes.find((m) => m.id === this.state.pinned);
+      if (marker) {
+        const [x, y, z] = marker.position;
+        this.plane.visible = true;
+        this.plane.position.copy(new THREE.Vector3(x, z, -y));
+      }
     }
 
     this.dispatchEvent({ type: "updated" });

@@ -93,6 +93,7 @@ export const NodeSchemaV2 = z.object({
 export const NodesStateSchemaV2 = z.object({
   nodes: z.record(z.string(), NodeSchemaV2),
   selected: z.string().array(),
+  pinnedPlane: z.union([z.string(), z.undefined()]),
 });
 
 export const PersistentStateSchema = z.object({

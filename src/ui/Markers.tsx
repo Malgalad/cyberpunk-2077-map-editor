@@ -1,5 +1,6 @@
 import {
-  Diamond,
+  MapPinCheckInside,
+  MapPinIcon,
   MapPinPlus,
   SquareMinus,
   SquarePlus,
@@ -24,6 +25,7 @@ function Markers() {
   const map3d = useMap3D();
   const nodes = useAppSelector(NodesSelectors.getNodes);
   const selected = useAppSelector(NodesSelectors.getSelectedNodes);
+  const pinned = useAppSelector(NodesSelectors.getPinnedPlaneNode);
   const tree = useAppSelector(NodesSelectors.getNodesTree);
   const [expanded, setExpanded] = React.useState(false);
   const markersTree = tree[MARKER_ID];
@@ -65,6 +67,7 @@ function Markers() {
   };
 
   function renderMarker(marker: TreeNode) {
+    const Icon = pinned === marker.id ? MapPinCheckInside : MapPinIcon;
     return (
       <div
         className={clsx("w-6 h-6 cursor-pointer")}
@@ -79,10 +82,10 @@ function Markers() {
           onLook(marker);
         }}
       >
-        <Diamond
+        <Icon
           className={clsx({
-            "text-pink-800": selected.includes(marker.id),
-            "text-cyan-800": !selected.includes(marker.id),
+            "text-pink-400": selected.includes(marker.id),
+            "text-cyan-400": !selected.includes(marker.id),
           })}
         />
       </div>

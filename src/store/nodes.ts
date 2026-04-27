@@ -29,6 +29,7 @@ interface NodesState {
   tree: NodesTree;
   index: NodesIndex;
   selected: string[];
+  pinnedPlane: string | undefined;
 }
 
 const initialState: NodesState = {
@@ -36,6 +37,7 @@ const initialState: NodesState = {
   tree: {},
   index: {},
   selected: [],
+  pinnedPlane: undefined,
 };
 
 const nodesSlice = createSlice({
@@ -83,13 +85,17 @@ const nodesSlice = createSlice({
     selectNodes: create.reducer<string[]>((state, action) => {
       state.selected = action.payload;
     }),
+    pinNode: create.reducer<string | undefined>((state, action) => {
+      state.pinnedPlane = action.payload;
+    }),
   }),
   extraReducers: (builder) =>
     builder
       .addCase(hydrateState.fulfilled, (state, action) => {
-        const { nodes, selected } = action.payload.nodes;
+        const { nodes, selected, pinnedPlane } = action.payload.nodes;
         state.nodes = nodes;
         state.selected = selected;
+        state.pinnedPlane = pinnedPlane;
         Object.assign(state, buildSupportStructures(state.nodes));
       })
       .addCase(DistrictActions.updateDistrict, (state, action) => {
@@ -277,6 +283,7 @@ export const NodesSelectors = {
   getNodes: (state: AppState) => getSlice(state).nodes,
   getNodesTree: (state: AppState) => getSlice(state).tree,
   getNodesIndex: (state: AppState) => getSlice(state).index,
+  getPinnedPlaneNode: (state: AppState) => getSlice(state).pinnedPlane,
   getSelectedNodes: (state: AppState) => getSlice(state).selected,
   getSelectedNodesDeep,
 };

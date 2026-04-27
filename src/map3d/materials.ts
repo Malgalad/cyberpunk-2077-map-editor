@@ -65,6 +65,13 @@ export const hiddenMaterial = new THREE.MeshBasicMaterial({
   opacity: 0.0,
   transparent: true,
   depthTest: false,
+  depthWrite: false,
+});
+
+export const planeMaterial = new THREE.MeshBasicMaterial({
+  color: 0xfefeff,
+  opacity: 0.33,
+  transparent: true,
 });
 
 export const terrainMaterial = new THREE.MeshPhongMaterial({

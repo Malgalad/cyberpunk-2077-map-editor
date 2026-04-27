@@ -1,11 +1,8 @@
 import { createAsyncThunk } from "@reduxjs/toolkit";
 
-import { MARKER_ID } from "../constants.ts";
 import type {
   District,
   DistrictProperties,
-  MapNode,
-  NodesMap,
   PersistentAppState,
   RevivedAppState,
 } from "../types/types.ts";
@@ -13,7 +10,6 @@ import {
   computeDistrictProperties,
   immutableDistrictTransforms,
 } from "../utilities/district.ts";
-import { transplantNode } from "../utilities/nodes.ts";
 import {
   fetchDistrictTransforms,
   unclampTransform,
@@ -38,25 +34,6 @@ const resolveDistrict = async (
   return district;
 };
 
-const isMarker = (nodes: NodesMap, node: MapNode) =>
-  node.type === "instance" &&
-  nodes[node.parent || ""]?.label.toLowerCase() === "markers" &&
-  Object.values(node.scale).every((v) => v === 1);
-
-function migrateMarkers(nodes: NodesMap): NodesMap {
-  const map: NodesMap = {};
-
-  for (const [id, node] of Object.entries(nodes)) {
-    if (isMarker(nodes, node) && node.district !== MARKER_ID) {
-      map[id] = transplantNode(nodes, node, null, MARKER_ID);
-    } else {
-      map[id] = node;
-    }
-  }
-
-  return map;
-}
-
 export const hydrateStateActionPrefix = "hydrateState";
 export const hydrateState = createAsyncThunk(
   hydrateStateActionPrefix,
@@ -69,10 +46,7 @@ export const hydrateState = createAsyncThunk(
         districts: resolvedDistricts,
         current,
       },
-      nodes: {
-        nodes: migrateMarkers(persistentState.nodes.nodes),
-        selected: persistentState.nodes.selected,
-      },
+      nodes: persistentState.nodes,
       options: {
         ...persistentState.options,
         effects: persistentState.options.effects ?? ["ao", "aa"],

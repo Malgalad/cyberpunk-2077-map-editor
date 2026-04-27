@@ -76,6 +76,7 @@ export type PersistentAppState = {
   nodes: {
     nodes: AppState["present"]["nodes"]["nodes"];
     selected: AppState["present"]["nodes"]["selected"];
+    pinnedPlane: AppState["present"]["nodes"]["pinnedPlane"];
   };
   options: {
     districtView: AppState["present"]["options"]["districtView"];
@@ -91,6 +92,7 @@ export type RevivedAppState = {
   nodes: {
     nodes: AppState["present"]["nodes"]["nodes"];
     selected: AppState["present"]["nodes"]["selected"];
+    pinnedPlane: AppState["present"]["nodes"]["pinnedPlane"];
   };
   options: AppState["present"]["options"];
   project: AppState["present"]["project"];
