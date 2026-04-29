@@ -126,7 +126,7 @@ function AddNodesTemplates() {
           </Button>
         }
         direction="left"
-        align="bottom"
+        align="center"
         disabled={isMarkerSelected}
       >
         {templates.length === 0 && (
