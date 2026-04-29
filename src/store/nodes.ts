@@ -180,7 +180,7 @@ const selectNode =
           ? index[start.parent].treeNode
           : index[start.district].treeNode;
         const siblings =
-          parentTree.type === "rootByTag"
+          parentTree.type === "root"
             ? parentTree[start.tag]
             : parentTree.children;
         const startIndex = siblings.findIndex((leaf) => leaf.id === startId);
@@ -215,17 +215,15 @@ const addDistrictNode =
     const selected = NodesSelectors.getSelectedNodes(state);
     const nodes = NodesSelectors.getNodes(state);
     const nodesIndex = NodesSelectors.getNodesIndex(state);
-    const tree = NodesSelectors.getNodesTree(state);
 
     const parent = resolveParent(nodes[selected[0]]);
     const id = nanoid();
 
     // If the user clicks twice without moving the pointer, the highlighted block
     // will stay the same and trigger the event twice
-    const districtTree = tree[district.name];
-    if (districtTree?.type === "rootByTag") {
-      const existingNode = districtTree[tag].find(
-        (treeNode) => nodes[treeNode.id].indexInDistrict === index,
+    if (nodesIndex[district.name]) {
+      const existingNode = nodesIndex[district.name].descendantIds.find(
+        (id) => nodes[id].indexInDistrict === index,
       );
       if (existingNode) return;
     }

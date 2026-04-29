@@ -16,7 +16,7 @@ import { useInvalidateTransformsCache } from "../hooks/nodes.hooks.ts";
 import { DistrictActions, DistrictSelectors } from "../store/district.ts";
 import { NodesActions, NodesSelectors } from "../store/nodes.ts";
 import type { ModalProps } from "../types/modals.ts";
-import type { NodesMap, TreeNode } from "../types/types.ts";
+import type { NodesMap, TreeBranch } from "../types/types.ts";
 import type { SelectItem } from "../types/ui.types.ts";
 import { getDistrictName } from "../utilities/district.ts";
 import { transplantNode } from "../utilities/nodes.ts";
@@ -52,11 +52,7 @@ function UpdateNodeParentModal(props: ModalProps) {
   );
 
   const root = tree[currentDistrict];
-  const branches = root
-    ? root.type === "rootByTag"
-      ? root[node.tag]
-      : root.children
-    : [];
+  const branches = root ? root[node.tag] : [];
 
   const districtItems: SelectItem[] = districts.map((district) => ({
     label: getLabel(getDistrictName(district), {
@@ -135,19 +131,19 @@ function UpdateNodeParentModal(props: ModalProps) {
       </div>
     );
   };
-  const renderTreeNode = (treeNode: TreeNode) => {
-    const mapNode = nodes[treeNode.id];
+  const renderTreeNode = (branch: TreeBranch) => {
+    const mapNode = nodes[branch.id];
     const checked = mapNode.id === currentParent;
     const current = mapNode.id === node.parent;
     const self = selected.includes(mapNode.id);
     const disabled = current || self;
-    const groupChildren = treeNode.children.filter(
-      (child) => child.type === "group",
+    const groupChildren = branch.children.filter(
+      (child) => nodes[child.id].type === "group",
     );
     const hasChildren = groupChildren.length > 0;
 
     return (
-      <React.Fragment key={treeNode.id}>
+      <React.Fragment key={branch.id}>
         <div
           className={clsx(
             "flex flex-row items-center gap-1 cursor-pointer",
@@ -177,7 +173,7 @@ function UpdateNodeParentModal(props: ModalProps) {
 
   return (
     <Modal
-      className="w-[480px]"
+      className="w-120"
       title={
         selected.length > 1
           ? `Update parent of ${selected.length} nodes`
@@ -206,7 +202,7 @@ function UpdateNodeParentModal(props: ModalProps) {
           <div className="flex flex-col gap-0.5 w-full max-h-48 overflow-y-auto bg-slate-800 p-1">
             {renderRootNode()}
             {branches
-              .filter((treeNode) => treeNode.type === "group")
+              .filter((branch) => nodes[branch.id].type === "group")
               .map(renderTreeNode)}
           </div>
         </div>

@@ -25,8 +25,6 @@ function UpdateNodes() {
   const tree = useAppSelector(NodesSelectors.getNodesTree);
   const selected = useAppSelector(NodesSelectors.getSelectedNodes);
   const district = useAppSelector(DistrictSelectors.getDistrict);
-  const root = tree[district?.name ?? "--"] ?? {};
-  const branches = root && root.type === "rootByTag" ? root.update : [];
 
   const onDeselect = useDeselectNode();
   const onDelete = useDeleteNode(selected);
@@ -35,6 +33,9 @@ function UpdateNodes() {
   const onEditAsNew = useEditNodeAsAddition(nodes[selected[0]]);
 
   if (!district) return null;
+
+  const root = tree[district.name];
+  const branches = root?.update ?? [];
 
   return (
     <>
@@ -51,7 +52,7 @@ function UpdateNodes() {
           ))}
         </div>
 
-        <div className="flex flex-row gap-2 sticky pr-1 bottom-0 justify-end border-t border-slate-900 bg-slate-800 z-[1000]">
+        <div className="flex flex-row gap-2 sticky pr-1 bottom-0 justify-end border-t border-slate-900 bg-slate-800 z-1000">
           {selected.length > 0 && (
             <>
               <Tooltip tooltip="Create node & delete block">
@@ -87,7 +88,7 @@ function UpdateNodes() {
                 </Button>
               </Tooltip>
 
-              <div className="border border-slate-600 w-[1px]" />
+              <div className="border border-slate-600 w-px" />
             </>
           )}
 
@@ -107,7 +108,7 @@ function UpdateNodes() {
         </div>
       </div>
 
-      <div className="flex flex-col basis-[270px] shrink-0">
+      <div className="flex flex-col basis-67.5 shrink-0">
         {selected.length > 0 ? (
           <EditNode key={selected[0]} mode="update" />
         ) : (

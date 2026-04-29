@@ -19,8 +19,6 @@ function RemoveNodes() {
   const tree = useAppSelector(NodesSelectors.getNodesTree);
   const selected = useAppSelector(NodesSelectors.getSelectedNodes);
   const district = useAppSelector(DistrictSelectors.getDistrict);
-  const root = tree[district?.name ?? "--"] ?? {};
-  const branches = root && root.type === "rootByTag" ? root.delete : [];
 
   const onDeselect = useDeselectNode();
   const onDelete = useDeleteNode(selected);
@@ -28,6 +26,9 @@ function RemoveNodes() {
   const onTransfer = useChangeNodeTag(nodes[selected[0]]);
 
   if (!district) return null;
+
+  const root = tree[district.name];
+  const branches = root?.delete ?? [];
 
   return (
     <>
@@ -44,7 +45,7 @@ function RemoveNodes() {
           ))}
         </div>
 
-        <div className="flex flex-row gap-2 sticky pr-1 bottom-0 justify-end border-t border-slate-900 bg-slate-800 z-[1000]">
+        <div className="flex flex-row gap-2 sticky pr-1 bottom-0 justify-end border-t border-slate-900 bg-slate-800 z-1000">
           {selected.length > 0 && (
             <>
               <Tooltip tooltip="Update block">
@@ -70,7 +71,7 @@ function RemoveNodes() {
                 </Button>
               </Tooltip>
 
-              <div className="border border-slate-600 w-[1px]" />
+              <div className="border border-slate-600 w-px" />
             </>
           )}
 
@@ -90,7 +91,7 @@ function RemoveNodes() {
         </div>
       </div>
 
-      <div className="flex flex-col basis-[132px] shrink-0">
+      <div className="flex flex-col basis-33 shrink-0">
         {selected.length > 0 ? (
           <EditNode key={selected[0]} mode="delete" />
         ) : (

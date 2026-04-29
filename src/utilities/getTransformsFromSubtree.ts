@@ -7,7 +7,7 @@ import type {
   NodesIndex,
   NodesMap,
   Plane,
-  TreeNode,
+  TreeBranch,
 } from "../types/types.ts";
 import { fromVector3, toQuaternion, toVector3 } from "./math.ts";
 import { nodeToTransform } from "./nodes.ts";
@@ -238,10 +238,10 @@ export const invalidateCachedTransforms = (
 export const getTransformsFromSubtree = (
   district: District,
   nodes: NodesMap,
-  treeNodes: TreeNode[],
+  treeNodes: TreeBranch[],
 ): InstancedMeshTransforms[] => {
   const processNode = (
-    treeNode: TreeNode,
+    treeNode: TreeBranch,
     parents: MapNode[],
   ): InstancedMeshTransforms[] => {
     const node = nodes[treeNode.id];

@@ -123,31 +123,25 @@ export type MapNode = Transform & {
 };
 export type NodesMap = Record<string, MapNode>;
 
-export type TreeNode = {
+export type TreeBranch = {
   id: string;
-  type: "group" | "instance";
-  children: TreeNode[];
+  type: "branch";
+  children: TreeBranch[];
   weight: number;
   depth: number;
 };
-export type TreeRoot =
-  | {
-      id: string;
-      type: "rootByTag";
-      create: TreeNode[];
-      update: TreeNode[];
-      delete: TreeNode[];
-    }
-  | {
-      id: string;
-      type: "simpleRoot";
-      children: TreeNode[];
-    };
+export type TreeRoot = {
+  id: string;
+  type: "root";
+  create: TreeBranch[];
+  update: TreeBranch[];
+  delete: TreeBranch[];
+};
 export type NodesTree = Record<string, TreeRoot>;
 export type NodesIndexIntermediate = Record<
   string,
   {
-    treeNode: TreeNode | TreeRoot;
+    treeNode: TreeBranch | TreeRoot;
     descendantIds: NestedArray<string>[];
     ancestorIds: NestedArray<string>[];
   }
@@ -155,7 +149,7 @@ export type NodesIndexIntermediate = Record<
 export type NodesIndex = Record<
   string,
   {
-    treeNode: TreeNode | TreeRoot;
+    treeNode: TreeBranch | TreeRoot;
     descendantIds: string[];
     ancestorIds: string[];
   }

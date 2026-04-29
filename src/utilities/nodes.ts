@@ -11,7 +11,7 @@ import type {
   NodesMap,
   NodesTree,
   Optional,
-  TreeNode,
+  TreeBranch,
   TreeRoot,
   Tuple3,
 } from "../types/types.ts";
@@ -106,7 +106,7 @@ export function cloneNode(
 
   if (node.type === "group") {
     const treeNode = index[node.id].treeNode;
-    invariant(treeNode.type === "group", "Unexpected treeNode type");
+    invariant(treeNode.type === "branch", "Unexpected treeNode type");
 
     for (const childTreeNode of treeNode.children) {
       const child = nodes[childTreeNode.id];
@@ -125,10 +125,6 @@ export function resolveParent(selected?: MapNode) {
     : null;
 }
 
-const buildRoot = (id: string): TreeRoot =>
-  id === TEMPLATE_ID || id === MARKER_ID
-    ? { id, type: "simpleRoot", children: [] }
-    : { id, type: "rootByTag", create: [], update: [], delete: [] };
 const getWeight = (node: MapNode) =>
   node.hidden ? 0 : 1 + (node.pattern?.count ?? 0);
 
@@ -146,7 +142,13 @@ export function buildSupportStructures(nodes: NodesMap) {
       if (!indexTemp[parent]) processNode(nodes[parent]);
     } else {
       if (!indexTemp[district]) {
-        const root = buildRoot(district);
+        const root: TreeRoot = {
+          id: district,
+          type: "root",
+          create: [],
+          update: [],
+          delete: [],
+        };
 
         tree[district] = root;
         indexTemp[district] = {
@@ -159,16 +161,20 @@ export function buildSupportStructures(nodes: NodesMap) {
 
     const parentIndex = indexTemp[parent || district];
     const parentTree = parentIndex.treeNode;
-    const treeNode: TreeNode = {
+    const treeNode: TreeBranch = {
       id: node.id,
-      type: node.type,
+      type: "branch",
       children: [],
       weight: 0,
-      depth: parentTree.type === "group" ? parentTree.depth + 1 : 0,
+      depth: parentTree.type === "branch" ? parentTree.depth + 1 : 0,
     };
 
-    if (parentTree.type === "rootByTag") {
-      parentTree[node.tag].push(treeNode);
+    if (parentTree.type === "root") {
+      const tag =
+        district === MARKER_ID || district === TEMPLATE_ID
+          ? "create"
+          : node.tag;
+      parentTree[tag].push(treeNode);
     } else {
       parentTree.children.push(treeNode);
     }
@@ -189,17 +195,17 @@ export function buildSupportStructures(nodes: NodesMap) {
 
     processed.add(node.id);
   };
-  const weighNode = (node: TreeNode) => {
-    if (node.weight > 0) return;
-    if (node.type === "instance") {
-      node.weight = getWeight(nodes[node.id]);
+  const weighNode = (branch: TreeBranch) => {
+    if (branch.weight > 0) return;
+    if (nodes[branch.id].type === "instance") {
+      branch.weight = getWeight(nodes[branch.id]);
     } else {
-      for (const child of node.children) {
+      for (const child of branch.children) {
         weighNode(child);
       }
-      node.weight =
-        node.children.reduce((acc, child) => acc + child.weight, 0) *
-        getWeight(nodes[node.id]);
+      branch.weight =
+        branch.children.reduce((acc, child) => acc + child.weight, 0) *
+        getWeight(nodes[branch.id]);
     }
   };
 
@@ -216,7 +222,7 @@ export function buildSupportStructures(nodes: NodesMap) {
       ancestorIds: indexTemp[id].ancestorIds.flat(MAX_DEPTH) as string[],
     };
 
-    if (index[id].treeNode.type === "group") weighNode(index[id].treeNode);
+    if (index[id].treeNode.type === "branch") weighNode(index[id].treeNode);
   }
 
   return { tree, index };

@@ -15,11 +15,11 @@ import { getDistrictName } from "../utilities/district.ts";
 import { clsx } from "../utilities/utilities.ts";
 
 const getEdits = (index: NodesIndex[string]) => {
-  if (!index || index.treeNode.type !== "rootByTag") return null;
-  const treeNode = index.treeNode;
-  const additions = treeNode.create.reduce((acc, node) => acc + node.weight, 0);
-  const updates = treeNode.update.reduce((acc, node) => acc + node.weight, 0);
-  const deletions = treeNode.delete.reduce((acc, node) => acc + node.weight, 0);
+  if (!index || index.treeNode.type !== "root") return null;
+  const root = index.treeNode;
+  const additions = root.create.reduce((acc, node) => acc + node.weight, 0);
+  const updates = root.update.reduce((acc, node) => acc + node.weight, 0);
+  const deletions = root.delete.reduce((acc, node) => acc + node.weight, 0);
 
   return (
     <div className="flex flex-row gap-0.5 text-sm &:empty:hidden">

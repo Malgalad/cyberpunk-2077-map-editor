@@ -15,10 +15,8 @@ import { MARKER_ID } from "../constants.ts";
 import { useAppDispatch, useAppSelector } from "../hooks/hooks.ts";
 import { useMap3D } from "../map3d/map3d.context.ts";
 import { NodesActions, NodesSelectors } from "../store/nodes.ts";
-import type { TreeNode } from "../types/types.ts";
+import type { TreeBranch } from "../types/types.ts";
 import { clsx, toTuple3 } from "../utilities/utilities.ts";
-
-const emptyArr: TreeNode[] = [];
 
 function Markers() {
   const dispatch = useAppDispatch();
@@ -28,11 +26,8 @@ function Markers() {
   const pinned = useAppSelector(NodesSelectors.getPinnedPlaneNode);
   const tree = useAppSelector(NodesSelectors.getNodesTree);
   const [expanded, setExpanded] = React.useState(false);
-  const markersTree = tree[MARKER_ID];
-  const markers =
-    markersTree && markersTree.type === "simpleRoot"
-      ? markersTree.children
-      : emptyArr;
+  const root = tree[MARKER_ID];
+  const markers = root?.create ?? [];
 
   const onCreate = (event: React.MouseEvent<HTMLButtonElement>) => {
     event.stopPropagation();
@@ -53,7 +48,7 @@ function Markers() {
     dispatch(NodesActions.selectNode(node.payload.id));
   };
 
-  const onLook = ({ id }: TreeNode) => {
+  const onLook = ({ id }: TreeBranch) => {
     if (!map3d) return;
     const { position } = nodes[id];
     map3d.lookAt(
@@ -66,7 +61,7 @@ function Markers() {
     dispatch(NodesActions.deleteNodesById(markers.map((marker) => marker.id)));
   };
 
-  function renderMarker(marker: TreeNode) {
+  function renderMarker(marker: TreeBranch) {
     const Icon = pinned === marker.id ? MapPinCheckInside : MapPinIcon;
     return (
       <div

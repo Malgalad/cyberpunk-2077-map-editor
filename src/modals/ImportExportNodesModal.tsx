@@ -165,9 +165,7 @@ function ImportExportNodesModal(props: ModalProps) {
 
     const parentTree = unIndex[node.parent || node.district].treeNode;
     const weight = (
-      parentTree?.type === "rootByTag"
-        ? parentTree[node.tag]
-        : parentTree.children
+      parentTree?.type === "root" ? parentTree[node.tag] : parentTree.children
     ).find((n) => n.id === node.id)?.weight;
 
     return (
@@ -278,7 +276,7 @@ function ImportExportNodesModal(props: ModalProps) {
             </Button>
           ))}
         </div>
-        <div className="border border-slate-500 w-[475px] h-96 p-4">
+        <div className="border border-slate-500 w-118.75 h-96 p-4">
           {tab === "import" && renderImportNodes()}
           {tab === "export" && renderExportNodes()}
         </div>

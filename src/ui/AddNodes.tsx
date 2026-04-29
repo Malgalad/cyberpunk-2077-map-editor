@@ -43,14 +43,14 @@ function AddNodes() {
   if (!district) return null;
 
   const root = tree[district.name];
-  const branches = root && root.type === "rootByTag" ? root.create : [];
+  const branches = root?.create ?? [];
   const isMarkerSelected = selected.some(
     (id) => nodes[id]?.district === MARKER_ID,
   );
 
   return (
     <>
-      <div className="flex flex-col gap-2 grow max-h-[calc(100%_-_320px)] bg-slate-800 relative">
+      <div className="flex flex-col gap-2 grow max-h-[calc(100%-320px)] bg-slate-800 relative">
         <div
           className="grow flex flex-col overflow-auto bg-inherit"
           onClick={onDeselect}
@@ -68,12 +68,12 @@ function AddNodes() {
           ))}
         </div>
 
-        <div className="flex flex-row gap-2 px-1 bottom-0 justify-end border-t border-slate-900 bg-slate-800 z-[1000]">
+        <div className="flex flex-row gap-2 px-1 bottom-0 justify-end border-t border-slate-900 bg-slate-800 z-1000">
           <AddNodesTemplates />
 
           {selected.length > 0 && (
             <>
-              <div className="border border-slate-600 w-[1px]" />
+              <div className="border border-slate-600 w-px" />
 
               <Tooltip tooltip={"Clone node\n[Alt+Ctrl+C]"} tooltip2="Cloned!">
                 <Button
@@ -97,7 +97,7 @@ function AddNodes() {
                 </Button>
               </Tooltip>
 
-              <div className="border border-slate-600 w-[1px]" />
+              <div className="border border-slate-600 w-px" />
             </>
           )}
 
@@ -112,7 +112,7 @@ function AddNodes() {
           </Tooltip>
 
           <Dropdown
-            className="w-[48px]! min-w-0!"
+            className="w-12! min-w-0!"
             trigger={
               <Button
                 className="border-none tooltip"

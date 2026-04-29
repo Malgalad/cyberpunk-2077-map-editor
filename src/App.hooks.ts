@@ -26,7 +26,7 @@ import type {
   District,
   DistrictWithTransforms,
   InstancedMeshTransforms,
-  TreeNode,
+  TreeBranch,
 } from "./types/types.ts";
 import {
   getFinalDistrictTransformsFromNodes,
@@ -36,7 +36,7 @@ import {
   applyTransforms,
   getTransformsFromSubtree,
 } from "./utilities/getTransformsFromSubtree.ts";
-import { invariant, partition } from "./utilities/utilities.ts";
+import { partition } from "./utilities/utilities.ts";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const emptyArray: any[] = [];
@@ -268,11 +268,9 @@ export function useDrawAdditions(map3d: Map3D | null) {
   const district = useAppSelector(DistrictSelectors.getDistrict);
   const nodes = useAppSelector(NodesSelectors.getNodes);
   const tree = useAppSelector(NodesSelectors.getNodesTree);
-  const additions = React.useMemo<TreeNode[]>(() => {
+  const additions = React.useMemo<TreeBranch[]>(() => {
     if (!district || !tree[district.name]) return emptyArray;
-    const root = tree[district.name];
-    invariant(root.type === "rootByTag", "Unexpected tree node type");
-    return root.create;
+    return tree[district.name].create;
   }, [district, tree]);
 
   React.useEffect(() => {
@@ -293,11 +291,9 @@ export function useDrawUpdates(map3d: Map3D | null) {
   const district = useAppSelector(DistrictSelectors.getDistrict);
   const nodes = useAppSelector(NodesSelectors.getNodes);
   const tree = useAppSelector(NodesSelectors.getNodesTree);
-  const updates = React.useMemo<TreeNode[]>(() => {
+  const updates = React.useMemo<TreeBranch[]>(() => {
     if (!district || !tree[district.name]) return emptyArray;
-    const root = tree[district.name];
-    invariant(root.type === "rootByTag", "Unexpected tree node type");
-    return root.update;
+    return tree[district.name].update;
   }, [district, tree]);
 
   React.useEffect(() => {
@@ -313,11 +309,9 @@ export function useDrawDeletions(map3d: Map3D | null) {
   const district = useAppSelector(DistrictSelectors.getDistrict);
   const nodes = useAppSelector(NodesSelectors.getNodes);
   const tree = useAppSelector(NodesSelectors.getNodesTree);
-  const deletions = React.useMemo<TreeNode[]>(() => {
+  const deletions = React.useMemo<TreeBranch[]>(() => {
     if (!district || !tree[district.name]) return emptyArray;
-    const root = tree[district.name];
-    invariant(root.type === "rootByTag", "Unexpected tree node type");
-    return root.delete;
+    return tree[district.name].delete;
   }, [district, tree]);
 
   React.useEffect(() => {
@@ -344,15 +338,12 @@ export function useDrawSelection(map3d: Map3D | null) {
   }, [map3d, mode, selected, nodes]);
 }
 
-const emptyArr: TreeNode[] = [];
+const emptyArr: TreeBranch[] = [];
 export function useDrawMarkers(map3d: Map3D | null) {
   const nodes = useAppSelector(NodesSelectors.getNodes);
   const tree = useAppSelector(NodesSelectors.getNodesTree);
-  const markersTree = tree[MARKER_ID];
-  const markers =
-    markersTree && markersTree.type === "simpleRoot"
-      ? markersTree.children
-      : emptyArr;
+  const root = tree[MARKER_ID];
+  const markers = root?.create ?? emptyArr;
 
   React.useEffect(() => {
     if (!map3d) return;

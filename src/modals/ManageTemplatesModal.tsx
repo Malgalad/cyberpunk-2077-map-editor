@@ -13,12 +13,12 @@ import { useAppDispatch, useAppSelector } from "../hooks/hooks.ts";
 import { useDeleteNode } from "../hooks/nodes.hooks.ts";
 import { ModalsActions } from "../store/modals.ts";
 import { NodesActions, NodesSelectors } from "../store/nodes.ts";
-import type { NodesMap, TreeNode } from "../types/types.ts";
+import type { NodesMap, TreeBranch } from "../types/types.ts";
 import { resolveParent } from "../utilities/nodes.ts";
 import { clsx, invariant } from "../utilities/utilities.ts";
 
 interface TemplateNodeProps {
-  node: TreeNode;
+  branch: TreeBranch;
   nodes: NodesMap;
   selected: string[];
   setSelected: (selected: string[]) => void;
@@ -31,29 +31,29 @@ function TemplateGroup(props: TemplateNodeProps) {
     <div
       className={clsx(
         "flex flex-col gap-1",
-        props.selected.includes(props.node.id) && "bg-indigo-800",
+        props.selected.includes(props.branch.id) && "bg-indigo-800",
       )}
       onClick={(event) => {
         event.stopPropagation();
-        props.setSelected([props.node.id]);
+        props.setSelected([props.branch.id]);
       }}
     >
       <div className="flex flex-row gap-2 items-center cursor-pointer">
         <Button
           className="p-0! min-w-6! w-6 h-6 border-0!"
           onClick={() => setExpanded(!expanded)}
-          disabled={props.node.children.length === 0}
+          disabled={props.branch.children.length === 0}
         >
           {expanded ? <MinusSquare /> : <PlusSquare />}
         </Button>
-        <div>{props.nodes[props.node.id].label}</div>
+        <div>{props.nodes[props.branch.id].label}</div>
       </div>
       {expanded && (
         <div className="flex flex-col gap-1 pl-4">
-          {props.node.children.map((treeNode) => (
+          {props.branch.children.map((leaf) => (
             <TemplateNode
-              key={treeNode.id}
-              node={treeNode}
+              key={leaf.id}
+              branch={leaf}
               nodes={props.nodes}
               selected={props.selected}
               setSelected={props.setSelected}
@@ -70,21 +70,23 @@ function TemplateInstance(props: TemplateNodeProps) {
     <div
       className={clsx(
         "cursor-pointer",
-        props.selected.includes(props.node.id) && "bg-indigo-800",
+        props.selected.includes(props.branch.id) && "bg-indigo-800",
       )}
       onClick={(event) => {
         event.stopPropagation();
-        props.setSelected([props.node.id]);
+        props.setSelected([props.branch.id]);
       }}
     >
-      {props.nodes[props.node.id].label}
+      {props.nodes[props.branch.id].label}
     </div>
   );
 }
 
 function TemplateNode(props: TemplateNodeProps) {
-  if (props.node.type === "group") return <TemplateGroup {...props} />;
-  if (props.node.type === "instance") return <TemplateInstance {...props} />;
+  if (props.nodes[props.branch.id].type === "group")
+    return <TemplateGroup {...props} />;
+  if (props.nodes[props.branch.id].type === "instance")
+    return <TemplateInstance {...props} />;
   return null;
 }
 
@@ -92,8 +94,8 @@ export default function ManageTemplatesModal() {
   const dispatch = useAppDispatch();
   const nodes = useAppSelector(NodesSelectors.getNodes);
   const index = useAppSelector(NodesSelectors.getNodesIndex);
-  const treeNode = index[TEMPLATE_ID].treeNode;
-  invariant(treeNode.type === "simpleRoot", "Invalid treeNode type");
+  const root = index[TEMPLATE_ID].treeNode;
+  invariant(root.type === "root", "Invalid treeNode type");
   const [selected, setSelected] = React.useState<string[]>([]);
 
   const reopen = () => dispatch(ModalsActions.openModal("manage-templates"));
@@ -116,15 +118,15 @@ export default function ManageTemplatesModal() {
   const changeParent = useChangeParent(selected);
 
   return (
-    <Modal className="w-[640px]" title="Manage templates">
+    <Modal className="w-160" title="Manage templates">
       <div
         className="flex flex-col gap-1 px-2 py-1 border border-slate-700 min-h-64 max-h-96 overflow-auto"
         onClick={() => setSelected([])}
       >
-        {treeNode.children.map((treeNode) => (
+        {root.create.map((branch) => (
           <TemplateNode
-            key={treeNode.id}
-            node={treeNode}
+            key={branch.id}
+            branch={branch}
             nodes={nodes}
             selected={selected}
             setSelected={setSelected}
@@ -136,7 +138,7 @@ export default function ManageTemplatesModal() {
           <Input
             key={selected[0] ?? "none"}
             type="text"
-            className="w-[248px]"
+            className="w-62"
             value={selected.length === 1 ? nodes[selected[0]]?.label : ""}
             onChange={changeLabel}
             readOnly={selected.length !== 1}

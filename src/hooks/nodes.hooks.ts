@@ -48,12 +48,12 @@ export function useLookAtNode(node: MapNode) {
       const nodes = NodesSelectors.getNodes(state);
       const tree = NodesSelectors.getNodesTree(state);
       const index = NodesSelectors.getNodesIndex(state);
-      const districtTree = tree[district.name];
-      if (!districtTree || districtTree.type !== "rootByTag") return;
+      const root = tree[district.name];
+      if (!root) return;
       const transforms = getTransformsFromSubtree(
         district,
         nodes,
-        districtTree[node.tag],
+        root[node.tag],
       );
 
       const transformId =

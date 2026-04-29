@@ -36,8 +36,8 @@ function Group({ node }: GroupProps) {
 
   const treeNode = index[node.id].treeNode;
   invariant(
-    treeNode.type === "group",
-    "Invalid treeNode type, expected 'group'",
+    treeNode.type === "branch",
+    "Invalid treeNode type, expected 'branch'",
   );
   const { children, depth } = treeNode;
   const descendantIds = index[node.id].descendantIds;
@@ -86,9 +86,7 @@ function Group({ node }: GroupProps) {
         <div className="grow flex flex-row justify-between items-center select-none">
           <span>
             {node.label}{" "}
-            <span className="text-gray-400">
-              ({treeNode.type === "group" ? treeNode.weight : 0})
-            </span>
+            <span className="text-gray-400">({treeNode.weight})</span>
           </span>
           <div className="flex flex-row gap-1">
             {node.pattern && (

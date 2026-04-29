@@ -9,7 +9,6 @@ import type {
   NodesTree,
 } from "../types/types.ts";
 import { getTransformsFromSubtree } from "./getTransformsFromSubtree.ts";
-import { invariant } from "./utilities.ts";
 
 /**
  * Returns district.name for custom districts or well-known label for default ones
@@ -72,17 +71,13 @@ export function getFinalDistrictTransformsFromNodes(
   tree: NodesTree,
 ): InstancedMeshTransforms[] {
   const baseTransforms = immutableDistrictTransforms.get(district.name) ?? [];
-  const treeNode = tree[district.name];
+  const root = tree[district.name];
 
-  if (!treeNode) return baseTransforms;
+  if (!root) return baseTransforms;
 
-  invariant(
-    treeNode.type === "rootByTag",
-    "District tree root must have children separated by tag.",
-  );
-  const additions = getTransformsFromSubtree(district, nodes, treeNode.create);
-  const updates = getTransformsFromSubtree(district, nodes, treeNode.update);
-  const deletions = getTransformsFromSubtree(district, nodes, treeNode.delete);
+  const additions = getTransformsFromSubtree(district, nodes, root.create);
+  const updates = getTransformsFromSubtree(district, nodes, root.update);
+  const deletions = getTransformsFromSubtree(district, nodes, root.delete);
 
   const visibleAdditions = additions.filter(isVisible);
   const visibleUpdatesMap = new Map(

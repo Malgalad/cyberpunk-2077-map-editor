@@ -18,7 +18,7 @@ import { useMap3D } from "../map3d/map3d.context.ts";
 import { DistrictSelectors } from "../store/district.ts";
 import { ModalsActions } from "../store/modals.ts";
 import { NodesActions, NodesSelectors } from "../store/nodes.ts";
-import type { TreeNode } from "../types/types.ts";
+import type { TreeBranch } from "../types/types.ts";
 import { resolveParent, transplantPoint } from "../utilities/nodes.ts";
 import { toTuple3 } from "../utilities/utilities.ts";
 
@@ -30,11 +30,8 @@ function AddNodesTemplates() {
   const selected = useAppSelector(NodesSelectors.getSelectedNodes);
   const tree = useAppSelector(NodesSelectors.getNodesTree);
   const invalidate = useInvalidateTransformsCache();
-  const templatesTree = tree[TEMPLATE_ID];
-  const templates =
-    templatesTree && templatesTree.type === "simpleRoot"
-      ? templatesTree.children
-      : [];
+  const root = tree[TEMPLATE_ID];
+  const templates = root.create;
   const isMarkerSelected = selected.some(
     (id) => nodes[id]?.district === MARKER_ID,
   );
@@ -83,12 +80,13 @@ function AddNodesTemplates() {
     );
   };
 
-  const renderTemplate = (template: TreeNode) => {
+  const renderTemplate = (template: TreeBranch) => {
     const node = nodes[template.id];
     if (node.label.startsWith("TEMPLATE")) {
       return (
         <DropdownItem
           key={template.id}
+          className="h-8"
           icon={<BetweenHorizonalEnd />}
           onClick={onInsert(template.id)}
         >
@@ -101,7 +99,7 @@ function AddNodesTemplates() {
       <Dropdown
         key={template.id}
         trigger={
-          <DropdownItem icon={<ChevronLeft />}>
+          <DropdownItem className="h-8" icon={<ChevronLeft />}>
             {nodes[template.id].label}
           </DropdownItem>
         }

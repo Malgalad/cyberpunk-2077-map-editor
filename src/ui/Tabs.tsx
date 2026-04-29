@@ -21,8 +21,8 @@ function Tabs() {
   };
 
   return (
-    <div className="w-[450px] h-full flex flex-col p-2 shrink-0">
-      <div className="flex flex-row gap-0.5 -mb-[1px]">
+    <div className="w-112.5 h-full flex flex-col p-2 shrink-0">
+      <div className="flex flex-row gap-0.5 -mb-px">
         <Button
           className={clsx(
             "w-1/3 z-10",
@@ -71,7 +71,7 @@ function Tabs() {
           </div>
         </Button>
       </div>
-      <div className="flex flex-col h-[calc(100%_-_37.33px)] gap-2 p-2 border border-slate-500">
+      <div className="flex flex-col h-[calc(100%-37.33px)] gap-2 p-2 border border-slate-500">
         {mode === "create" && <AddNodes />}
         {mode === "update" && <UpdateNodes />}
         {mode === "delete" && <RemoveNodes />}
