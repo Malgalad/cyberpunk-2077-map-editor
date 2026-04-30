@@ -31,7 +31,7 @@ function AddNodesTemplates() {
   const tree = useAppSelector(NodesSelectors.getNodesTree);
   const invalidate = useInvalidateTransformsCache();
   const root = tree[TEMPLATE_ID];
-  const templates = root.create;
+  const templates = root?.create ?? [];
   const isMarkerSelected = selected.some(
     (id) => nodes[id]?.district === MARKER_ID,
   );
@@ -126,7 +126,7 @@ function AddNodesTemplates() {
           </Button>
         }
         direction="left"
-        align="center"
+        align="bottom"
         disabled={isMarkerSelected}
       >
         {templates.length === 0 && (
