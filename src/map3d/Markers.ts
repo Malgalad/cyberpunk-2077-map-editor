@@ -35,6 +35,7 @@ class Markers extends THREE.Group<EventMap> {
   );
   private markerNodes: MapNode[] = [];
   name = "Markers";
+  renderOrder = 1000;
 
   constructor(store: AppStore, camera: THREE.OrthographicCamera) {
     super();
