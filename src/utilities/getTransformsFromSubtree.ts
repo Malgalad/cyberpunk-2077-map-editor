@@ -8,8 +8,14 @@ import type {
   NodesMap,
   Plane,
   TreeBranch,
+  Tuple3,
 } from "../types/types.ts";
-import { fromVector3, toQuaternion, toVector3 } from "./math.ts";
+import {
+  fromQuaternion,
+  fromVector3,
+  toQuaternion,
+  toVector3,
+} from "./math.ts";
 import { nodeToTransform } from "./nodes.ts";
 import { pipe, toTuple3 } from "./utilities.ts";
 
@@ -47,34 +53,32 @@ function applyParentTransform(parent: MapNode | null) {
     const parentPosition = toVector3(parent.position);
     const parentRotation = toQuaternion(parent.rotation);
 
-    const object = new THREE.Object3D();
-
-    object.position.fromArray(
+    const position = toVector3(
       hadamardProduct(
         mirrorContext.reduce(
           (vec3, plane) => mirrorPosition(plane, vec3),
           node.position,
         ),
         parent.scale,
-      ),
+      ) as Tuple3<number>,
     );
-    object.rotation.fromArray(
+    const quaternion = toQuaternion(
       mirrorContext.reduce(
         (vec3, plane) => mirrorRotation(plane, vec3),
         node.rotation,
       ),
     );
-    object.scale.fromArray(hadamardProduct(node.scale, parent.scale));
+    const scale = hadamardProduct(node.scale, parent.scale) as Tuple3<number>;
 
-    object.applyQuaternion(parentRotation);
-    object.position.applyQuaternion(parentRotation);
-    object.position.add(parentPosition);
+    quaternion.premultiply(parentRotation);
+    position.applyQuaternion(parentRotation);
+    position.add(parentPosition);
 
     return {
       ...node,
-      position: fromVector3(object.position),
-      rotation: toTuple3(object.rotation.toArray() as number[]),
-      scale: fromVector3(object.scale),
+      position: fromVector3(position),
+      rotation: fromQuaternion(quaternion),
+      scale,
     };
   };
 }
