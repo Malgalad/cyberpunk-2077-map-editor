@@ -106,7 +106,10 @@ export class Map3D extends Map3DBase {
     if (object instanceof THREE.InstancedMesh && instanceId == null) return;
 
     const mode = this.state.mode;
-    if (
+
+    if (object instanceof THREE.Sprite) {
+      this.store.dispatch(NodesActions.selectNode(object.userData.id));
+    } else if (
       mode === "create" ||
       (mode === "update" && object.name === "updates") ||
       (mode === "delete" && object.name === "deletions")
@@ -117,8 +120,6 @@ export class Map3D extends Map3DBase {
       this.store.dispatch(NodesActions.addDistrictNode(instanceId!, "delete"));
     } else if (mode === "update" && object.name === "currentDistrict") {
       this.store.dispatch(NodesActions.addDistrictNode(instanceId!, "update"));
-    } else if (object instanceof THREE.Sprite) {
-      this.store.dispatch(NodesActions.selectNode(object.userData.id));
     }
   };
 
