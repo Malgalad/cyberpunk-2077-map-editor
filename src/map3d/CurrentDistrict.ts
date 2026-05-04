@@ -1,4 +1,3 @@
-import { shallowEqual } from "react-redux";
 import * as THREE from "three";
 
 import { NodesSelectors } from "../store/nodes.ts";
@@ -39,7 +38,6 @@ const selectors = {
 } as const;
 
 class CurrentDistrict extends THREE.Group<EventMap> {
-  private readonly raycaster = new THREE.Raycaster();
   private readonly meshMap = new Map<
     KnownInstancedMeshNames,
     THREE.InstancedMesh
@@ -47,8 +45,6 @@ class CurrentDistrict extends THREE.Group<EventMap> {
   private readonly state: ReturnType<
     typeof selectedStateFactory<typeof selectors>
   >;
-  private intersections: THREE.Intersection[] = [];
-  private intersectionIndex = 0;
 
   constructor(store: AppStore) {
     super();
@@ -57,9 +53,6 @@ class CurrentDistrict extends THREE.Group<EventMap> {
     this.state.subscribe(this.onUpdate);
 
     this.name = "CurrentDistrict";
-    this.raycaster.layers.enable(EXCLUDE_AO_LAYER);
-    document.addEventListener("keyup", this.changeIntersectionIndex);
-    document.addEventListener("wheel", this.changeIntersectionIndex);
   }
 
   dispose() {
@@ -70,51 +63,19 @@ class CurrentDistrict extends THREE.Group<EventMap> {
         mesh.geometry.dispose();
       }
     }
-    document.removeEventListener("keyup", this.changeIntersectionIndex);
-    document.removeEventListener("wheel", this.changeIntersectionIndex);
   }
 
   clear() {
     super.clear();
-    this.intersections = [];
-    this.intersectionIndex = 0;
     this.meshMap.clear();
     return this;
   }
 
-  private onUpdate = () => {
+  onUpdate = () => {
+    this.setViable();
     this.updateAdditionsVirtualMaterial();
     this.updateInstancedMeshColors();
     this.dispatchEvent({ type: "updated" });
-  };
-
-  private changeIntersectionIndex = (event: KeyboardEvent | WheelEvent) => {
-    const min = 0;
-    const max = this.intersections.length - 1;
-    const isKeyboardEvent = event instanceof KeyboardEvent;
-    const isWheelEvent = event instanceof WheelEvent;
-
-    if (min === max) return;
-
-    if (
-      (isKeyboardEvent &&
-        (event.code === "ArrowUp" || event.code === "KeyC")) ||
-      (isWheelEvent && event.deltaY > 0)
-    ) {
-      this.intersectionIndex =
-        this.intersectionIndex === max ? min : this.intersectionIndex + 1;
-      this.onUpdate();
-    }
-
-    if (
-      (isKeyboardEvent &&
-        (event.code === "ArrowDown" || event.code === "KeyZ")) ||
-      (isWheelEvent && event.deltaY < 0)
-    ) {
-      this.intersectionIndex =
-        this.intersectionIndex === min ? max : this.intersectionIndex - 1;
-      this.onUpdate();
-    }
   };
 
   private updateAdditionsVirtualMaterial() {
@@ -131,7 +92,9 @@ class CurrentDistrict extends THREE.Group<EventMap> {
   }
 
   private updateInstancedMeshColors() {
-    const intersection = this.findIntersection();
+    const intersection = this.userData.intersection as
+      | undefined
+      | THREE.Intersection;
 
     for (const mesh of this.children) {
       // noinspection SuspiciousTypeOfGuard
@@ -214,42 +177,23 @@ class CurrentDistrict extends THREE.Group<EventMap> {
       if (name === "deletions") mesh.layers.set(EXCLUDE_AO_LAYER);
       if (name === "additionsVirtual") this.updateAdditionsVirtualMaterial();
     }
+    this.setViable();
     this.updateInstancedMeshColors();
-    this.intersect();
   }
 
-  castRay(pointer: THREE.Vector2, camera: THREE.Camera) {
-    this.raycaster.setFromCamera(pointer, camera);
-    this.intersect();
-  }
-
-  private intersect() {
-    const intersections = this.raycaster.intersectObject(this);
-
-    if (!shallowEqual(intersections, this.intersections)) {
-      this.intersections = intersections;
-      this.intersectionIndex = 0;
-      this.onUpdate();
-    }
-  }
-
-  findIntersection(): undefined | THREE.Intersection {
+  private setViable() {
     const { mode, tool } = this.state;
 
-    if (tool !== "select") return;
-
-    const intersections = this.intersections.filter(
-      ({ object }) =>
-        (mode === "create" && object === this.meshMap.get("additions")) ||
-        (mode === "create" &&
-          object === this.meshMap.get("additionsVirtual")) ||
-        (mode === "update" && object === this.meshMap.get("updates")) ||
-        (mode === "update" && object === this.meshMap.get("currentDistrict")) ||
-        (mode === "delete" && object === this.meshMap.get("deletions")) ||
-        (mode === "delete" && object === this.meshMap.get("currentDistrict")),
-    );
-
-    return intersections[this.intersectionIndex];
+    for (const [name, mesh] of this.meshMap) {
+      mesh.userData.viable =
+        tool === "select" &&
+        ((mode === "create" && name === "additions") ||
+          (mode === "create" && name === "additionsVirtual") ||
+          (mode === "update" && name === "updates") ||
+          (mode === "update" && name === "currentDistrict") ||
+          (mode === "delete" && name === "deletions") ||
+          (mode === "delete" && name === "currentDistrict"));
+    }
   }
 }
 

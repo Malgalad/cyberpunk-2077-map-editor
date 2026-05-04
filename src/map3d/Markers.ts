@@ -1,6 +1,7 @@
 import * as THREE from "three";
 
 import { NodesSelectors } from "../store/nodes.ts";
+import { ProjectSelectors } from "../store/project.ts";
 import type { AppStore, MapNode } from "../types/types.ts";
 import selectedStateFactory from "../utilities/SelectedState.ts";
 import { EXCLUDE_AO_LAYER } from "./constants.ts";
@@ -12,16 +13,12 @@ type EventMap = THREE.Object3DEventMap & {
    */
   // eslint-disable-next-line @typescript-eslint/no-empty-object-type
   updated: {};
-  /**
-   * Dispatch onto this object to update markers size
-   */
-  // eslint-disable-next-line @typescript-eslint/no-empty-object-type
-  zoomChanged: {};
 };
 
 const selectors = {
   selected: NodesSelectors.getSelectedNodes,
   pinned: NodesSelectors.getPinnedPlaneNode,
+  tool: ProjectSelectors.getTool,
 } as const;
 
 class Markers extends THREE.Group<EventMap> {
@@ -40,35 +37,36 @@ class Markers extends THREE.Group<EventMap> {
     super();
 
     this.state = selectedStateFactory(store, selectors);
-    this.state.subscribe(this.update);
+    this.state.subscribe(this.onUpdate);
 
     this.plane.layers.set(EXCLUDE_AO_LAYER);
     this.plane.rotateX(-Math.PI / 2);
     this.plane.visible = false;
     this.add(this.plane);
     this.camera = camera;
-    this.addEventListener("zoomChanged", this.update);
   }
 
   dispose() {
-    this.removeEventListener("zoomChanged", this.update);
     this.state.dispose();
     this.children.forEach((child) => {
       (child as THREE.Mesh | THREE.Sprite).geometry.dispose();
     });
   }
 
-  private update = () => {
+  onUpdate = () => {
     this.clear();
     this.add(this.plane);
     this.plane.visible = false;
+    const selectable = this.state.tool === "select";
 
     for (const marker of this.markerNodes) {
       const sprite = new THREE.Sprite(spriteMaterial.clone());
-      const scale = 100 / this.camera.zoom / window.devicePixelRatio;
-      const color = this.state.selected.includes(marker.id)
-        ? 0xff88ff
-        : 0x00ffff;
+      const scale = 150 / this.camera.zoom / window.devicePixelRatio;
+      const isSelected = this.state.selected.includes(marker.id);
+      const isHovered =
+        (this.userData.intersection as undefined | THREE.Intersection)?.object
+          .userData.id === marker.id && selectable;
+      const color = isSelected ? 0xff88ff : isHovered ? 0xffffff : 0x00ffff;
       sprite.scale.set(scale, scale, 1);
       sprite.position.set(
         marker.position[0],
@@ -77,6 +75,8 @@ class Markers extends THREE.Group<EventMap> {
       );
       sprite.material.color.set(color);
       sprite.layers.set(EXCLUDE_AO_LAYER);
+      sprite.userData.id = marker.id;
+      sprite.userData.viable = true;
       const spriteCopy = sprite.clone();
       spriteCopy.material = spriteMaterial2.clone();
       spriteCopy.material.color.set(color);
@@ -97,7 +97,7 @@ class Markers extends THREE.Group<EventMap> {
 
   setMarkers(markerNodes: MapNode[]) {
     this.markerNodes = markerNodes;
-    this.update();
+    this.onUpdate();
   }
 }
 

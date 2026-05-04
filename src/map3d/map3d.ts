@@ -18,6 +18,7 @@ import {
   buildingsMaterial,
   wireframeMaterial,
 } from "./materials.ts";
+import Selectable from "./Selectable.ts";
 import StaticDistricts from "./StaticDistricts.ts";
 import StaticMeshes from "./StaticMeshes.ts";
 
@@ -29,6 +30,7 @@ const selectors = {
 export class Map3D extends Map3DBase {
   private readonly current: CurrentDistrict;
   private readonly markers: Markers;
+  private readonly selectable: Selectable;
   private readonly staticDistricts: StaticDistricts;
   private readonly staticMeshes: StaticMeshes;
   private readonly store: AppStore;
@@ -36,7 +38,6 @@ export class Map3D extends Map3DBase {
     typeof selectedStateFactory<typeof selectors>
   >;
   private currentDistrictBoundaries: THREE.BoxHelper | null = null;
-  private canvasRect: DOMRect | null = null;
   private helper = new AxesHelper(50);
   private raf: number | undefined;
 
@@ -48,8 +49,6 @@ export class Map3D extends Map3DBase {
     this.state = selectedStateFactory(store, selectors);
     this.state.subscribe(this.update);
 
-    this.canvasRect = this.canvas.getBoundingClientRect();
-
     this.staticMeshes = new StaticMeshes(store);
     this.staticMeshes.addEventListener("visibilityChanged", this.update);
     this.addMesh(this.staticMeshes);
@@ -60,10 +59,12 @@ export class Map3D extends Map3DBase {
 
     this.markers = new Markers(store, this.camera);
     this.markers.addEventListener("updated", this.update);
-    this.onZoomChange(() =>
-      this.markers.dispatchEvent({ type: "zoomChanged" }),
-    );
+    this.onZoomChange(this.markers.onUpdate);
     this.addMesh(this.markers);
+
+    this.selectable = new Selectable(this.canvas, this.camera);
+    this.selectable.add(this.current);
+    this.selectable.add(this.markers);
 
     this.staticDistricts = new StaticDistricts();
     this.staticDistricts.addEventListener("updated", this.update);
@@ -72,8 +73,6 @@ export class Map3D extends Map3DBase {
     this.addMesh(this.helper);
     this.addMesh(this.markers);
 
-    this.canvas.addEventListener("mousemove", this.onMouseMove);
-    this.canvas.addEventListener("mouseleave", this.onMouseLeave);
     this.canvas.addEventListener("click", this.onClick);
 
     this.render();
@@ -86,34 +85,17 @@ export class Map3D extends Map3DBase {
     this.staticMeshes.dispose();
     this.current.dispose();
     this.markers.dispose();
+    this.selectable.dispose();
 
-    this.canvas.removeEventListener("mousemove", this.onMouseMove);
-    this.canvas.removeEventListener("mouseleave", this.onMouseLeave);
-    this.canvas.removeEventListener("mouseup", this.onClick);
+    this.canvas.removeEventListener("click", this.onClick);
 
     this.helper.dispose();
   }
 
-  private getPointer(event: MouseEvent) {
-    const { left, top, width, height } = this.canvasRect!;
-    return new THREE.Vector2(
-      ((event.clientX - left) / width) * 2 - 1,
-      -((event.clientY - top) / height) * 2 + 1,
-    );
-  }
-
-  private onMouseMove = (event: MouseEvent) => {
-    this.current.castRay(this.getPointer(event), this.camera);
-  };
-
-  private onMouseLeave = () => {
-    this.current.castRay(new THREE.Vector2(9999, 9999), this.camera);
-  };
-
   private onClick = () => {
     if (this.state.tool !== "select") return;
 
-    const intersection = this.current.findIntersection();
+    const intersection = this.selectable.intersection;
 
     if (!intersection) {
       this.store.dispatch(NodesActions.selectNode(null));
@@ -121,7 +103,7 @@ export class Map3D extends Map3DBase {
     }
 
     const { object, instanceId } = intersection;
-    if (instanceId == null) return;
+    if (object instanceof THREE.InstancedMesh && instanceId == null) return;
 
     const mode = this.state.mode;
     if (
@@ -129,12 +111,14 @@ export class Map3D extends Map3DBase {
       (mode === "update" && object.name === "updates") ||
       (mode === "delete" && object.name === "deletions")
     ) {
-      const { id } = object.userData.instances[instanceId];
+      const { id } = object.userData.instances[instanceId!];
       this.store.dispatch(NodesActions.selectNode(id));
     } else if (mode === "delete" && object.name === "currentDistrict") {
-      this.store.dispatch(NodesActions.addDistrictNode(instanceId, "delete"));
+      this.store.dispatch(NodesActions.addDistrictNode(instanceId!, "delete"));
     } else if (mode === "update" && object.name === "currentDistrict") {
-      this.store.dispatch(NodesActions.addDistrictNode(instanceId, "update"));
+      this.store.dispatch(NodesActions.addDistrictNode(instanceId!, "update"));
+    } else if (object instanceof THREE.Sprite) {
+      this.store.dispatch(NodesActions.selectNode(object.userData.id));
     }
   };
 
@@ -278,7 +262,6 @@ export class Map3D extends Map3DBase {
   render() {
     this.toggleControls(this.state.tool === "move");
     super.render();
-    this.canvasRect = this.canvas.getBoundingClientRect();
   }
 
   getCenter() {
