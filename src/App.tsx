@@ -6,7 +6,6 @@ import {
   useDrawCurrentDistrict,
   useDrawDeletions,
   useDrawMarkers,
-  useDrawSelection,
   useDrawUpdates,
   useInitMap3D,
   useShortcuts,
@@ -34,7 +33,6 @@ function App() {
   useDrawAdditions(map3d);
   useDrawUpdates(map3d);
   useDrawDeletions(map3d);
-  useDrawSelection(map3d);
   useDrawMarkers(map3d);
 
   return (

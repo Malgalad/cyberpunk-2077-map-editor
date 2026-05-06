@@ -8,9 +8,9 @@ import type {
   MapNode,
 } from "../types/types.ts";
 import selectedStateFactory from "../utilities/SelectedState.ts";
-import AxesHelper from "./axesHelper.ts";
 import * as COLORS from "./colors.ts";
 import CurrentDistrict from "./CurrentDistrict.ts";
+import Helper from "./Helper.ts";
 import { Map3DBase } from "./map3d.base.ts";
 import Markers from "./Markers.ts";
 import {
@@ -29,6 +29,7 @@ const selectors = {
 
 export class Map3D extends Map3DBase {
   private readonly current: CurrentDistrict;
+  private readonly helper: Helper;
   private readonly markers: Markers;
   private readonly selectable: Selectable;
   private readonly staticDistricts: StaticDistricts;
@@ -38,7 +39,6 @@ export class Map3D extends Map3DBase {
     typeof selectedStateFactory<typeof selectors>
   >;
   private currentDistrictBoundaries: THREE.BoxHelper | null = null;
-  private helper = new AxesHelper(50);
   private raf: number | undefined;
 
   constructor(canvas: HTMLCanvasElement, store: AppStore) {
@@ -49,13 +49,13 @@ export class Map3D extends Map3DBase {
     this.state = selectedStateFactory(store, selectors);
     this.state.subscribe(this.update);
 
-    this.staticMeshes = new StaticMeshes(store);
-    this.staticMeshes.addEventListener("visibilityChanged", this.update);
-    this.addMesh(this.staticMeshes);
-
     this.current = new CurrentDistrict(store);
     this.current.addEventListener("updated", this.update);
     this.addMesh(this.current);
+
+    this.helper = new Helper(store, this.camera);
+    this.onZoomChange(this.helper.onUpdate);
+    this.addMesh(this.helper);
 
     this.markers = new Markers(store, this.camera);
     this.markers.addEventListener("updated", this.update);
@@ -70,8 +70,9 @@ export class Map3D extends Map3DBase {
     this.staticDistricts.addEventListener("updated", this.update);
     this.addMesh(this.staticDistricts);
 
-    this.addMesh(this.helper);
-    this.addMesh(this.markers);
+    this.staticMeshes = new StaticMeshes(store);
+    this.staticMeshes.addEventListener("visibilityChanged", this.update);
+    this.addMesh(this.staticMeshes);
 
     this.canvas.addEventListener("click", this.onClick);
 
@@ -81,15 +82,14 @@ export class Map3D extends Map3DBase {
   dispose() {
     super.dispose();
     this.state.dispose();
-    this.staticDistricts.dispose();
-    this.staticMeshes.dispose();
     this.current.dispose();
+    this.helper.dispose();
     this.markers.dispose();
     this.selectable.dispose();
+    this.staticDistricts.dispose();
+    this.staticMeshes.dispose();
 
     this.canvas.removeEventListener("click", this.onClick);
-
-    this.helper.dispose();
   }
 
   private onClick = () => {
@@ -128,41 +128,6 @@ export class Map3D extends Map3DBase {
 
     this.currentDistrictBoundaries.geometry.computeBoundingBox();
     this.lookAtBox(this.currentDistrictBoundaries.geometry.boundingBox);
-
-    this.update();
-  }
-
-  setHelper(node?: MapNode, relative?: boolean) {
-    if (!node) {
-      this.helper.visible = false;
-      this.update();
-      return;
-    }
-
-    this.helper.position.set(
-      node.position[0],
-      node.position[2],
-      -node.position[1],
-    );
-    if (node.type === "group") {
-      this.helper.scale.set(1.5, 1.5, 1.5);
-    } else {
-      this.helper.scale.set(
-        node.scale[0] / 50,
-        node.scale[2] / 50,
-        node.scale[1] / 50,
-      );
-    }
-    if (relative) {
-      this.helper.rotation.fromArray([
-        node.rotation[0],
-        node.rotation[2],
-        -node.rotation[1],
-      ]);
-    } else {
-      this.helper.rotation.set(0, 0, 0);
-    }
-    this.helper.visible = true;
 
     this.update();
   }

@@ -32,10 +32,7 @@ import {
   getFinalDistrictTransformsFromNodes,
   immutableDistrictTransforms,
 } from "./utilities/district.ts";
-import {
-  applyTransforms,
-  getTransformsFromSubtree,
-} from "./utilities/getTransformsFromSubtree.ts";
+import { getTransformsFromSubtree } from "./utilities/getTransformsFromSubtree.ts";
 import { partition } from "./utilities/utilities.ts";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -321,21 +318,6 @@ export function useDrawDeletions(map3d: Map3D | null) {
 
     map3d.setDeletions({ district, transforms });
   }, [map3d, district, nodes, deletions]);
-}
-
-export function useDrawSelection(map3d: Map3D | null) {
-  const mode = useAppSelector(ProjectSelectors.getMode);
-  const selected = useAppSelector(NodesSelectors.getSelectedNodes);
-  const nodes = useAppSelector(NodesSelectors.getNodes);
-
-  React.useEffect(() => {
-    if (!map3d || mode === "delete") return;
-    if (selected.length !== 1) {
-      map3d.setHelper(undefined);
-    } else {
-      map3d.setHelper(applyTransforms(nodes, nodes[selected[0]]), true);
-    }
-  }, [map3d, mode, selected, nodes]);
 }
 
 const emptyArr: TreeBranch[] = [];
