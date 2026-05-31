@@ -43,7 +43,10 @@ export function createDistrictMesh(
     mesh.userData.ids = {};
   }
 
-  if (district.name !== mesh.userData.district.name) {
+  if (
+    district.name !== mesh.userData.district.name ||
+    !district.position.every((v, i) => mesh.position.getComponent(i) === v)
+  ) {
     const position = new THREE.Vector3().fromArray(district.position);
     const transformMin = new THREE.Vector4().fromArray(district.transMin);
 

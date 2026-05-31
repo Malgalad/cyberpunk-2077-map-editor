@@ -1,5 +1,5 @@
 import { produce } from "immer";
-import { AlertTriangle, LockKeyhole, XIcon } from "lucide-react";
+import { AlertTriangle, LockKeyhole, Undo2, XIcon } from "lucide-react";
 import { nanoid } from "nanoid";
 import * as React from "react";
 
@@ -11,10 +11,15 @@ import Tooltip from "../../components/common/Tooltip.tsx";
 import { AXII, AXIS_LABELS } from "../../constants.ts";
 import { useAppDispatch, useAppSelector } from "../../hooks/hooks.ts";
 import { decodeImageData } from "../../map3d/processDDS.ts";
+import mapData from "../../mapData.min.json";
 import { DistrictActions, DistrictSelectors } from "../../store/district.ts";
 import { ModalsActions } from "../../store/modals.ts";
 import type { ModalProps } from "../../types/modals.ts";
-import type { District, DistrictProperties } from "../../types/types.ts";
+import type {
+  DefaultDistrictNames,
+  District,
+  DistrictProperties,
+} from "../../types/types.ts";
 import {
   computeDistrictProperties,
   getDistrictName,
@@ -23,7 +28,7 @@ import {
 import { uploadFileByExtensions } from "../../utilities/fileHelpers.ts";
 import { fs } from "../../utilities/opfs.ts";
 import { unclampTransform } from "../../utilities/transforms.ts";
-import { invariant, toNumber } from "../../utilities/utilities.ts";
+import { invariant, toNumber, toTuple3 } from "../../utilities/utilities.ts";
 import { defaultValues } from "./editDistrictModal.constants.ts";
 import {
   useDistrictTextureHeight,
@@ -53,6 +58,7 @@ function EditDistrictModal(props: ModalProps) {
   const validationErrors = useGetErrors(data, isEdit ? district : undefined);
   const isCustomDistrict = isEdit ? district?.isCustom : true;
   const isValid = !validationErrors.size;
+  const readOnly = isEdit && !isCustomDistrict;
 
   const redrawCanvasRefFn = useDrawOnCanvas(
     canvasRef,
@@ -61,7 +67,7 @@ function EditDistrictModal(props: ModalProps) {
   );
 
   React.useEffect(() => {
-    if (!isCustomDistrict) return;
+    // if (!isCustomDistrict) return;
     redrawCanvasRefFn.current?.(data);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [data, isCustomDistrict]);
@@ -90,13 +96,29 @@ function EditDistrictModal(props: ModalProps) {
     immutableDistrictTransforms.set(district.name, unclampedTransforms);
   };
 
-  const createDistrict = async () => {
+  const createOrUpdateDistrict = async () => {
     const computedProperties = computeDistrictProperties(
       data,
       district
         ? (immutableDistrictTransforms.get(district.name)?.length ?? 0)
         : 0,
     );
+
+    if (readOnly) {
+      const next: District = produce(district!, (draft) => {
+        draft.position = data.position;
+        draft.origin = computedProperties.origin;
+      });
+      dispatch(ModalsActions.closeModal());
+      dispatch(
+        DistrictActions.updateDistrict({
+          name: district!.name,
+          district: next,
+        }),
+      );
+      return;
+    }
+
     const next: District = {
       ...data,
       ...computedProperties,
@@ -141,9 +163,17 @@ function EditDistrictModal(props: ModalProps) {
     setResolvedTextureName(file.name);
   }, [district, isCustomDistrict]);
 
+  const resetPosition = React.useCallback(() => {
+    if (!readOnly || !district) return;
+    const position = toTuple3(
+      mapData.soup[district.name as DefaultDistrictNames].position,
+    );
+    setData((data) => ({ ...data, position }));
+  }, [readOnly, district]);
+
   return (
     <Modal
-      className="w-[858px]"
+      className="w-214.5"
       title={
         isEdit
           ? `Edit district "${getDistrictName(district!)}":`
@@ -151,7 +181,7 @@ function EditDistrictModal(props: ModalProps) {
       }
     >
       <div className="flex flex-row gap-4">
-        <div className="w-[512px] aspect-square shrink-0">
+        <div className="w-lg aspect-square shrink-0">
           <canvas
             ref={canvasRef}
             width={512}
@@ -164,7 +194,7 @@ function EditDistrictModal(props: ModalProps) {
           <div className="flex flex-row justify-between items-center">
             <div className="text-lg font-bold flex flex-row gap-2 items-center">
               District properties
-              {isEdit && !isCustomDistrict && (
+              {readOnly && (
                 <span
                   className="tooltip"
                   data-tooltip="Default district properties cannot be edited"
@@ -190,11 +220,23 @@ function EditDistrictModal(props: ModalProps) {
                   }),
                 );
               }}
-              readOnly={isEdit && !isCustomDistrict}
+              readOnly={readOnly}
             />
           </div>
 
-          <div>Position:</div>
+          <div className="flex flex-row gap-2 items-center">
+            Position:
+            {readOnly && (
+              <span
+                className="tooltip"
+                data-tooltip="Reset to default position"
+                data-flow="top"
+                onClick={() => resetPosition()}
+              >
+                <Undo2 />
+              </span>
+            )}
+          </div>
           <div className="flex flex-row gap-2">
             {AXII.map((axis) => (
               <DraggableInput
@@ -212,7 +254,6 @@ function EditDistrictModal(props: ModalProps) {
                     }),
                   );
                 }}
-                readOnly={isEdit && !isCustomDistrict}
                 max={8_000}
                 min={-8_000}
               />
@@ -237,7 +278,7 @@ function EditDistrictModal(props: ModalProps) {
                     }),
                   );
                 }}
-                readOnly={isEdit && !isCustomDistrict}
+                readOnly={readOnly}
               />
             ))}
           </div>
@@ -260,7 +301,7 @@ function EditDistrictModal(props: ModalProps) {
                     }),
                   );
                 }}
-                readOnly={isEdit && !isCustomDistrict}
+                readOnly={readOnly}
               />
             ))}
           </div>
@@ -279,7 +320,7 @@ function EditDistrictModal(props: ModalProps) {
                   }),
                 );
               }}
-              readOnly={isEdit && !isCustomDistrict}
+              readOnly={readOnly}
               min={1}
               max={1000}
             />
@@ -294,7 +335,7 @@ function EditDistrictModal(props: ModalProps) {
             >
               Select file
             </Button>
-            <div className="overflow-hidden overflow-ellipsis">
+            <div className="overflow-hidden text-ellipsis">
               {resolvedTextureName || "None"}
             </div>
             {data.texture && (
@@ -335,8 +376,8 @@ function EditDistrictModal(props: ModalProps) {
 
           <div className="flex flex-row gap-2 mt-auto justify-end">
             <Button
-              onClick={() => createDistrict()}
-              disabled={!isValid || (isEdit && !isCustomDistrict)}
+              onClick={() => createOrUpdateDistrict()}
+              disabled={!isValid}
             >
               {isEdit ? "Update district" : "Crate new district"}
             </Button>
