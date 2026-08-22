@@ -3,6 +3,8 @@ import {
   FilePlus,
   FolderOpenDot,
   FolderPlus,
+  Pin,
+  PinOff,
   Trash2,
 } from "lucide-react";
 
@@ -20,6 +22,7 @@ import {
   useCloneNode,
   useDeleteNode,
   useDeselectNode,
+  useToggleIsolation,
   useWrapNode,
 } from "../hooks/nodes.hooks.ts";
 import { DistrictSelectors } from "../store/district.ts";
@@ -32,6 +35,7 @@ function AddNodes() {
   const tree = useAppSelector(NodesSelectors.getNodesTree);
   const selected = useAppSelector(NodesSelectors.getSelectedNodes);
   const district = useAppSelector(DistrictSelectors.getDistrict);
+  const isolated = useAppSelector(NodesSelectors.getIsolated);
 
   const onDeselect = useDeselectNode();
   const onDelete = useDeleteNode(selected);
@@ -39,6 +43,7 @@ function AddNodes() {
   const onAddInstance = useAddNode("instance", "create");
   const onAddGroup = useAddNode("group", "create");
   const onWrapNode = useWrapNode(selected);
+  const onIsolate = useToggleIsolation(nodes[selected[0]]);
 
   if (!district) return null;
 
@@ -74,6 +79,16 @@ function AddNodes() {
           {selected.length > 0 && (
             <>
               <div className="border border-slate-600 w-px" />
+
+              <Tooltip tooltip={"Isolate node\n[Ctrl+I]"}>
+                <Button
+                  className="border-none"
+                  onClick={() => onIsolate()}
+                  disabled={selected.length !== 1}
+                >
+                  {isolated ? <PinOff className="text-red-500" /> : <Pin />}
+                </Button>
+              </Tooltip>
 
               <Tooltip tooltip={"Clone node\n[Alt+Ctrl+C]"} tooltip2="Cloned!">
                 <Button

@@ -15,6 +15,7 @@ import {
   useDeselectNode,
   useHideNode,
   useInvalidateTransformsCache,
+  useToggleIsolation,
 } from "./hooks/nodes.hooks.ts";
 import { Map3D } from "./map3d/map3d.ts";
 import { DistrictSelectors } from "./store/district.ts";
@@ -32,7 +33,10 @@ import {
   getFinalDistrictTransformsFromNodes,
   immutableDistrictTransforms,
 } from "./utilities/district.ts";
-import { getTransformsFromSubtree } from "./utilities/getTransformsFromSubtree.ts";
+import {
+  getIsolatedBranch,
+  getTransformsFromSubtree,
+} from "./utilities/getTransformsFromSubtree.ts";
 import { partition } from "./utilities/utilities.ts";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -81,6 +85,7 @@ export function useShortcuts(map3d: Map3D | null) {
   const deleteNode = useDeleteNode(selected);
   const saveProject = useDownloadProject();
   const cloneNode = useCloneNode(nodes[selected[0]]);
+  const toggleIsolated = useToggleIsolation(nodes[selected[0]]);
 
   useGlobalShortcuts("KeyW", () => dispatch(ProjectActions.setTool("move")));
   useGlobalShortcuts("KeyS", () => dispatch(ProjectActions.setTool("select")));
@@ -153,6 +158,12 @@ export function useShortcuts(map3d: Map3D | null) {
     "Alt+Control+KeyI",
     () => dispatch(ModalsActions.openModal("import-export", "import")),
     !district,
+  );
+
+  useGlobalShortcuts(
+    "Control+KeyI",
+    () => toggleIsolated(),
+    selected.length !== 1,
   );
 }
 
@@ -265,6 +276,8 @@ export function useDrawAdditions(map3d: Map3D | null) {
   const district = useAppSelector(DistrictSelectors.getDistrict);
   const nodes = useAppSelector(NodesSelectors.getNodes);
   const tree = useAppSelector(NodesSelectors.getNodesTree);
+  const isolated = useAppSelector(NodesSelectors.getIsolated);
+  const index = useAppSelector(NodesSelectors.getNodesIndex);
   const additions = React.useMemo<TreeBranch[]>(() => {
     if (!district || !tree[district.name]) return emptyArray;
     return tree[district.name].create;
@@ -274,14 +287,23 @@ export function useDrawAdditions(map3d: Map3D | null) {
     if (!map3d || !district) return;
 
     const transforms = getTransformsFromSubtree(district, nodes, additions);
+    let filtered;
+    if (isolated) {
+      const nodesInBranch = new Set(getIsolatedBranch(nodes, index, isolated));
+      filtered = transforms.filter((transform) =>
+        nodesInBranch.has(transform.originId || transform.id),
+      );
+    } else {
+      filtered = transforms;
+    }
     const split = partition(
-      transforms,
+      filtered,
       (transform) => `${transform.originId != null}`,
     );
 
     map3d.setAdditions({ district, transforms: split["false"] ?? [] });
     map3d.setAdditionsVirtual({ district, transforms: split["true"] ?? [] });
-  }, [map3d, district, nodes, additions]);
+  }, [map3d, district, nodes, additions, isolated, index]);
 }
 
 export function useDrawUpdates(map3d: Map3D | null) {

@@ -19,6 +19,7 @@ interface InstanceProps {
 
 function Instance({ node }: InstanceProps) {
   const selected = useAppSelector(NodesSelectors.getSelectedNodes);
+  const isolated = useAppSelector(NodesSelectors.getIsolated);
 
   const ref = useFocusNodeOnSelected(node);
   const lookAtNode = useLookAtNode(node);
@@ -30,6 +31,8 @@ function Instance({ node }: InstanceProps) {
       className={clsx("flex flex-row items-center gap-2 cursor-pointer", {
         "bg-indigo-800": selected.includes(node.id),
         "bg-inherit": !selected.includes(node.id),
+        "opacity-50": isolated && isolated !== node.id,
+        "pointer-events-none": isolated && isolated !== node.id,
       })}
       ref={ref}
       role="button"

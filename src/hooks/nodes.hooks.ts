@@ -99,6 +99,19 @@ export function useDeselectNode() {
   );
 }
 
+export function useToggleIsolation(node: MapNode) {
+  const dispatch = useAppDispatch();
+  const isolated = useAppSelector(NodesSelectors.getIsolated);
+
+  return React.useCallback(
+    () =>
+      void dispatch(
+        NodesActions.isolateNode(isolated === node.id ? undefined : node.id),
+      ),
+    [dispatch, node, isolated],
+  );
+}
+
 export function useCloneNode(node?: MapNode) {
   const dispatch = useAppDispatch();
   const invalidate = useInvalidateTransformsCache();

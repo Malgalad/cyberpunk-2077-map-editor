@@ -29,6 +29,7 @@ interface NodesState {
   tree: NodesTree;
   index: NodesIndex;
   selected: string[];
+  isolated: string | undefined;
   pinnedPlane: string | undefined;
 }
 
@@ -37,6 +38,7 @@ const initialState: NodesState = {
   tree: {},
   index: {},
   selected: [],
+  isolated: undefined,
   pinnedPlane: undefined,
 };
 
@@ -87,6 +89,9 @@ const nodesSlice = createSlice({
     }),
     pinNode: create.reducer<string | undefined>((state, action) => {
       state.pinnedPlane = action.payload;
+    }),
+    isolateNode: create.reducer<string | undefined>((state, action) => {
+      state.isolated = action.payload;
     }),
   }),
   extraReducers: (builder) =>
@@ -278,6 +283,7 @@ export const NodesActions = {
   selectNode,
 };
 export const NodesSelectors = {
+  getIsolated: (state: AppState) => getSlice(state).isolated,
   getNodes: (state: AppState) => getSlice(state).nodes,
   getNodesTree: (state: AppState) => getSlice(state).tree,
   getNodesIndex: (state: AppState) => getSlice(state).index,

@@ -30,6 +30,7 @@ const ROW_HEIGHT = 28;
 function Group({ node }: GroupProps) {
   const nodes = useAppSelector(NodesSelectors.getNodes);
   const selected = useAppSelector(NodesSelectors.getSelectedNodes);
+  const isolated = useAppSelector(NodesSelectors.getIsolated);
   const index = useAppSelector(NodesSelectors.getNodesIndex);
 
   const [expanded, setExpanded] = React.useState(false);
@@ -66,6 +67,8 @@ function Group({ node }: GroupProps) {
       className={clsx("flex flex-col", {
         "bg-indigo-800": selected.includes(node.id),
         "bg-inherit": !selected.includes(node.id),
+        "opacity-50": isolated && isolated !== node.id,
+        "pointer-events-none": isolated && isolated !== node.id,
       })}
     >
       <div
