@@ -31,7 +31,9 @@ function Group({ node }: GroupProps) {
   const nodes = useAppSelector(NodesSelectors.getNodes);
   const selected = useAppSelector(NodesSelectors.getSelectedNodes);
   const isolated = useAppSelector(NodesSelectors.getIsolated);
+  const branch = useAppSelector(NodesSelectors.getIsolatedNodesDeep);
   const index = useAppSelector(NodesSelectors.getNodesIndex);
+  const isExcluded = branch ? !branch.has(node.id) : false;
 
   const [expanded, setExpanded] = React.useState(false);
 
@@ -67,8 +69,8 @@ function Group({ node }: GroupProps) {
       className={clsx("flex flex-col", {
         "bg-indigo-800": selected.includes(node.id),
         "bg-inherit": !selected.includes(node.id),
-        "opacity-50": isolated && isolated !== node.id,
-        "pointer-events-none": isolated && isolated !== node.id,
+        "opacity-50": isExcluded,
+        "pointer-events-none": isExcluded,
       })}
     >
       <div
@@ -87,7 +89,7 @@ function Group({ node }: GroupProps) {
           {expanded ? <SquareMinus /> : <SquarePlus />}
         </Button>
         <div className="grow flex flex-row justify-between items-center select-none">
-          <span>
+          <span className={clsx({ "text-red-500": isolated === node.id })}>
             {node.label}{" "}
             <span className="text-gray-400">({treeNode.weight})</span>
           </span>

@@ -206,44 +206,24 @@ const addTransformsToCache = (
   cache.set(key, transforms);
 };
 
-const getNodeAncestors = (index: NodesIndex, node: MapNode) => {
-  if (!node.parent) return [];
-  return [node.parent, ...index[node.parent].ancestorIds];
-};
-const getNodeDescendants = (index: NodesIndex, node: MapNode) => {
-  if (!index[node.id]) return [];
-  return [...index[node.id].descendantIds];
-};
-
 /**
  * Return ids of all nodes in the branch of the specified node
  */
-export const getIsolatedBranch = (
-  nodes: NodesMap,
-  index: NodesIndex,
-  id: string,
-) => {
-  const node = nodes[id];
-  const allIds = [id];
-
-  if (node.parent) allIds.push(...getNodeAncestors(index, node));
-  if (node.type === "group") allIds.push(...getNodeDescendants(index, node));
-
-  return allIds;
+export const getIsolatedBranch = (index: NodesIndex, id: string) => {
+  return [id, ...index[id].ancestorIds, ...index[id].descendantIds];
 };
 
 /**
  * Invalidate cached transforms for specified node ids
  */
 export const invalidateCachedTransforms = (
-  nodes: NodesMap,
   index: NodesIndex,
   ids: string[],
 ) => {
   const allIds = [];
 
   for (const id of ids) {
-    allIds.push(...getIsolatedBranch(nodes, index, id));
+    allIds.push(...getIsolatedBranch(index, id));
   }
 
   for (const id of allIds) {

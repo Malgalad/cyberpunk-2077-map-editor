@@ -86,7 +86,11 @@ function AddNodes() {
                   onClick={() => onIsolate()}
                   disabled={selected.length !== 1}
                 >
-                  {isolated ? <PinOff className="text-red-500" /> : <Pin />}
+                  {isolated && isolated === selected[0] ? (
+                    <PinOff className="text-red-500" />
+                  ) : (
+                    <Pin />
+                  )}
                 </Button>
               </Tooltip>
 

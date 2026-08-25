@@ -20,6 +20,8 @@ interface InstanceProps {
 function Instance({ node }: InstanceProps) {
   const selected = useAppSelector(NodesSelectors.getSelectedNodes);
   const isolated = useAppSelector(NodesSelectors.getIsolated);
+  const branch = useAppSelector(NodesSelectors.getIsolatedNodesDeep);
+  const isExcluded = branch ? !branch.has(node.id) : false;
 
   const ref = useFocusNodeOnSelected(node);
   const lookAtNode = useLookAtNode(node);
@@ -31,8 +33,8 @@ function Instance({ node }: InstanceProps) {
       className={clsx("flex flex-row items-center gap-2 cursor-pointer", {
         "bg-indigo-800": selected.includes(node.id),
         "bg-inherit": !selected.includes(node.id),
-        "opacity-50": isolated && isolated !== node.id,
-        "pointer-events-none": isolated && isolated !== node.id,
+        "opacity-50": isExcluded,
+        "pointer-events-none": isExcluded,
       })}
       ref={ref}
       role="button"
@@ -41,7 +43,7 @@ function Instance({ node }: InstanceProps) {
       onDoubleClick={lookAtNode}
     >
       <div className="grow flex flex-row gap-2 justify-between items-center select-none px-2 py-0.5 bg-inherit">
-        <span>
+        <span className={clsx({ "text-red-500": isolated === node.id })}>
           {node.label}
           {node.pattern && (
             <>

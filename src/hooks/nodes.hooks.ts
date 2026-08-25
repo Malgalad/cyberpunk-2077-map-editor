@@ -320,10 +320,9 @@ export function useInvalidateTransformsCache() {
   return React.useCallback(
     (nodeIds: string[]) => {
       const state = store.getState();
-      const nodes = NodesSelectors.getNodes(state);
       const index = NodesSelectors.getNodesIndex(state);
 
-      invalidateCachedTransforms(nodes, index, nodeIds);
+      invalidateCachedTransforms(index, nodeIds);
     },
     [store],
   );

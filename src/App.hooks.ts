@@ -289,7 +289,7 @@ export function useDrawAdditions(map3d: Map3D | null) {
     const transforms = getTransformsFromSubtree(district, nodes, additions);
     let filtered;
     if (isolated) {
-      const nodesInBranch = new Set(getIsolatedBranch(nodes, index, isolated));
+      const nodesInBranch = new Set(getIsolatedBranch(index, isolated));
       filtered = transforms.filter((transform) =>
         nodesInBranch.has(transform.originId || transform.id),
       );

@@ -11,7 +11,10 @@ import type {
   Optional,
 } from "../types/types.ts";
 import { immutableDistrictTransforms } from "../utilities/district.ts";
-import { invalidateCachedTransforms } from "../utilities/getTransformsFromSubtree.ts";
+import {
+  getIsolatedBranch,
+  invalidateCachedTransforms,
+} from "../utilities/getTransformsFromSubtree.ts";
 import {
   buildSupportStructures,
   cloneNode,
@@ -249,7 +252,7 @@ const addDistrictNode =
         parent,
         district.name,
       );
-      invalidateCachedTransforms(nodes, nodesIndex, [parent]);
+      invalidateCachedTransforms(nodesIndex, [parent]);
       dispatch(NodesActions.createNode(nodeWithCorrectParent));
     } else {
       dispatch(NodesActions.createNode(node));
@@ -273,6 +276,14 @@ const getSelectedNodesDeep = createSelector(
     });
   },
 );
+const getIsolatedNodesDeep = createSelector(
+  [
+    (state: AppState): NodesIndex => NodesSelectors.getNodesIndex(state),
+    (state: AppState): string | undefined => NodesSelectors.getIsolated(state),
+  ],
+  (index, isolated) =>
+    isolated != null ? new Set(getIsolatedBranch(index, isolated)) : null,
+);
 
 const getSlice = (state: AppState) => state.present[nodesSlice.reducerPath];
 export const NodesActions = {
@@ -290,5 +301,6 @@ export const NodesSelectors = {
   getPinnedPlaneNode: (state: AppState) => getSlice(state).pinnedPlane,
   getSelectedNodes: (state: AppState) => getSlice(state).selected,
   getSelectedNodesDeep,
+  getIsolatedNodesDeep,
 };
 export default nodesSlice;

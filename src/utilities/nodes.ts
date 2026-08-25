@@ -179,18 +179,17 @@ export function buildSupportStructures(nodes: NodesMap) {
       parentTree.children.push(treeNode);
     }
 
+    const nodeIndex: NodesIndexIntermediate[string] = {
+      treeNode,
+      descendantIds: [],
+      ancestorIds: [parentIndex.ancestorIds],
+    };
+    if (parent) nodeIndex.ancestorIds.unshift(parent);
+    indexTemp[node.id] = nodeIndex;
+    parentIndex.descendantIds.push(node.id, nodeIndex.descendantIds);
+
     if (node.type === "instance") {
-      parentIndex.descendantIds.push(node.id);
       treeNode.weight = getWeight(node);
-    } else {
-      const nodeIndex: NodesIndexIntermediate[string] = {
-        treeNode,
-        descendantIds: [],
-        ancestorIds: [parentIndex.ancestorIds],
-      };
-      if (parent) nodeIndex.ancestorIds.unshift(parent);
-      parentIndex.descendantIds.push(node.id, nodeIndex.descendantIds);
-      indexTemp[node.id] = nodeIndex;
     }
 
     processed.add(node.id);
