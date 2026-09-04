@@ -103,12 +103,22 @@ class RenderPipeline extends EffectComposer {
   };
 
   private onWindowResize = () => {
-    const parent = this.renderer.domElement.parentElement;
+    const canvas = this.renderer.domElement;
+    const parent = canvas.parentElement;
 
     if (!parent) return;
 
-    this.renderer.setSize(parent.clientWidth, parent.clientHeight);
-    this.setSize(parent.clientWidth, parent.clientHeight);
+    const width =
+      document.fullscreenElement === canvas
+        ? window.screen.width
+        : parent.clientWidth;
+    const height =
+      document.fullscreenElement === canvas
+        ? window.screen.height
+        : parent.clientHeight;
+
+    this.renderer.setSize(width, height);
+    this.setSize(width, height);
     this.render();
   };
 }

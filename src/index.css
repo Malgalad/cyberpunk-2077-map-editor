@@ -1,5 +1,10 @@
 @import "tailwindcss";
 
+canvas:fullscreen {
+  width: 100vw !important;
+  height: 100vh !important;
+}
+
 .tooltip {
   @apply relative;
 }

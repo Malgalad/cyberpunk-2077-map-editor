@@ -125,16 +125,59 @@ export class Map3DBase {
 
   screenshot(name = "screenshot") {
     this.render();
-    this.canvas.toBlob((blob) => {
-      if (!blob) return;
-      downloadBlob(blob, `${name}.png`);
-    }, "image/png");
+    return new Promise<void>((resolve, reject) => {
+      this.canvas.toBlob((blob) => {
+        if (!blob) {
+          reject(new Error("Failed to create screenshot"));
+          return;
+        }
+
+        downloadBlob(blob, `${name}.png`);
+        resolve();
+      }, "image/png");
+    });
+  }
+
+  async screenshotCurrentView() {
+    try {
+      await this.canvas.requestFullscreen({ navigationUI: "hide" });
+      await nextFrame();
+
+      this.renderPipeline.renderer.setPixelRatio(window.devicePixelRatio);
+      this.renderPipeline.setPixelRatio(window.devicePixelRatio);
+      this.resize(window.screen.width, window.screen.height);
+      await nextFrame();
+
+      const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
+      await this.screenshot(`nc-3dmap-editor-${timestamp}`);
+    } finally {
+      if (document.fullscreenElement === this.canvas) {
+        await document.exitFullscreen();
+      }
+
+      await nextFrame();
+      this.onWindowResize();
+    }
   }
 
   private onWindowResize = () => {
     const parent = this.canvas.parentElement;
     if (!parent) return;
-    this.cameraAspectRatio = parent.clientWidth / parent.clientHeight;
+
+    const width =
+      document.fullscreenElement === this.canvas
+        ? window.screen.width
+        : parent.clientWidth;
+    const height =
+      document.fullscreenElement === this.canvas
+        ? window.screen.height
+        : parent.clientHeight;
+
+    this.resize(width, height);
+  };
+
+  private resize(width: number, height: number) {
+    this.cameraAspectRatio = width / height;
 
     this.camera.left = (-frustumSize * this.cameraAspectRatio) / 2;
     this.camera.right = (frustumSize * this.cameraAspectRatio) / 2;
@@ -142,8 +185,10 @@ export class Map3DBase {
     this.camera.bottom = -frustumSize / 2;
     this.camera.updateProjectionMatrix();
 
+    this.renderPipeline.renderer.setSize(width, height);
+    this.renderPipeline.setSize(width, height);
     this.render();
-  };
+  }
 
   protected get canvas() {
     return this.renderPipeline.renderer.domElement;
@@ -235,7 +280,7 @@ export class Map3DBase {
         this.camera.position.set(x, 3000, y);
         this.camera.lookAt(new THREE.Vector3(x, 0, y));
         this.camera.updateProjectionMatrix();
-        this.screenshot(`tile-${counter}`);
+        await this.screenshot(`tile-${counter}`);
         await sleep(200);
       }
     }
@@ -243,3 +288,5 @@ export class Map3DBase {
 }
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+const nextFrame = () =>
+  new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));

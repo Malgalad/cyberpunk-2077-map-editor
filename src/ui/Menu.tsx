@@ -1,4 +1,5 @@
 import {
+  Camera,
   FileDown,
   FilePlus2,
   FileUp,
@@ -26,6 +27,7 @@ import {
   useConnectToServer,
 } from "../hooks/hooks.ts";
 import { useDownloadProject, useExportDDS } from "../hooks/importExport.ts";
+import { useMap3D } from "../map3d/map3d.context.ts";
 import { DistrictSelectors } from "../store/district.ts";
 import { ModalsActions } from "../store/modals.ts";
 import { OptionsActions, OptionsSelectors } from "../store/options.ts";
@@ -46,8 +48,18 @@ function Menu() {
   const exportDDS = useExportDDS();
   const saveProject = useDownloadProject();
   const connectToServer = useConnectToServer();
+  const map3d = useMap3D();
   const hasPast = useAppSelector((state) => state.past.length > 0);
   const hasFuture = useAppSelector((state) => state.future.length > 0);
+  const screenshotCurrentView = async () => {
+    try {
+      await map3d?.screenshotCurrentView();
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Failed to create screenshot";
+      void dispatch(ModalsActions.openModal("alert", message));
+    }
+  };
 
   return (
     <div className="flex flex-row justify-between px-2">
@@ -130,6 +142,14 @@ function Menu() {
             disabled={!projectName}
           >
             Connect to server
+          </DropdownItem>
+          <DropdownSeparator />
+          <DropdownItem
+            icon={<Camera />}
+            onClick={() => void screenshotCurrentView()}
+            disabled={!map3d}
+          >
+            Screenshot current view
           </DropdownItem>
         </Dropdown>
 
