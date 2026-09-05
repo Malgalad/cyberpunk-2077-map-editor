@@ -38,7 +38,7 @@ class RenderPipeline extends EffectComposer {
     const canvas = this.renderer.domElement;
 
     this.renderer.setPixelRatio(window.devicePixelRatio);
-    this.renderer.setSize(canvas.clientWidth, canvas.clientHeight);
+    this.renderer.setSize(canvas.clientWidth, canvas.clientHeight, false);
 
     this.setPixelRatio(window.devicePixelRatio);
     this.setSize(canvas.clientWidth, canvas.clientHeight);
@@ -117,7 +117,7 @@ class RenderPipeline extends EffectComposer {
         ? window.screen.height
         : parent.clientHeight;
 
-    this.renderer.setSize(width, height);
+    this.renderer.setSize(width, height, false);
     this.setSize(width, height);
     this.render();
   };

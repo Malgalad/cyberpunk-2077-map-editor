@@ -185,7 +185,7 @@ export class Map3DBase {
     this.camera.bottom = -frustumSize / 2;
     this.camera.updateProjectionMatrix();
 
-    this.renderPipeline.renderer.setSize(width, height);
+    this.renderPipeline.renderer.setSize(width, height, false);
     this.renderPipeline.setSize(width, height);
     this.render();
   }
