@@ -226,7 +226,7 @@ export class Map3DBase {
   }
 
   lookAtBox(box: THREE.Box3 | null) {
-    if (!box) return;
+    if (!box || box.isEmpty()) return;
 
     const margins = 0.05; // %
     const center = new THREE.Vector3();
@@ -238,7 +238,7 @@ export class Map3DBase {
 
     const horizontalZoom = (frustumSize * this.cameraAspectRatio) / width;
     const verticalZoom = frustumSize / height;
-    const zoom = Math.min(horizontalZoom, verticalZoom);
+    const zoom = Math.min(100, horizontalZoom, verticalZoom);
 
     this.lookAt(center, zoom);
   }

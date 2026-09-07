@@ -4,6 +4,7 @@ import { MARKER_ID } from "../constants.ts";
 import { NodesSelectors } from "../store/nodes.ts";
 import type { AppStore } from "../types/types.ts";
 import { applyTransforms } from "../utilities/getTransformsFromSubtree.ts";
+import { toQuaternion } from "../utilities/math.ts";
 import selectedStateFactory from "../utilities/SelectedState.ts";
 
 const material = new THREE.LineBasicMaterial({
@@ -70,6 +71,7 @@ class Helper extends THREE.LineSegments {
 
     this.visible = true;
     const transform = applyTransforms(nodes, node);
+    const rotation = toQuaternion(transform.rotation);
     const scale = 750 / this.camera.zoom / window.devicePixelRatio;
 
     this.position.set(
@@ -78,11 +80,7 @@ class Helper extends THREE.LineSegments {
       -transform.position[1],
     );
     this.scale.set(scale, scale, scale);
-    this.rotation.set(
-      transform.rotation[0],
-      transform.rotation[2],
-      -transform.rotation[1],
-    );
+    this.quaternion.set(rotation.x, rotation.z, -rotation.y, rotation.w);
   };
 }
 

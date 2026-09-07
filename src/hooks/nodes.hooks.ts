@@ -1,4 +1,5 @@
 import * as React from "react";
+import * as THREE from "three";
 
 import { useMap3D } from "../map3d/map3d.context.ts";
 import { DistrictSelectors } from "../store/district.ts";
@@ -7,10 +8,11 @@ import { NodesActions, NodesSelectors } from "../store/nodes.ts";
 import { ProjectActions } from "../store/project.ts";
 import type { MapNode, Modes, NodesMap, Plane } from "../types/types.ts";
 import {
+  applyTransforms,
   getTransformsFromSubtree,
   invalidateCachedTransforms,
 } from "../utilities/getTransformsFromSubtree.ts";
-import { lookAtTransform } from "../utilities/map.ts";
+import { getTransformsBoundingBox, lookAtTransform } from "../utilities/map.ts";
 import {
   cloneNode,
   resolveParent,
@@ -56,13 +58,25 @@ export function useLookAtNode(node: MapNode) {
         root[node.tag],
       );
 
-      const transformId =
-        node.type === "instance"
-          ? node.id
-          : index[node.id].descendantIds.find(
-              (id) => nodes[id].type === "instance",
-            );
-      const transform = transforms.find(({ id }) => id === transformId);
+      if (node.type === "group") {
+        const descendantIds = new Set(index[node.id].descendantIds);
+        const children = transforms.filter(({ id, originId }) =>
+          descendantIds.has(originId ?? id),
+        );
+        const bounds = getTransformsBoundingBox(children, district);
+        if (bounds.isEmpty()) {
+          const { position } = applyTransforms(nodes, node);
+          map3D.lookAt(
+            new THREE.Vector3(position[0], position[2], -position[1]),
+            1,
+          );
+        } else {
+          map3D.lookAtBox(bounds);
+        }
+        return;
+      }
+
+      const transform = transforms.find(({ id }) => id === node.id);
 
       if (transform) {
         const [position, zoom] = lookAtTransform(transform, district);
