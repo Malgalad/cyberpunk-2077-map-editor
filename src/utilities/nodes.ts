@@ -1,7 +1,12 @@
 import { nanoid } from "nanoid";
 import * as THREE from "three";
 
-import { MARKER_ID, MAX_DEPTH, TEMPLATE_ID } from "../constants.ts";
+import {
+  MARKER_ID,
+  MAX_DEPTH,
+  NODE_VERSION,
+  TEMPLATE_ID,
+} from "../constants.ts";
 import type {
   District,
   InstancedMeshTransforms,
@@ -15,7 +20,11 @@ import type {
   TreeRoot,
   Tuple3,
 } from "../types/types.ts";
-import { applyTransforms } from "./getTransformsFromSubtree.ts";
+import {
+  applyTransforms,
+  getTransplantFrame,
+  hasAffineTransforms,
+} from "./getTransformsFromSubtree.ts";
 import {
   fromQuaternion,
   fromVector3,
@@ -54,8 +63,12 @@ export function initNode(
     rotation,
     scale,
     mirror,
-    version: 2,
+    version: NODE_VERSION,
   };
+
+  if (type === "group" && init.preserveShape !== undefined)
+    node.preserveShape = init.preserveShape;
+  if (init.transformFrame) node.transformFrame = init.transformFrame;
 
   return node;
 }
@@ -251,6 +264,19 @@ export function transplantNode(
   parentId: string | null,
   district: string,
 ): MapNode {
+  if (hasAffineTransforms(nodes, node)) {
+    if (node.parent === parentId) return { ...node, district };
+    return {
+      ...node,
+      parent: parentId,
+      district,
+      version:
+        node.type === "group"
+          ? Math.max(node.version ?? 0, NODE_VERSION)
+          : node.version,
+      transformFrame: getTransplantFrame(nodes, node, parentId),
+    };
+  }
   const resolvedNode = applyTransforms(nodes, node);
 
   if (!parentId)

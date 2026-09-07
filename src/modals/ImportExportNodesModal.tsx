@@ -6,10 +6,11 @@ import Button from "../components/common/Button.tsx";
 import Modal from "../components/common/Modal.tsx";
 import Select from "../components/common/Select.tsx";
 import { useAppDispatch, useAppSelector } from "../hooks/hooks.ts";
+import { useInvalidateTransformsCache } from "../hooks/nodes.hooks.ts";
 import { DistrictActions, DistrictSelectors } from "../store/district.ts";
 import { NodesActions, NodesSelectors } from "../store/nodes.ts";
 import type { ModalProps } from "../types/modals.ts";
-import { NodeSchemaV2 } from "../types/schemas.ts";
+import { NodeSchemaV3 } from "../types/schemas.ts";
 import type { MapNode } from "../types/types.ts";
 import { getDistrictName } from "../utilities/district.ts";
 import {
@@ -33,11 +34,12 @@ const tabs: { key: Tabs; label: string }[] = [
   { key: "import", label: "Import" },
   { key: "export", label: "Export" },
 ];
-const NodesSchema = z.array(NodeSchemaV2);
+const NodesSchema = z.array(NodeSchemaV3);
 
 function ImportExportNodesModal(props: ModalProps) {
   const { data: defaultTab = "export" } = props as { data?: Tabs };
   const dispatch = useAppDispatch();
+  const invalidate = useInvalidateTransformsCache();
   const [tab, setTab] = React.useState<Tabs>(defaultTab);
   const [loaded, setLoaded] = React.useState<Loaded>({
     filename: null,
@@ -136,6 +138,7 @@ function ImportExportNodesModal(props: ModalProps) {
           .map((node) => [node.id, node]),
       );
 
+      invalidate(Object.keys(toImport).filter((id) => index[id]));
       dispatch(NodesActions.batchUpsertNodes(toImport));
       dispatch(DistrictActions.selectDistrict(district));
     }

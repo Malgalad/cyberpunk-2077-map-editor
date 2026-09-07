@@ -14,7 +14,6 @@ import {
   useDeleteNode,
   useDeselectNode,
   useHideNode,
-  useInvalidateTransformsCache,
   useToggleIsolation,
 } from "./hooks/nodes.hooks.ts";
 import { Map3D } from "./map3d/map3d.ts";
@@ -78,7 +77,6 @@ export function useShortcuts(map3d: Map3D | null) {
   const modal = useAppSelector(ModalsSelectors.getModal);
   const hasPast = useAppSelector((state) => state.past.length > 0);
   const hasFuture = useAppSelector((state) => state.future.length > 0);
-  const invalidate = useInvalidateTransformsCache();
 
   const deselectNode = useDeselectNode();
   const hideNode = useHideNode(selected);
@@ -132,7 +130,6 @@ export function useShortcuts(map3d: Map3D | null) {
   useGlobalShortcuts(
     "Control+KeyZ",
     () => {
-      if (selected.length) invalidate(selected);
       dispatch(ActionCreators.undo());
       map3d?.render();
     },
@@ -141,7 +138,6 @@ export function useShortcuts(map3d: Map3D | null) {
   useGlobalShortcuts(
     "Control+Shift+KeyZ",
     () => {
-      if (selected.length) invalidate(selected);
       dispatch(ActionCreators.redo());
       map3d?.render();
     },

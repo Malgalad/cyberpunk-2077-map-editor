@@ -90,15 +90,45 @@ export const NodeSchemaV2 = z.object({
     })
     .optional(),
 });
+export const NodeSchemaV3 = NodeSchemaV2.extend({
+  preserveShape: z.boolean().optional(),
+  transformFrame: z
+    .object({
+      matrix: z.tuple([
+        z.number(),
+        z.number(),
+        z.number(),
+        z.number(),
+        z.number(),
+        z.number(),
+        z.number(),
+        z.number(),
+        z.number(),
+        z.number(),
+        z.number(),
+        z.number(),
+        z.number(),
+        z.number(),
+        z.number(),
+        z.number(),
+      ]),
+      mirrors: z.array(PlaneSchema),
+    })
+    .optional(),
+});
+
 export const NodesStateSchemaV2 = z.object({
   nodes: z.record(z.string(), NodeSchemaV2),
   selected: z.string().array(),
   pinnedPlane: z.union([z.string(), z.undefined()]),
+});
+export const NodesStateSchemaV3 = NodesStateSchemaV2.extend({
+  nodes: z.record(z.string(), NodeSchemaV3),
 });
 
 export const PersistentStateSchema = z.object({
   project: ProjectStateSchema,
   options: OptionsStateSchema,
   district: PersistentDistrictStateSchema,
-  nodes: NodesStateSchemaV2,
+  nodes: NodesStateSchemaV3,
 });

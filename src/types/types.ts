@@ -104,6 +104,10 @@ export type Transform = {
   scale: Vector3;
   mirror: Plane | Plane[] | null;
 };
+export type TransformFrame = {
+  matrix: THREE.Matrix4Tuple;
+  mirrors: Plane[];
+};
 // MapNodes use absolute position
 export type MapNode = Transform & {
   id: string;
@@ -117,6 +121,8 @@ export type MapNode = Transform & {
   virtual?: boolean;
   originId?: string;
   version?: number;
+  preserveShape?: boolean;
+  transformFrame?: TransformFrame;
   pattern?: Transform & {
     count: number;
   };

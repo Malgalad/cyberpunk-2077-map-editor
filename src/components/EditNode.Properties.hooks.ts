@@ -21,7 +21,7 @@ type UpdateNodeProperties = {
 const updateTuple = <T>(tuple: T[], index: number, value: T) =>
   toTuple3(tuple.toSpliced(index, 1, value));
 
-function useUpdateNode(node: MapNode, shouldInvalidate = true) {
+export function useUpdateNode(node: MapNode, shouldInvalidate = true) {
   const dispatch = useAppDispatch();
   const invalidate = useInvalidateTransformsCache();
 

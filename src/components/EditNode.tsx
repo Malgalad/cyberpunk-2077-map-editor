@@ -62,7 +62,7 @@ function EditNode(props: EditNodeProps) {
         {tab === "properties" && (
           <EditNodeProperties selected={selected} mode={props.mode} />
         )}
-        {tab === "settings" && <EditNodeSettings />}
+        {tab === "settings" && <EditNodeSettings node={nodes[selected[0]]} />}
       </div>
     );
   }
@@ -100,7 +100,7 @@ function EditNode(props: EditNodeProps) {
         <EditNodeProperties selected={selected} mode={props.mode} />
       )}
       {tab === "pattern" && <EditNodePattern node={nodes[selected[0]]} />}
-      {tab === "settings" && <EditNodeSettings />}
+      {tab === "settings" && <EditNodeSettings node={nodes[selected[0]]} />}
     </div>
   );
 }

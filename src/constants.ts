@@ -8,6 +8,7 @@ import type {
 } from "./types/types.ts";
 
 export const PROJECT_VERSION = 3 as const;
+export const NODE_VERSION = 3 as const;
 export const MAX_DEPTH = 10 as const;
 export const TEMPLATE_ID = "@@TEMPLATE" as const;
 export const MARKER_ID = "@@MARKER" as const;
