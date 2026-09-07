@@ -7,7 +7,7 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
-    "test": "node tests/group-scaling.test.js",
+    "test": "node --test --test-reporter=spec",
     "preview": "vite preview"
   },
   "dependencies": {

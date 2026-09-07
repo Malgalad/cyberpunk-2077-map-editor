@@ -10,6 +10,7 @@ import type {
   PatternView,
 } from "../types/types.ts";
 import selectedStateFactory from "../utilities/SelectedState.ts";
+import { addInstanceUpdateRange } from "./addInstanceUpdateRange.ts";
 import { getPalette } from "./colors.ts";
 import { EXCLUDE_AO_LAYER } from "./constants.ts";
 import { createDistrictMesh } from "./createDistrictMesh.ts";
@@ -142,6 +143,7 @@ class CurrentDistrict extends THREE.Group<EventMap> {
         const { id } = instances[i];
         if (meshColors[id] === nextColors[id]) continue;
         mesh.setColorAt(i, nextColors[id]);
+        addInstanceUpdateRange(mesh.instanceColor!, i);
         needsUpdate = true;
       }
       if (needsUpdate && mesh.instanceColor) {
@@ -157,6 +159,7 @@ class CurrentDistrict extends THREE.Group<EventMap> {
     transforms: InstancedMeshTransforms[],
     material: THREE.Material,
     color: THREE.Color,
+    changedIndexes?: number[],
   ) {
     const current = this.meshMap.get(name);
     const mesh = createDistrictMesh(
@@ -165,6 +168,7 @@ class CurrentDistrict extends THREE.Group<EventMap> {
       transforms,
       material,
       color,
+      changedIndexes,
     );
     mesh.name = name;
     if (current !== mesh) {

@@ -3,6 +3,7 @@ import * as THREE from "three";
 import type {
   District,
   InstancedMeshTransforms,
+  InstancedMeshUpdate,
   MapNode,
   NodesIndex,
   NodesMap,
@@ -91,12 +92,20 @@ function withTransformFrame<Result>(
 }
 
 function applyParentTransform(parent: ResolvedNode | null | undefined) {
+  if (!parent) return (node: MapNode): ResolvedNode => node;
+
+  const parentMatrix =
+    parent.affineMatrix ??
+    (parent.type === "group" && parent.preserveShape
+      ? resolvedMatrix(parent)
+      : undefined);
+  const parentPosition = parentMatrix ? undefined : toVector3(parent.position);
+  const parentRotation = parentMatrix
+    ? undefined
+    : toQuaternion(parent.rotation);
+  const parentScale = parentMatrix ? undefined : toVector3(parent.scale);
+
   return (node: MapNode): ResolvedNode => {
-    if (!parent) return node;
-
-    const parentPosition = toVector3(parent.position);
-    const parentRotation = toQuaternion(parent.rotation);
-
     const position = toVector3(
       mirrorContext.reduce(
         (vec3, plane) => mirrorPosition(plane, vec3),
@@ -110,17 +119,7 @@ function applyParentTransform(parent: ResolvedNode | null | undefined) {
       ),
     );
 
-    if (
-      parent.affineMatrix ||
-      (parent.type === "group" && parent.preserveShape)
-    ) {
-      const parentMatrix =
-        parent.affineMatrix ??
-        new THREE.Matrix4().compose(
-          parentPosition,
-          parentRotation,
-          toVector3(parent.scale),
-        );
+    if (parentMatrix) {
       const matrix = new THREE.Matrix4()
         .compose(position, quaternion, toVector3(node.scale))
         .premultiply(parentMatrix);
@@ -132,12 +131,12 @@ function applyParentTransform(parent: ResolvedNode | null | undefined) {
         : resolved;
     }
 
-    position.multiply(toVector3(parent.scale));
+    position.multiply(parentScale!);
     const scale = hadamardProduct(node.scale, parent.scale) as Tuple3<number>;
 
-    quaternion.premultiply(parentRotation);
-    position.applyQuaternion(parentRotation);
-    position.add(parentPosition);
+    quaternion.premultiply(parentRotation!);
+    position.applyQuaternion(parentRotation!);
+    position.add(parentPosition!);
 
     return {
       ...node,
@@ -173,6 +172,10 @@ function applyGroupPatternTransform(
       source.rotation,
     ),
   ).invert();
+  const sourceRotationMatrix = new THREE.Matrix4().makeRotationFromQuaternion(
+    sourceRotation,
+  );
+  const patternMatrix = new THREE.Matrix4();
 
   return (copy: MapNode): ResolvedNode => {
     if (copy === source) return original;
@@ -189,7 +192,7 @@ function applyGroupPatternTransform(
     const scale = toVector3(
       toTuple3(copy.scale.map((value, axis) => 1 + value - source.scale[axis])),
     );
-    const patternMatrix = new THREE.Matrix4()
+    patternMatrix
       .compose(
         toVector3(
           mirrorContext.reduce(
@@ -200,9 +203,7 @@ function applyGroupPatternTransform(
         rotation,
         scale,
       )
-      .premultiply(
-        new THREE.Matrix4().makeRotationFromQuaternion(sourceRotation),
-      );
+      .premultiply(sourceRotationMatrix);
 
     // Assemble copies at unit group scale, then stretch them in shared axes.
     const affineMatrix = matrix.clone().multiply(patternMatrix);
@@ -429,9 +430,14 @@ const cache = new Map<string, InstancedMeshTransforms[]>();
 // id -> key[],
 //   list of all keys related to this id
 const extraKeys = new Map<string, string[]>();
+let revision = 0;
+let resetRevision = 0;
+const invalidations: Array<{ revision: number; ids: string[] }> = [];
 export const clearCachedTransforms = () => {
   cache.clear();
   extraKeys.clear();
+  resetRevision = ++revision;
+  invalidations.length = 0;
 };
 
 const getKey = <T extends { id: string }>(node: T, parents: T[]) =>
@@ -462,10 +468,13 @@ export const invalidateCachedTransforms = (
   index: NodesIndex,
   ids: string[],
 ) => {
-  const allIds = [];
+  invalidations.push({ revision: ++revision, ids: [...ids] });
+  // Inactive previews rebuild if they fall behind this bounded change history.
+  if (invalidations.length > 128) invalidations.shift();
+  const allIds = new Set<string>();
 
   for (const id of ids) {
-    allIds.push(...getIsolatedBranch(index, id));
+    for (const related of getIsolatedBranch(index, id)) allIds.add(related);
   }
 
   for (const id of allIds) {
@@ -475,55 +484,249 @@ export const invalidateCachedTransforms = (
   }
 };
 
+interface ResolvedOccurrence {
+  node: MapNode;
+  treeNode: TreeBranch;
+  parents: ResolvedNode[];
+  mirrors: Array<Plane | null>;
+  start: number;
+  count: number;
+}
+
+type VisitResolvedNode = (
+  treeNode: TreeBranch,
+  parents: ResolvedNode[],
+  mirrors: Array<Plane | null>,
+  transforms: InstancedMeshTransforms[],
+) => void;
+
+function processSubtreeNode(
+  district: District,
+  nodes: NodesMap,
+  treeNode: TreeBranch,
+  parents: ResolvedNode[],
+  visit?: VisitResolvedNode,
+): InstancedMeshTransforms[] {
+  const node = nodes[treeNode.id];
+  const key = getKey(node, parents);
+  if (!visit && cache.has(key)) return cache.get(key) ?? noTransforms;
+  const mirrors = visit ? [...mirrorContext] : [];
+  const transforms = withTransformFrame(node, parents.at(-1), (parent) => {
+    const nodeCopies = [node, ...applyPattern(node)];
+    if (node.type === "instance") {
+      const resolveNode = pipe(
+        applyParentTransform(parent),
+        applyHidden,
+        applyCloned(parents),
+        applyOffset,
+      );
+      const resolvedNodes = nodeCopies.map(applyMirror(resolveNode));
+
+      return resolvedNodes.map((node) => nodeToTransform(node, district));
+    } else {
+      const resolveNode = pipe(
+        applyGroupPatternTransform(parent, node),
+        applyHidden,
+        applyCloned(parents),
+      );
+      const resolvedNodes = nodeCopies.map(resolveNode);
+
+      return treeNode.children.flatMap((child) =>
+        resolvedNodes.flatMap(
+          applyMirror((parent) =>
+            processSubtreeNode(
+              district,
+              nodes,
+              child,
+              [...parents, parent],
+              visit,
+            ),
+          ),
+        ),
+      );
+    }
+  });
+  if (visit) visit(treeNode, parents, mirrors, transforms);
+  else addTransformsToCache(node.id, key, transforms);
+  return transforms;
+}
+
 export const getTransformsFromSubtree = (
   district: District,
   nodes: NodesMap,
   treeNodes: TreeBranch[],
 ): InstancedMeshTransforms[] => {
-  const processNode = (
-    treeNode: TreeBranch,
-    parents: ResolvedNode[],
-  ): InstancedMeshTransforms[] => {
-    const node = nodes[treeNode.id];
-    const key = getKey(node, parents);
-    let transforms: InstancedMeshTransforms[];
-
-    if (cache.has(key)) return cache.get(key) ?? noTransforms;
-
-    return withTransformFrame(node, parents.at(-1), (parent) => {
-      const nodeCopies = [node, ...applyPattern(node)];
-      if (node.type === "instance") {
-        const resolveNode = pipe(
-          applyParentTransform(parent),
-          applyHidden,
-          applyCloned(parents),
-          applyOffset,
-        );
-        const resolvedNodes = nodeCopies.map(applyMirror(resolveNode));
-
-        transforms = resolvedNodes.map((node) =>
-          nodeToTransform(node, district),
-        );
-      } else {
-        const resolveNode = pipe(
-          applyGroupPatternTransform(parent, node),
-          applyHidden,
-          applyCloned(parents),
-        );
-        const resolvedNodes = nodeCopies.map(resolveNode);
-
-        transforms = treeNode.children.flatMap((child) =>
-          resolvedNodes.flatMap(
-            applyMirror((parent) => processNode(child, [...parents, parent])),
-          ),
-        );
-      }
-
-      addTransformsToCache(node.id, key, transforms);
-
-      return transforms;
-    });
-  };
-
-  return treeNodes.flatMap((treeNode) => processNode(treeNode, []));
+  return treeNodes.flatMap((treeNode) =>
+    processSubtreeNode(district, nodes, treeNode, []),
+  );
 };
+
+const sameLayout = (previous: MapNode, next: MapNode) =>
+  previous.type === next.type &&
+  previous.parent === next.parent &&
+  previous.district === next.district &&
+  previous.tag === next.tag &&
+  previous.hidden === next.hidden &&
+  previous.virtual === next.virtual &&
+  previous.originId === next.originId &&
+  previous.pattern?.count === next.pattern?.count &&
+  previous.pattern?.mirror === next.pattern?.mirror;
+
+export class SubtreeTransforms {
+  private revision = -1;
+  private district?: District;
+  private treeNodes?: TreeBranch[];
+  private index?: NodesIndex;
+  private isolated?: string;
+  private occurrences = new Map<string, Map<string, ResolvedOccurrence>>();
+  private transforms: InstancedMeshTransforms[] = [];
+  // Zero excludes a slot; positive/negative values encode main/virtual index + 1.
+  private slots: number[] = [];
+  private main: InstancedMeshUpdate = { transforms: [] };
+  private virtual: InstancedMeshUpdate = { transforms: [] };
+  private readonly splitVirtual: boolean;
+
+  constructor(splitVirtual = false) {
+    this.splitVirtual = splitVirtual;
+  }
+
+  update(
+    district: District,
+    nodes: NodesMap,
+    treeNodes: TreeBranch[],
+    index: NodesIndex,
+    isolated?: string,
+  ) {
+    const rebuild = () => {
+      this.occurrences.clear();
+      const visit = this.collectOccurrences(nodes, 0);
+      this.transforms = treeNodes.flatMap((treeNode) =>
+        processSubtreeNode(district, nodes, treeNode, [], visit),
+      );
+      this.main = { transforms: [] };
+      this.virtual = { transforms: [] };
+      const branch = isolated
+        ? new Set(getIsolatedBranch(index, isolated))
+        : undefined;
+      this.slots = this.transforms.map((transform) => {
+        if (branch && !branch.has(transform.originId || transform.id)) return 0;
+        if (this.splitVirtual && transform.originId != null)
+          return -this.virtual.transforms.push(transform);
+        return this.main.transforms.push(transform);
+      });
+      this.district = district;
+      this.treeNodes = treeNodes;
+      this.index = index;
+      this.isolated = isolated;
+    };
+
+    if (
+      this.district !== district ||
+      this.treeNodes !== treeNodes ||
+      this.index !== index ||
+      this.isolated !== isolated ||
+      this.revision < resetRevision ||
+      this.revision < (invalidations[0]?.revision ?? revision + 1) - 1
+    ) {
+      rebuild();
+    } else {
+      const dirty = new Set<string>();
+      for (let i = invalidations.length - 1; i >= 0; i--) {
+        const invalidation = invalidations[i];
+        if (invalidation.revision <= this.revision) break;
+        for (const id of invalidation.ids) {
+          if (this.occurrences.has(id)) dirty.add(id);
+        }
+      }
+      this.main = { transforms: this.main.transforms, changedIndexes: [] };
+      this.virtual = {
+        transforms: this.virtual.transforms,
+        changedIndexes: [],
+      };
+      let layoutChanged = false;
+      for (const id of dirty) {
+        const occurrence = this.occurrences.get(id)!.values().next().value!;
+        if (!nodes[id] || !sameLayout(occurrence.node, nodes[id])) {
+          layoutChanged = true;
+          break;
+        }
+      }
+      if (!layoutChanged) {
+        for (const id of dirty) {
+          if (index[id].ancestorIds.some((ancestor) => dirty.has(ancestor)))
+            continue;
+          for (const occurrence of this.occurrences.get(id)!.values()) {
+            const depth = mirrorContext.length;
+            mirrorContext.push(...occurrence.mirrors);
+            let transforms: InstancedMeshTransforms[];
+            try {
+              transforms = processSubtreeNode(
+                district,
+                nodes,
+                occurrence.treeNode,
+                occurrence.parents,
+                this.collectOccurrences(nodes, occurrence.start),
+              );
+            } finally {
+              mirrorContext.length = depth;
+            }
+            if (transforms.length !== occurrence.count) {
+              layoutChanged = true;
+              break;
+            }
+            for (let i = 0; i < transforms.length; i++) {
+              const offset = occurrence.start + i;
+              const transform = transforms[i];
+              const previous = this.transforms[offset];
+              if (
+                transform.id !== previous.id ||
+                transform.originId !== previous.originId
+              ) {
+                layoutChanged = true;
+                break;
+              }
+              this.transforms[offset] = transform;
+              const slot = this.slots[offset];
+              if (slot === 0) continue;
+              const target = slot > 0 ? this.main : this.virtual;
+              const targetIndex = Math.abs(slot) - 1;
+              target.transforms[targetIndex] = transform;
+              target.changedIndexes!.push(targetIndex);
+            }
+            if (layoutChanged) break;
+          }
+          if (layoutChanged) break;
+        }
+      }
+      if (layoutChanged) rebuild();
+    }
+    this.revision = revision;
+    return { main: this.main, virtual: this.virtual };
+  }
+
+  private collectOccurrences(
+    nodes: NodesMap,
+    start: number,
+  ): VisitResolvedNode {
+    let cursor = start;
+    return (treeNode, parents, mirrors, transforms) => {
+      const node = nodes[treeNode.id];
+      const offset =
+        node.type === "instance" ? cursor : cursor - transforms.length;
+      if (node.type === "instance") cursor += transforms.length;
+      let occurrences = this.occurrences.get(node.id);
+      if (!occurrences) {
+        occurrences = new Map();
+        this.occurrences.set(node.id, occurrences);
+      }
+      occurrences.set(getKey(node, parents), {
+        node,
+        treeNode,
+        parents,
+        mirrors,
+        start: offset,
+        count: transforms.length,
+      });
+    };
+  }
+}

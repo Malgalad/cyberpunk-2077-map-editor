@@ -32,10 +32,7 @@ import {
   getFinalDistrictTransformsFromNodes,
   immutableDistrictTransforms,
 } from "./utilities/district.ts";
-import {
-  getIsolatedBranch,
-  getTransformsFromSubtree,
-} from "./utilities/getTransformsFromSubtree.ts";
+import { SubtreeTransforms } from "./utilities/getTransformsFromSubtree.ts";
 import { partition } from "./utilities/utilities.ts";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -269,6 +266,7 @@ export function useDrawCurrentDistrict(map3d: Map3D | null) {
 }
 
 export function useDrawAdditions(map3d: Map3D | null) {
+  const [transforms] = React.useState(() => new SubtreeTransforms(true));
   const district = useAppSelector(DistrictSelectors.getDistrict);
   const nodes = useAppSelector(NodesSelectors.getNodes);
   const tree = useAppSelector(NodesSelectors.getNodesTree);
@@ -282,30 +280,24 @@ export function useDrawAdditions(map3d: Map3D | null) {
   React.useEffect(() => {
     if (!map3d || !district) return;
 
-    const transforms = getTransformsFromSubtree(district, nodes, additions);
-    let filtered;
-    if (isolated) {
-      const nodesInBranch = new Set(getIsolatedBranch(index, isolated));
-      filtered = transforms.filter((transform) =>
-        nodesInBranch.has(transform.originId || transform.id),
-      );
-    } else {
-      filtered = transforms;
-    }
-    const split = partition(
-      filtered,
-      (transform) => `${transform.originId != null}`,
+    const { main, virtual } = transforms.update(
+      district,
+      nodes,
+      additions,
+      index,
+      isolated,
     );
-
-    map3d.setAdditions({ district, transforms: split["false"] ?? [] });
-    map3d.setAdditionsVirtual({ district, transforms: split["true"] ?? [] });
-  }, [map3d, district, nodes, additions, isolated, index]);
+    map3d.setAdditions({ district, ...main });
+    map3d.setAdditionsVirtual({ district, ...virtual });
+  }, [map3d, district, nodes, additions, isolated, index, transforms]);
 }
 
 export function useDrawUpdates(map3d: Map3D | null) {
+  const [transforms] = React.useState(() => new SubtreeTransforms());
   const district = useAppSelector(DistrictSelectors.getDistrict);
   const nodes = useAppSelector(NodesSelectors.getNodes);
   const tree = useAppSelector(NodesSelectors.getNodesTree);
+  const index = useAppSelector(NodesSelectors.getNodesIndex);
   const updates = React.useMemo<TreeBranch[]>(() => {
     if (!district || !tree[district.name]) return emptyArray;
     return tree[district.name].update;
@@ -314,16 +306,17 @@ export function useDrawUpdates(map3d: Map3D | null) {
   React.useEffect(() => {
     if (!map3d || !district) return;
 
-    const transforms = getTransformsFromSubtree(district, nodes, updates);
-
-    map3d.setUpdates({ district, transforms });
-  }, [map3d, district, nodes, updates]);
+    const { main } = transforms.update(district, nodes, updates, index);
+    map3d.setUpdates({ district, ...main });
+  }, [map3d, district, nodes, updates, index, transforms]);
 }
 
 export function useDrawDeletions(map3d: Map3D | null) {
+  const [transforms] = React.useState(() => new SubtreeTransforms());
   const district = useAppSelector(DistrictSelectors.getDistrict);
   const nodes = useAppSelector(NodesSelectors.getNodes);
   const tree = useAppSelector(NodesSelectors.getNodesTree);
+  const index = useAppSelector(NodesSelectors.getNodesIndex);
   const deletions = React.useMemo<TreeBranch[]>(() => {
     if (!district || !tree[district.name]) return emptyArray;
     return tree[district.name].delete;
@@ -332,10 +325,9 @@ export function useDrawDeletions(map3d: Map3D | null) {
   React.useEffect(() => {
     if (!map3d || !district) return;
 
-    const transforms = getTransformsFromSubtree(district, nodes, deletions);
-
-    map3d.setDeletions({ district, transforms });
-  }, [map3d, district, nodes, deletions]);
+    const { main } = transforms.update(district, nodes, deletions, index);
+    map3d.setDeletions({ district, ...main });
+  }, [map3d, district, nodes, deletions, index, transforms]);
 }
 
 const emptyArr: TreeBranch[] = [];

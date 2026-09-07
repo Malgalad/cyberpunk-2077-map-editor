@@ -47,10 +47,15 @@ export type InstancedMeshTransforms = {
   scale: THREE.Vector4Like;
 };
 
-export type DistrictWithTransforms = {
-  district: DistrictProperties;
+export interface InstancedMeshUpdate {
   transforms: InstancedMeshTransforms[];
-};
+  // Preview arrays may be reused; these slots must be written despite equality.
+  changedIndexes?: number[];
+}
+
+export interface DistrictWithTransforms extends InstancedMeshUpdate {
+  district: DistrictProperties;
+}
 
 export type Tool = "move" | "select" | "multiselect";
 export type Modes = "create" | "update" | "delete";

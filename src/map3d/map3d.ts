@@ -136,35 +136,50 @@ export class Map3D extends Map3DBase {
     this.markers.setMarkers(markers);
   }
 
-  setAdditions({ district, transforms }: DistrictWithTransforms) {
+  setAdditions({
+    district,
+    transforms,
+    changedIndexes,
+  }: DistrictWithTransforms) {
     this.current.setMesh(
       "additions",
       district,
       transforms,
       additionsMaterial,
       COLORS.ADDITIONS.default,
+      changedIndexes,
     );
     this.update();
   }
 
-  setAdditionsVirtual({ district, transforms }: DistrictWithTransforms) {
+  setAdditionsVirtual({
+    district,
+    transforms,
+    changedIndexes,
+  }: DistrictWithTransforms) {
     this.current.setMesh(
       "additionsVirtual",
       district,
       transforms,
       additionsMaterial,
       COLORS.ADDITIONS.default,
+      changedIndexes,
     );
     this.update();
   }
 
-  setDeletions({ district, transforms }: DistrictWithTransforms) {
+  setDeletions({
+    district,
+    transforms,
+    changedIndexes,
+  }: DistrictWithTransforms) {
     this.current.setMesh(
       "deletions",
       district,
       transforms,
       wireframeMaterial,
       COLORS.DELETIONS.default,
+      changedIndexes,
     );
     this.update();
   }
@@ -198,13 +213,14 @@ export class Map3D extends Map3DBase {
     this.update();
   }
 
-  setUpdates({ district, transforms }: DistrictWithTransforms) {
+  setUpdates({ district, transforms, changedIndexes }: DistrictWithTransforms) {
     this.current.setMesh(
       "updates",
       district,
       transforms,
       additionsMaterial,
       COLORS.UPDATES.default,
+      changedIndexes,
     );
     this.update();
   }
