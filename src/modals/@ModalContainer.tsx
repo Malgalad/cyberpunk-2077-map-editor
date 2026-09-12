@@ -12,6 +12,7 @@ import EditDistrictModal from "./EditDistrictModal/EditDistrictModal.tsx";
 import ImportExportNodesModal from "./ImportExportNodesModal.tsx";
 import LoadingModal from "./LoadingModal.tsx";
 import ManageTemplatesModal from "./ManageTemplatesModal.tsx";
+import MeshOverridesModal from "./MeshOverridesModal.tsx";
 import ProjectModal from "./ProjectModal.tsx";
 import UpdateNodeParentModal from "./UpdateNodeParentModal.tsx";
 
@@ -26,6 +27,7 @@ const ComponentMap: Record<ModalType, React.FC<ModalProps>> = {
   "import-export": ImportExportNodesModal,
   "update-node-parent": UpdateNodeParentModal,
   "manage-templates": ManageTemplatesModal,
+  "mesh-overrides": MeshOverridesModal,
   "connect-to-server": ConnectToServerModal,
 };
 

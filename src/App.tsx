@@ -12,6 +12,7 @@ import {
 } from "./App.hooks.ts";
 import { useAppSelector } from "./hooks/hooks.ts";
 import { Map3DContext } from "./map3d/map3d.context.ts";
+import ModalContainer from "./modals/@ModalContainer.tsx";
 import { ProjectSelectors } from "./store/project.ts";
 import Menu from "./ui/Menu.tsx";
 import ResetButton from "./ui/ResetButton.tsx";
@@ -56,6 +57,7 @@ function App() {
 
         <Tabs />
       </div>
+      <ModalContainer />
     </Map3DContext>
   );
 }

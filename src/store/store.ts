@@ -8,6 +8,7 @@ import modalsSlice from "./modals.ts";
 import nodesSlice from "./nodes.ts";
 import optionsSlice from "./options.ts";
 import projectSlice from "./project.ts";
+import { projectListeners } from "./projectListeners.ts";
 import { transformsCacheMiddleware } from "./transformsCacheMiddleware.ts";
 
 export const combinedReducer = undoable(
@@ -24,7 +25,9 @@ export const combinedReducer = undoable(
 const store = configureStore({
   reducer: combinedReducer,
   middleware: (getDefaultMiddleware) =>
-    getDefaultMiddleware().concat(transformsCacheMiddleware, persistMiddleware),
+    getDefaultMiddleware()
+      .prepend(projectListeners.middleware)
+      .concat(transformsCacheMiddleware, persistMiddleware),
 });
 
 export default store;

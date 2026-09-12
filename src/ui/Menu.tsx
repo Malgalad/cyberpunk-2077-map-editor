@@ -195,6 +195,12 @@ function Menu() {
           >
             Manage templates
           </DropdownItem>
+          <DropdownItem
+            disabled={!projectName || !map3d}
+            onClick={() => dispatch(ModalsActions.openModal("mesh-overrides"))}
+          >
+            Override default meshes…
+          </DropdownItem>
         </Dropdown>
 
         <Dropdown

@@ -2,8 +2,10 @@ import * as THREE from "three";
 
 import { NodesActions } from "../store/nodes.ts";
 import { ProjectSelectors } from "../store/project.ts";
+import { onProjectLoaded } from "../store/projectListeners.ts";
 import type {
   AppStore,
+  DefaultMeshNames,
   DistrictWithTransforms,
   MapNode,
 } from "../types/types.ts";
@@ -34,6 +36,7 @@ export class Map3D extends Map3DBase {
   private readonly selectable: Selectable;
   private readonly staticDistricts: StaticDistricts;
   private readonly staticMeshes: StaticMeshes;
+  private readonly unsubscribeProjectLoaded: () => void;
   private readonly store: AppStore;
   private readonly state: ReturnType<
     typeof selectedStateFactory<typeof selectors>
@@ -71,7 +74,10 @@ export class Map3D extends Map3DBase {
     this.addMesh(this.staticDistricts);
 
     this.staticMeshes = new StaticMeshes(store);
-    this.staticMeshes.addEventListener("visibilityChanged", this.update);
+    this.staticMeshes.addEventListener("updated", this.update);
+    this.unsubscribeProjectLoaded = onProjectLoaded(
+      this.staticMeshes.resetOverrides,
+    );
     this.addMesh(this.staticMeshes);
 
     this.canvas.addEventListener("click", this.onClick);
@@ -80,6 +86,7 @@ export class Map3D extends Map3DBase {
   }
 
   dispose() {
+    this.unsubscribeProjectLoaded();
     super.dispose();
     this.state.dispose();
     this.current.dispose();
@@ -89,7 +96,22 @@ export class Map3D extends Map3DBase {
     this.staticDistricts.dispose();
     this.staticMeshes.dispose();
 
+    if (this.raf != null) cancelAnimationFrame(this.raf);
+
     this.canvas.removeEventListener("click", this.onClick);
+  }
+
+  getMeshOverrides = () => this.staticMeshes.getOverrideStatuses();
+
+  subscribeMeshOverrides = (listener: () => void) =>
+    this.staticMeshes.subscribeOverrides(listener);
+
+  applyMeshOverride(name: DefaultMeshNames, file: File, signal: AbortSignal) {
+    return this.staticMeshes.applyOverride(name, file, signal);
+  }
+
+  restoreDefaultMesh(name: DefaultMeshNames) {
+    this.staticMeshes.restoreDefault(name);
   }
 
   private onClick = () => {

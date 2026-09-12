@@ -61,6 +61,7 @@ function openModal(
   data: string[],
 ): AppThunkAction<Promise<void>>;
 function openModal(type: "manage-templates"): AppThunkAction<Promise<void>>;
+function openModal(type: "mesh-overrides"): AppThunkAction<Promise<void>>;
 function openModal(
   type: "connect-to-server",
 ): AppThunkAction<Promise<string | void>>;

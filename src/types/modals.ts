@@ -9,6 +9,7 @@ export type ModalType =
   | "import-export"
   | "update-node-parent"
   | "manage-templates"
+  | "mesh-overrides"
   | "connect-to-server";
 export type Modal = {
   type: ModalType;

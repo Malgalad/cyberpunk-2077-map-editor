@@ -6,7 +6,12 @@ import { STATIC_ASSETS } from "./constants.ts";
 const dracoLoader = new DRACOLoader();
 
 dracoLoader.setDecoderPath(STATIC_ASSETS + "/draco/");
-dracoLoader.preload();
+
+export function decodeDRC(buffer: ArrayBuffer): Promise<THREE.BufferGeometry> {
+  return new Promise((resolve, reject) => {
+    dracoLoader.parse(buffer, resolve, reject);
+  });
+}
 
 export async function importDRC(url: string, material: THREE.Material) {
   const model = await dracoLoader.loadAsync(url);
